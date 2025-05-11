@@ -22,6 +22,30 @@
           }
         },
         {
+          "client_id": "345408565738-8gstkcth7gbq1sh76fgms2tuh0bo8r86.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cognifyteam.cognifyapp",
+            "certificate_hash": "cdd9ffec495bf8b521f7f155f36cd7dcff65c830"
+          }
+        },
+        {
+          "client_id": "345408565738-chtoe6mlfr4uqc6j3th7mtordthhncup.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cognifyteam.cognifyapp",
+            "certificate_hash": "303f55389438eca9e14c6defaefd1fc2fc2b2cfb"
+          }
+        },
+        {
+          "client_id": "345408565738-okmcsh066kjsn6128rjccq0tgk1ea2bb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cognifyteam.cognifyapp",
+            "certificate_hash": "926e1c0b9d86687bd37671ff123f16c662f643b3"
+          }
+        },
+        {
           "client_id": "345408565738-1v4h6aov2hncfq8bm7r0vmc3jichgc4m.apps.googleusercontent.com",
           "client_type": 3
         }
