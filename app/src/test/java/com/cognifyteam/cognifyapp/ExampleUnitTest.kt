@@ -1,4 +1,4 @@
-package com.example.cognifyapp
+package com.cognifyteam.cognifyapp
 
 import org.junit.Test
 

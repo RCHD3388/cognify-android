@@ -1,4 +1,4 @@
-package com.example.cognifyapp.ui.theme
+package com.cognifyteam.cognifyapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "345408565738",
+    "project_id": "cognifyauth-a4093",
+    "storage_bucket": "cognifyauth-a4093.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:345408565738:android:9080263b4e014833530293",
+        "android_client_info": {
+          "package_name": "com.cognifyteam.cognifyapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "345408565738-296d69tpdbptqn8f1lqepfi134bbflqq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cognifyteam.cognifyapp",
+            "certificate_hash": "78ab7c8d105e902da4f0b1819722ce94b36f3468"
+          }
+        },
+        {
+          "client_id": "345408565738-1v4h6aov2hncfq8bm7r0vmc3jichgc4m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2EfSacMySCLORC0bZqr4VSI9-158pJ7E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "345408565738-1v4h6aov2hncfq8bm7r0vmc3jichgc4m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

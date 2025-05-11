@@ -1,4 +1,4 @@
-package com.example.cognifyapp.ui.theme
+package com.cognifyteam.cognifyapp.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -34,7 +34,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun CognifyAppTheme(
+fun CognifyApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

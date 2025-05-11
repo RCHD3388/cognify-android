@@ -16,8 +16,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Tambahkan ini untuk jaga-jaga
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
-rootProject.name = "CognifyApp"
+rootProject.name = "Cognify Application"
 include(":app")
+ 
