@@ -16,14 +16,21 @@ enum class AuthScreen {
 fun AuthToggleScreen() {
     var currentScreen by remember { mutableStateOf(AuthScreen.LOGIN) }
 
-    when (currentScreen) {
-        AuthScreen.LOGIN -> LoginScreen(
-            onNavigateToRegister = { currentScreen = AuthScreen.REGISTER },
-            onLoginSuccess = { /* Handle login success */ }
-        )
-        AuthScreen.REGISTER -> RegisterScreen(
-            onNavigateToLogin = { currentScreen = AuthScreen.LOGIN },
-            onRegisterSuccess = { /* Handle register success */ }
-        )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+        when (currentScreen) {
+            AuthScreen.LOGIN -> LoginScreen(
+                onNavigateToRegister = { currentScreen = AuthScreen.REGISTER },
+                onLoginSuccess = { /* Handle login success */ },
+            )
+
+            AuthScreen.REGISTER -> RegisterScreen(
+                onNavigateToLogin = { currentScreen = AuthScreen.LOGIN },
+                onRegisterSuccess = { /* Handle register success */ }
+            )
+        }
     }
 }
