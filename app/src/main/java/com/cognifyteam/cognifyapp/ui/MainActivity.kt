@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import com.cognifyteam.cognifyapp.CognifyApplication
+import com.cognifyteam.cognifyapp.ui.auth.AuthToggleScreen
+import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
 
 
 class MainActivity : ComponentActivity() {
@@ -17,8 +19,11 @@ class MainActivity : ComponentActivity() {
 
         val appContainer = (application as CognifyApplication).container
         setContent {
-            val widthSizeClass = calculateWindowSizeClass(this).widthSizeClass
-            CognifyApp(appContainer, widthSizeClass)
+            CognifyApplicationTheme {
+                AuthToggleScreen()
+            }
+//            val widthSizeClass = calculateWindowSizeClass(this).widthSizeClass
+//            CognifyApp(appContainer, widthSizeClass)
         }
     }
 }
