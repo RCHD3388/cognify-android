@@ -39,9 +39,31 @@ class AuthViewModel : ViewModel() {
 
     fun firebaseAuthWithGoogle(idToken: String) {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
-            .addOnCompleteListener { task ->
-                _status.value = if (task.isSuccessful) "Logged in with Google!" else task.exception?.message ?: "Google login failed"
-            }
+
+        auth.currentUser?.let { currentUser ->
+            // If user is already signed in with email/password, try to link with Google
+            currentUser.linkWithCredential(credential)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        // Successfully linked Google account with email/password account
+                        _status.value = "Google account linked successfully!"
+                    } else {
+                        // If linking fails (e.g., Google account is already linked), display an error message
+                        _status.value = task.exception?.message ?: "Failed to link Google account"
+                    }
+                }
+        } ?: run {
+            // If the user is not signed in with email/password, sign them in with Google
+            auth.signInWithCredential(credential)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        _status.value = "Logged in with Google!"
+                    } else {
+                        _status.value = task.exception?.message ?: "Google login failed"
+                    }
+                }
+        }
     }
+
+
 }
