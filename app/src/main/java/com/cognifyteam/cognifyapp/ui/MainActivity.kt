@@ -1,0 +1,34 @@
+package com.cognifyteam.cognifyapp.ui
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import com.cognifyteam.cognifyapp.CognifyApplication
+import com.cognifyteam.cognifyapp.ui.auth.AuthToggleScreen
+import com.cognifyteam.cognifyapp.ui.material.ExoPlayerVideo
+import com.cognifyteam.cognifyapp.ui.material.NativeWebView
+import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
+
+
+class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+
+        val appContainer = (application as CognifyApplication).container
+        setContent {
+            CognifyApplicationTheme {
+//                AuthToggleScreen()
+//               NativeWebView("https://iframe.mediadelivery.net/play/427249/c5b500fc-95a0-443e-acac-31442b1b318e")
+                ExoPlayerVideo("https://nyoba-nyoba-aws-bucket-hehehe.s3.us-east-1.amazonaws.com/Desktop+2024.11.27+-+09.46.21.02.mp4")
+            }
+//            val widthSizeClass = calculateWindowSizeClass(this).widthSizeClass
+//            CognifyApp(appContainer, widthSizeClass)
+        }
+    }
+}
+

@@ -1,0 +1,37 @@
+package com.cognifyteam.cognifyapp.data.repository.impl
+
+import com.cognifyteam.cognifyapp.data.local.dao.UserDao
+import com.cognifyteam.cognifyapp.data.remote.api.UserService
+import com.cognifyteam.cognifyapp.data.repository.UserRepository
+import com.cognifyteam.cognifyapp.model.User
+
+class UserRepositoryImpl(
+    private val userDao: UserDao,
+    private val userService: UserService
+) : UserRepository {
+
+    override suspend fun getUser(userId: String): Result<User> {
+        val userFromApi = userService.getUser(userId)
+
+        return if (userFromApi != null) {
+            userDao.register(userFromApi.toEntity())
+            Result.success(userFromApi.toDomain());
+        } else {
+            try {
+                val cachedUserEntity = userDao.getUser(userId).value
+                if (cachedUserEntity == null) {
+                    Result.failure(Exception("User not found in cache"))
+                } else{
+                    Result.success(cachedUserEntity.toDomain())
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun saveUser(user: User) {
+        val userEntity = user.toEntity()
+        userDao.register(userEntity)
+    }
+}
