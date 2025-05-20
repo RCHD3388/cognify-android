@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cognifyteam.cognifyapp.R
+import com.cognifyteam.cognifyapp.data.AppContainer
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
@@ -42,6 +43,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
+    appContainer: AppContainer,
     onNavigateToRegister: () -> Unit,
     modifier: Modifier = Modifier,
     onLoginSuccess: () -> Unit
@@ -49,7 +51,11 @@ fun LoginScreen(
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
 
-    val viewModel: AuthViewModel = viewModel()
+    val viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModel.provideFactory(
+            postsRepository = appContainer.authRepository
+        )
+    )
 
     val uiState by viewModel.uiState.observeAsState(AuthUiState.Unauthenticated)
 

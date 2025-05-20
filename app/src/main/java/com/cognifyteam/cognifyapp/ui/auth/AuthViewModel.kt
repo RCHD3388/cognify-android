@@ -3,7 +3,9 @@ package com.cognifyteam.cognifyapp.ui.auth
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
@@ -15,7 +17,9 @@ sealed interface AuthUiState {
     object Unauthenticated : AuthUiState
 }
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(
+    private val authRepository: AuthRepository
+) : ViewModel() {
     private val auth by lazy { FirebaseAuth.getInstance() }
 
     private val _uiState = MutableLiveData<AuthUiState>()
@@ -70,6 +74,17 @@ class AuthViewModel : ViewModel() {
                         _uiState.value = AuthUiState.Error(task.exception?.message ?: "Google login failed")
                     }
                 }
+        }
+    }
+
+    companion object {
+        fun provideFactory(
+            postsRepository: AuthRepository
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AuthViewModel(postsRepository) as T
+            }
         }
     }
 }

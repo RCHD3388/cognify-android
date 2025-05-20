@@ -43,10 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cognifyteam.cognifyapp.R
+import com.cognifyteam.cognifyapp.data.AppContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
+    appContainer: AppContainer,
     onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier,
     onRegisterSuccess: () -> Unit
@@ -56,7 +58,11 @@ fun RegisterScreen(
     val password = remember { mutableStateOf("") }
     val confirm_password = remember { mutableStateOf("") }
 
-    val viewModel: AuthViewModel = viewModel()
+    val viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModel.provideFactory(
+            postsRepository = appContainer.authRepository
+        )
+    )
 
     val uiState by viewModel.uiState.observeAsState()
 

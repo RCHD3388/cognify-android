@@ -7,6 +7,6 @@ class RemoteAuthDataSourceImpl(
     private val authService: AuthService
 ): RemoteAuthDataSource {
     override suspend fun register(user: User): User {
-        TODO("Not yet implemented")
+        return authService.register(user.toJson())
     }
 }

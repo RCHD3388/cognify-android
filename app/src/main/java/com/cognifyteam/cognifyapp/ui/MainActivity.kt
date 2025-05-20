@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         val appContainer = (application as CognifyApplication).container
         setContent {
             CognifyApplicationTheme {
-                AuthToggleScreen()
+                AuthToggleScreen(appContainer)
             }
 //            val widthSizeClass = calculateWindowSizeClass(this).widthSizeClass
 //            CognifyApp(appContainer, widthSizeClass)

@@ -3,13 +3,17 @@ package com.cognifyteam.cognifyapp.data
 import android.content.Context
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepositoryImpl
+import com.cognifyteam.cognifyapp.data.sources.local.AppDatabase
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSource
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.remote.auth.RemoteAuthDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.remote.services.AuthService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 interface AppContainer{
-
     val authRepository: AuthRepository
 }
 
@@ -21,8 +25,8 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
 
     override val authRepository: AuthRepository by lazy {
         AuthRepositoryImpl(
-
-
+            LocalAuthDataSourceImpl(AppDatabase.getInstance(applicationContext)),
+            RemoteAuthDataSourceImpl(retrofit.create(AuthService::class.java))
         )
     }
 }
