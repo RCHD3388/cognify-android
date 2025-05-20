@@ -12,12 +12,13 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.AuthDao
 ], version = 1)
 abstract class AppDatabase : RoomDatabase() {
 
-     abstract fun userDao(): AuthDao
+     abstract fun authDao(): AuthDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
         fun getInstance(context: Context): AppDatabase {
+        //context.deleteDatabase("cognify_local_db")
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context,

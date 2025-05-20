@@ -7,5 +7,5 @@ import com.cognifyteam.cognifyapp.data.models.UserEntity
 @Dao
 interface AuthDao {
     @Insert
-    suspend fun register(user:UserEntity)
+    suspend fun insert(user:UserEntity)
 }

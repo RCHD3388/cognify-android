@@ -46,10 +46,9 @@ class AuthViewModel(
 
                 user?.let { firebaseUser ->
                     // 2. Tambahkan display name (opsional)
-
+                    authRepository.register(user.uid, name, email);
                     // 3. Kirim email verifikasi
                     firebaseUser.sendEmailVerification().await()
-
                     // 4. Setelah semua berhasil, update UI
                     _uiState.value = AuthUiState.RegisterSuccess("Registrasi berhasil. Silakan cek email Anda untuk verifikasi.")
                 } ?: run {
@@ -123,18 +122,17 @@ class AuthViewModel(
 
                             if (isNewUser == true) {
                                 // 🔵 User baru, bisa dianggap sebagai registrasi
-                                Log.d("GoogleAuth", "Ini adalah user baru. Lakukan registrasi.")
-                                _uiState.value = AuthUiState.Success(
-                                    email = email,
-                                )
-                            } else {
-                                // 🟢 User sudah pernah login sebelumnya
-                                Log.d("GoogleAuth", "Ini adalah user lama. Login ulang.")
+                                viewModelScope.launch {
+                                    authRepository.register(uid, displayName, email)
+                                    _uiState.value = AuthUiState.Success(
+                                        email = email,
+                                    )
+                                }
+                            }else{
                                 _uiState.value = AuthUiState.Success(
                                     email = email,
                                 )
                             }
-
                         } ?: run {
                             _uiState.value = AuthUiState.Error("User null setelah login Google")
                         }
