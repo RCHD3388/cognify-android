@@ -63,9 +63,9 @@ fun NativeWebView(url: String) {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            settings.javaScriptEnabled = true // Enable JavaScript
+            settings.javaScriptEnabled = true
             webViewClient = WebViewClient()
-            loadUrl("https://iframe.mediadelivery.net/play/427249/c5b500fc-95a0-443e-acac-31442b1b318e ")
+            loadUrl(url)
         }
     })
 }

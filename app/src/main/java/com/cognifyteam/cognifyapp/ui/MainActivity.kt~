@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CognifyApplicationTheme {
 //                AuthToggleScreen()
-               NativeWebView("https://iframe.mediadelivery.net/play/427249/781d9aed-f968-4e90-a063-ff2d25e7abac")
+               NativeWebView("https://iframe.mediadelivery.net/play/427249/c5b500fc-95a0-443e-acac-31442b1b318e")
 //                ExoPlayerVideo("https://nyoba-nyoba-aws-bucket-hehehe.s3.us-east-1.amazonaws.com/Desktop+2024.11.27+-+09.46.21.02.mp4")
             }
 //            val widthSizeClass = calculateWindowSizeClass(this).widthSizeClass
