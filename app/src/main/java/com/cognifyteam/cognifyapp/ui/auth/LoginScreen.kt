@@ -73,7 +73,11 @@ fun LoginScreen(
             is AuthUiState.Error -> {
                 Toast.makeText(context, "Username atau Password Salah!", Toast.LENGTH_SHORT).show()
             }
+            is AuthUiState.Verified -> {
+                Toast.makeText(context, "Email belum diverifikasi. Silakan cek email Anda.", Toast.LENGTH_SHORT).show()
+            }
             AuthUiState.Loading, AuthUiState.Unauthenticated -> Unit
+            is AuthUiState.RegisterSuccess -> {}
         }
     }
 

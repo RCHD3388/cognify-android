@@ -64,10 +64,7 @@ fun RegisterScreen(
 
     LaunchedEffect(uiState) {
         when (uiState) {
-            is AuthUiState.Success -> {
-                onRegisterSuccess()
-                Toast.makeText(context, "Registration successful!", Toast.LENGTH_LONG).show()
-            }
+            is AuthUiState.Success -> {}
             is AuthUiState.Error -> {
                 Toast.makeText(
                     context,
@@ -78,6 +75,11 @@ fun RegisterScreen(
             AuthUiState.Loading -> {}
             AuthUiState.Unauthenticated -> {}
             null -> {}
+            is AuthUiState.Verified -> {}
+            is AuthUiState.RegisterSuccess -> {
+                onRegisterSuccess()
+                Toast.makeText(context, "Register Success, Silahkan Cek Email Anda", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
