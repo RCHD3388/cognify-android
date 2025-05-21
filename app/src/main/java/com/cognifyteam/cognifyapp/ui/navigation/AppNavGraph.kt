@@ -10,6 +10,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.ui.detail_course.screen.CourseOverviewScreen
+import com.cognifyteam.cognifyapp.ui.detail_course.screen.CourseLessonsScreen
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -52,10 +54,10 @@ fun AppNavGraph(
             HomeScreen(navController)
         }
         composable(AppNavRoutes.PROFILE) {
-            ProfileScreen(navController)
+            CourseLessonsScreen(navController)
         }
         composable(AppNavRoutes.SETTINGS) {
-            SettingsScreen(navController)
+            CourseOverviewScreen(navController)
         }
     }
 }
