@@ -13,9 +13,7 @@ import com.cognifyteam.cognifyapp.data.AppContainer
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-        Text("Home Screen")
-    }
+    com.cognifyteam.cognifyapp.ui.home.HomeScreen()
 }
 
 @Composable

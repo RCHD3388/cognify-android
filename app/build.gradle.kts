@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.materialWindow)
 
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.lifecycle.livedata.ktx)
