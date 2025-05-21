@@ -25,11 +25,11 @@ fun AuthToggleScreen(appContainer: AppContainer) {
     val context = LocalContext.current
 
     val user = FirebaseAuth.getInstance().currentUser
-    if(user != null && user.isEmailVerified){
-        val intent = Intent(context, AppActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        context.startActivity(intent)
-    }
+//    if(user != null && user.isEmailVerified){
+//        val intent = Intent(context, AppActivity::class.java)
+//        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//        context.startActivity(intent)
+//    }
 
     Column(
         modifier = Modifier

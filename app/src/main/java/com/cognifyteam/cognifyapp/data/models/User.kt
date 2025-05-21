@@ -6,7 +6,6 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.JsonClass
 import kotlinx.parcelize.Parcelize
 import java.util.Date
-
 @JsonClass(generateAdapter = true)
 data class UserJson(
     val firebaseId:String,

@@ -115,11 +115,6 @@ class AuthViewModel(
                             val email = firebaseUser.email ?: "Email tidak tersedia"
                             val uid = firebaseUser.uid
 
-                            Log.d("GoogleAuth", "Nama Pengguna: $displayName")
-                            Log.d("GoogleAuth", "Email: $email")
-                            Log.d("GoogleAuth", "UID: $uid")
-                            Log.d("GoogleAuth", "Apakah user baru? $isNewUser")
-
                             if (isNewUser == true) {
                                 // 🔵 User baru, bisa dianggap sebagai registrasi
                                 viewModelScope.launch {
