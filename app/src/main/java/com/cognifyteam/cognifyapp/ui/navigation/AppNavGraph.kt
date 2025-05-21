@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.cognifyteam.cognifyapp.data.AppContainer
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -39,7 +40,10 @@ object AppNavRoutes {
 }
 
 @Composable
-fun AppNavGraph(navController: NavHostController) {
+fun AppNavGraph(
+    navController: NavHostController,
+    appContainer: AppContainer
+) {
     NavHost(
         navController = navController,
         startDestination = AppBottomNavItem.Home.route

@@ -55,7 +55,10 @@ fun AppMainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ){
-            AppNavGraph(navController = navController)
+            AppNavGraph(
+                navController = navController,
+                appContainer = appContainer
+            )
         }
     }
 }
