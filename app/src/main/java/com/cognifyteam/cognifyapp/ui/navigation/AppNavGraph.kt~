@@ -23,7 +23,7 @@ fun ProfileScreen(navController: NavHostController) {
 //    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
 //        Text("Profile Screen")
 //    }
-    ProfilePage ()
+    ProfilePage (navigateBack = { navController.popBackStack() })
 
 }
 

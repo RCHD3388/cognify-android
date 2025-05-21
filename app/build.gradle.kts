@@ -94,4 +94,7 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    //image
+    implementation ("io.coil-kt:coil-compose:2.4.0")
 }
