@@ -10,7 +10,7 @@ import java.util.Date
 data class UserJson(
     val firebaseId:String,
     var name:String,
-    var email:String,
+    var email:String
 )
 
 @Entity(tableName = "users")
@@ -19,27 +19,23 @@ data class UserEntity (
     val firebaseId: String,
     var name:String,
     var email: String,
+    var role: String,
 )
 
 @Parcelize
 data class User (
     val firebaseId: String,
     val name: String,
-    val email: String
+    val email: String,
+    var role: String,
 ): Parcelable{
     companion object {
-        fun fromJson(json: UserJson): User {
-            return User(
-                firebaseId = json.firebaseId,
-                name = json.name,
-                email = json.email,
-            )
-        }
         fun fromEntity(entity: UserEntity): User {
             return User(
                 firebaseId = entity.firebaseId,
                 name = entity.name,
                 email = entity.email,
+                role = entity.role,
             )
         }
     }
@@ -47,7 +43,7 @@ data class User (
         return UserJson(
             firebaseId = firebaseId,
             name = name,
-            email = email
+            email = email,
         )
     }
     fun toEntity(): UserEntity {
@@ -55,6 +51,7 @@ data class User (
             firebaseId = firebaseId,
             name = name,
             email = email,
+            role = role
         )
     }
 }

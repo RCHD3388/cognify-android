@@ -18,7 +18,7 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
         fun getInstance(context: Context): AppDatabase {
-        //context.deleteDatabase("cognify_local_db")
+//        context.deleteDatabase("cognify_local_db")
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context,

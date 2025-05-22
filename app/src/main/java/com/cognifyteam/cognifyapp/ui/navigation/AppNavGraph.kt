@@ -35,8 +35,8 @@ fun SettingsScreen(navController: NavHostController) {
 
 object AppNavRoutes {
     const val HOME = "home"
+    const val SMART = "smart"
     const val PROFILE = "profile"
-    const val SETTINGS = "settings"
 }
 
 @Composable
@@ -51,11 +51,11 @@ fun AppNavGraph(
         composable(AppNavRoutes.HOME) {
             HomeScreen(navController)
         }
+        composable(AppNavRoutes.SMART) {
+            SettingsScreen(navController)
+        }
         composable(AppNavRoutes.PROFILE) {
             ProfileScreen(navController)
-        }
-        composable(AppNavRoutes.SETTINGS) {
-            SettingsScreen(navController)
         }
     }
 }
