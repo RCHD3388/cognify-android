@@ -9,7 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
+import androidx.navigation.compose.rememberNavController
+import com.cognifyteam.cognifyapp.ui.profile.ProfileNavigation
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -23,8 +24,8 @@ fun ProfileScreen(navController: NavHostController) {
 //    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
 //        Text("Profile Screen")
 //    }
-    ProfilePage ()
-
+    val navControllerRemember = rememberNavController()
+    ProfileNavigation(navController = navControllerRemember)
 }
 
 @Composable

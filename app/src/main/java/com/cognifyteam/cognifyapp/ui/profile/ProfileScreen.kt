@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.profile
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -45,9 +46,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.cognifyteam.cognifyapp.R
 import coil.compose.rememberAsyncImagePainter
 import coil.annotation.ExperimentalCoilApi
@@ -55,7 +58,7 @@ import coil.compose.AsyncImagePainter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfilePage() {
+fun ProfilePage(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -80,11 +83,7 @@ fun ProfilePage() {
             // About Me Section
             AboutMeSection()
 
-//            // My Skills Section
-//            MySkillsSection()
-
-            // Enrolled Courses Section
-            EnrolledCoursesSection()
+            EnrolledCoursesSection(navController = navController)
         }
     }
 }
@@ -184,15 +183,7 @@ fun MySkillsSection() {
             modifier = Modifier.padding(vertical = 16.dp)
         )
 
-//        FlowRow(
-//            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//            verticalArrangement = Arrangement.spacedBy(8.dp),
-//            modifier = Modifier.padding(bottom = 24.dp)
-//        ) {
-//            listOf("UI/UX", "Website Design", "Figma", "Animation", "User Persona", "XD").forEach { skill ->
-//                SkillChip(skill = skill)
-//            }
-//        }
+
     }
 }
 
@@ -213,7 +204,7 @@ fun SkillChip(skill: String) {
 }
 
 @Composable
-fun EnrolledCoursesSection() {
+fun EnrolledCoursesSection(navController: NavController) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -249,6 +240,9 @@ fun EnrolledCoursesSection() {
 
                     rating = 4.5f,
                     progress = 85,
+                    onCourseClick = {
+                        navController.navigate("course_details/123")
+                    }
                 )
             }
         }
@@ -261,14 +255,14 @@ fun CourseCard(
     author: String,
     rating: Float,
     progress: Int,
-
+    onCourseClick: () -> Unit
 ) {
     Row (){
         Column(
             modifier = Modifier
                 .width(200.dp)
                 .height(200.dp)
-                .clickable { }
+                .clickable(onClick = onCourseClick)
         ) {
             Image(
                 painter = rememberAsyncImagePainter(model = "https://images.unsplash.com/photo-1575936123452-b67c3203c357?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aW1hZ2V8ZW58MHx8MHx8fDA%3D"),
