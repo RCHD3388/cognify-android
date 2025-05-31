@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -10,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -52,7 +54,7 @@ fun AppNavGraph(
             HomeScreen(navController)
         }
         composable(AppNavRoutes.SMART) {
-            SettingsScreen(navController)
+            MainLearningPathScreen()
         }
         composable(AppNavRoutes.PROFILE) {
             ProfileScreen(navController)
