@@ -17,7 +17,7 @@ class AppActivity : ComponentActivity() {
 
         val appContainer = (application as CognifyApplication).container
         setContent {
-            CognifyApplicationTheme {
+            CognifyApplicationTheme(dynamicColor = false) {
                 AppMainScreen(appContainer)
             }
         }

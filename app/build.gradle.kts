@@ -64,7 +64,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation(libs.androidx.compose.material3)
+//    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.materialWindow)
 
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
