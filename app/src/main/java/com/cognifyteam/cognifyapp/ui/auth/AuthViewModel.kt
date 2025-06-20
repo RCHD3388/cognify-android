@@ -45,7 +45,6 @@ class AuthViewModel(
                 val user = authResult.user
 
                 user?.let { firebaseUser ->
-                    // 2. Tambahkan display name (opsional)
                     authRepository.register(user.uid, name, email);
                     // 3. Kirim email verifikasi
                     firebaseUser.sendEmailVerification().await()
@@ -75,7 +74,10 @@ class AuthViewModel(
                             // Auto refresh token
                             user.getIdToken(true)
                             // Email sudah diverifikasi, lanjutkan ke aplikasi
-                            _uiState.value = AuthUiState.Success(user.email)
+                            viewModelScope.launch {
+                                authRepository.login(user.uid);
+                                _uiState.value = AuthUiState.Success(user.email)
+                            }
                         } else if (!user?.isEmailVerified!!) {
                             _uiState.value = AuthUiState.Verified("lalala")
                         } else {
@@ -115,13 +117,8 @@ class AuthViewModel(
                             val email = firebaseUser.email ?: "Email tidak tersedia"
                             val uid = firebaseUser.uid
 
-                            Log.d("GoogleAuth", "Nama Pengguna: $displayName")
-                            Log.d("GoogleAuth", "Email: $email")
-                            Log.d("GoogleAuth", "UID: $uid")
-                            Log.d("GoogleAuth", "Apakah user baru? $isNewUser")
-
                             if (isNewUser == true) {
-                                // 🔵 User baru, bisa dianggap sebagai registrasi
+                                // 🔵 REGISTRASI
                                 viewModelScope.launch {
                                     authRepository.register(uid, displayName, email)
                                     _uiState.value = AuthUiState.Success(
@@ -129,9 +126,13 @@ class AuthViewModel(
                                     )
                                 }
                             }else{
-                                _uiState.value = AuthUiState.Success(
-                                    email = email,
-                                )
+                                // 🔵 LOGIN
+                                viewModelScope.launch {
+                                    authRepository.login(uid);
+                                    _uiState.value = AuthUiState.Success(
+                                        email = email,
+                                    )
+                                }
                             }
                         } ?: run {
                             _uiState.value = AuthUiState.Error("User null setelah login Google")
