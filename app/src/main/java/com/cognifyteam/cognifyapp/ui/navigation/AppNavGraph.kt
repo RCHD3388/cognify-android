@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.ui.profile.ProfileNavigation
 
 @Composable
@@ -20,12 +21,12 @@ fun HomeScreen(navController: NavHostController) {
 }
 
 @Composable
-fun ProfileScreen(navController: NavHostController) {
+fun ProfileScreen(appContainer: AppContainer,navController: NavHostController) {
 //    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
 //        Text("Profile Screen")
 //    }
     val navControllerRemember = rememberNavController()
-    ProfileNavigation(navController = navControllerRemember)
+    ProfileNavigation(appContainer = appContainer ,navController = navControllerRemember)
 }
 
 @Composable
@@ -43,7 +44,7 @@ object AppNavRoutes {
 }
 
 @Composable
-fun AppNavGraph(navController: NavHostController) {
+fun AppNavGraph(appContainer: AppContainer, navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = AppBottomNavItem.Home.route
@@ -52,7 +53,7 @@ fun AppNavGraph(navController: NavHostController) {
             HomeScreen(navController)
         }
         composable(AppNavRoutes.PROFILE) {
-            ProfileScreen(navController)
+            ProfileScreen(appContainer ,navController)
         }
         composable(AppNavRoutes.SETTINGS) {
             SettingsScreen(navController)

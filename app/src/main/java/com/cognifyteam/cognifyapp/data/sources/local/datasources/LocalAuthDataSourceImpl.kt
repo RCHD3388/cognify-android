@@ -8,7 +8,7 @@ class LocalAuthDataSourceImpl(
     private val db: AppDatabase
 ): LocalAuthDataSource {
     override suspend fun register(firebaseId: String, name: String, email: String): User {
-        val user = User(firebaseId, name, email)
+        val user = User(firebaseId, name, email, role = "user")
         db.authDao().insert(user.toEntity())
         return user
     }

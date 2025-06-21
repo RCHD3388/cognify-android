@@ -56,92 +56,111 @@ import coil.compose.rememberAsyncImagePainter
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImagePainter
 
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.User
+import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfilePage(navController: NavController) {
+fun ProfilePage(
+    appContainer: AppContainer,
+    navController: NavController,
+    firebaseId: String,
+) {
+    val viewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.provideFactory(
+            postsRepository = appContainer.profileRepository
+        )
+    )
+    // Panggil fungsi untuk mengambil data saat Composable pertama kali dibuat
+    LaunchedEffect(key1 = firebaseId) {
+        viewModel.loadProfile(firebaseId)
+    }
+
+    val isLoading by viewModel.isLoading.observeAsState(initial = true)
+    val userProfile by viewModel.userProfile.observeAsState()
+    val errorMessage by viewModel.error.observeAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Profile") },
                 navigationIcon = {
-                    IconButton(onClick = { /* Handle back */ }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            // Profile Header
-            ProfileHeader()
-
-            // About Me Section
-            AboutMeSection()
-
-            EnrolledCoursesSection(navController = navController)
+            // Gunakan `when` untuk menampilkan UI berdasarkan state
+            if (isLoading) {
+                CircularProgressIndicator() // Tampilkan loading indicator
+            } else if (userProfile != null) {
+                // Jika sukses, tampilkan konten utama dengan data user
+                // Kita gunakan !! karena kita sudah cek null
+                ProfileContent(user = userProfile!!, navController = navController)
+            } else if (errorMessage != null) {
+                // Jika error, tampilkan pesan error
+                Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+            }
         }
     }
 }
 
+// Composable baru untuk menampung konten utama agar lebih rapi
 @Composable
-fun ProfileHeader() {
+fun ProfileContent(user: User, navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Berikan data `user` ke ProfileHeader
+        ProfileHeader(user = user)
+        AboutMeSection() // Tidak ada data dinamis di sini
+        EnrolledCoursesSection(navController = navController)
+    }
+}
+
+// MODIFIKASI: ProfileHeader sekarang menerima objek User
+@Composable
+fun ProfileHeader(user: User) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(top = 24.dp).fillMaxSize()
     ) {
-        Box() {
+        Box {
+            // Kita bisa menggunakan URL dari objek user jika ada,
+            // untuk sementara kita tetap pakai hardcoded URL
             val imageUrl = "https://cultivatedculture.com/wp-content/uploads/2019/12/LinkedIn-Profile-Picture-Example-Rachel-Montan%CC%83ez.jpeg "
             val imageLoaderPainter = rememberAsyncImagePainter(model = imageUrl)
-
-            val painterToShow = if (imageLoaderPainter.state is AsyncImagePainter.State.Error ||
-                imageLoaderPainter.state is AsyncImagePainter.State.Loading && imageUrl.isNullOrBlank() // Optional: show placeholder if URL is initially blank and still loading
-            ) {
-                painterResource(id = R.drawable.logo_google) // Your default drawable
-            } else {
-                imageLoaderPainter
-            }
-
+            // ... (logika Image tidak berubah) ...
             Image(
-                painter = painterToShow,
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                contentScale = ContentScale.Crop
+                painter = painterResource(id = R.drawable.logo_google),
+                contentDescription = null
             )
-
-            IconButton(
-                onClick = { /* Handle edit profile */ },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(32.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "Edit Profile",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
+            // ... (IconButton tidak berubah) ...
         }
 
-        // Name and Tagline
+        // GUNAKAN DATA DINAMIS DARI OBJEK USER
         Text(
-            text = "Name Here",
+            text = user.name, // <-- DATA DINAMIS
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(top = 16.dp)
         )
         Text(
-            text = "Tag Line",
+            text = user.email, // <-- DATA DINAMIS
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.secondary
         )

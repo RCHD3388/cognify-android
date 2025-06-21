@@ -10,7 +10,7 @@ class AuthRepositoryImpl(
     private val remoteAuthDataSource: RemoteAuthDataSource
 ): AuthRepository {
     override suspend fun register(firebaseId: String, name: String, email: String): Result<User> {
-        var user = User(firebaseId, name, email);
+        var user = User(firebaseId, name, email, role = "user");
         localAuthDataSource.register(firebaseId, name, email);
         return Result.success(user)
     }

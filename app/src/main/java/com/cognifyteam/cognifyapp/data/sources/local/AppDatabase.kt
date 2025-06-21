@@ -6,13 +6,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.sources.local.dao.AuthDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.ProfileDao
 
 @Database(entities = [
     UserEntity::class
-], version = 1)
+], version = 2)
 abstract class AppDatabase : RoomDatabase() {
 
      abstract fun authDao(): AuthDao
+     abstract fun profileDao(): ProfileDao
 
     companion object {
         @Volatile
