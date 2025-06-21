@@ -32,7 +32,15 @@ class AuthViewModel(
     val uiState: LiveData<AuthUiState> = _uiState
 
     init {
-        _uiState.value = AuthUiState.Unauthenticated
+        // DIUBAH: Periksa status login saat ini saat ViewModel dibuat
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            // Jika ada pengguna yang sudah login, set state ke Success
+            _uiState.value = AuthUiState.Success(currentUser.email)
+        } else {
+            // Jika tidak ada, baru set state ke Unauthenticated
+            _uiState.value = AuthUiState.Unauthenticated
+        }
     }
 
     fun register(name: String, email: String, password: String) {

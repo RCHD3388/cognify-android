@@ -26,8 +26,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+// BARU: Import untuk ikon Logout
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +43,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+// BARU: Import tambahan
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,17 +61,56 @@ import com.cognifyteam.cognifyapp.R
 import coil.compose.rememberAsyncImagePainter
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImagePainter
+// BARU: Import yang dibutuhkan
+import android.content.Intent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.platform.LocalContext
+import com.cognifyteam.cognifyapp.ui.MainActivity // <-- Pastikan ini menunjuk ke MainActivity Anda
+import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
+import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfilePage(navController: NavController) {
+// DIUBAH: Hapus parameter onLogout, kita tidak membutuhkannya lagi
+fun ProfilePage(
+    navController: NavController,
+    authViewModel: AuthViewModel
+) {
+    val authState by authViewModel.uiState.observeAsState()
+    val context = LocalContext.current // <-- BARU: Dapatkan context
+
+    LaunchedEffect(authState) {
+        // Jika state menjadi Unauthenticated (setelah logout)
+        if (authState is AuthUiState.Unauthenticated) {
+            // BARU: Buat intent untuk kembali ke MainActivity
+            val intent = Intent(context, MainActivity::class.java).apply {
+                // Hapus semua activity sebelumnya dari back stack
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            // Luncurkan MainActivity (layar login)
+            context.startActivity(intent)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Profile") },
                 navigationIcon = {
-                    IconButton(onClick = { /* Handle back */ }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        // Ini akan memicu LaunchedEffect di atas
+                        authViewModel.logout()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout"
+                        )
                     }
                 }
             )
@@ -77,16 +122,15 @@ fun ProfilePage(navController: NavController) {
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Profile Header
             ProfileHeader()
-
-            // About Me Section
             AboutMeSection()
-
             EnrolledCoursesSection(navController = navController)
         }
     }
 }
+
+
+// ... (sisa file ProfilePage.kt tidak perlu diubah)
 
 @Composable
 fun ProfileHeader() {

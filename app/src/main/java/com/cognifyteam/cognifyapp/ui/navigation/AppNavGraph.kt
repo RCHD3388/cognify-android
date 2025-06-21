@@ -15,32 +15,24 @@ import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
 import androidx.navigation.compose.rememberNavController
 import com.cognifyteam.cognifyapp.ui.profile.ProfileNavigation
 
-@Composable
-fun HomeScreen(navController: NavHostController) {
-    com.cognifyteam.cognifyapp.ui.home.HomeScreen()
-}
+// BARU: Import ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
+import com.cognifyteam.cognifyapp.ui.course.CourseScreen // <-- BARU: Import CourseScreen
+import com.cognifyteam.cognifyapp.ui.home.HomeScreen
+import com.cognifyteam.cognifyapp.ui.profile.ProfilePage // <-- BARU: Import ProfilePage
 
-@Composable
-fun ProfileScreen(navController: NavHostController) {
-//    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-//        Text("Profile Screen")
-//    }
-    val navControllerRemember = rememberNavController()
-    ProfileNavigation(navController = navControllerRemember)
-}
+// Hapus ProfileScreen dan ProfileNavigation dari file ini jika ada.
+// Kita akan langsung memanggil ProfilePage.
 
-@Composable
-fun SettingsScreen(navController: NavHostController) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-        Text("Settings Screen")
-    }
-}
-
+// ... (HomeScreen dan SettingsScreen jika ada)
 
 object AppNavRoutes {
     const val HOME = "home"
     const val SMART = "smart"
     const val PROFILE = "profile"
+    // BARU: Tambahkan rute untuk detail kursus
+    const val COURSE_DETAILS = "course_details/{courseId}"
 }
 
 @Composable
@@ -48,18 +40,38 @@ fun AppNavGraph(
     navController: NavHostController,
     appContainer: AppContainer
 ) {
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModel.provideFactory(
+            postsRepository = appContainer.authRepository
+        )
+    )
+
     NavHost(
         navController = navController,
+        // DIUBAH: startDestination sekarang bisa jadi rute profil atau home
         startDestination = AppBottomNavItem.Home.route
     ) {
         composable(AppNavRoutes.HOME) {
-            HomeScreen(navController)
+            HomeScreen()
         }
         composable(AppNavRoutes.SMART) {
             MainLearningPathScreen()
         }
+
+        // DIUBAH: Langsung panggil ProfilePage di sini
         composable(AppNavRoutes.PROFILE) {
-            ProfileScreen(navController)
+            ProfilePage(
+                // Gunakan NavController utama
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        // BARU: Tambahkan rute detail kursus ke grafik utama
+        composable(AppNavRoutes.COURSE_DETAILS) { backStackEntry ->
+            // Anda mungkin perlu mengambil courseId jika dibutuhkan
+            // val courseId = backStackEntry.arguments?.getString("courseId")
+            CourseScreen()
         }
     }
 }
