@@ -44,8 +44,6 @@ class AuthViewModel(
         }
     }
 
-    // File: ui/auth/AuthViewModel.kt
-
     fun register(name: String, email: String, password: String, role: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
@@ -104,8 +102,11 @@ class AuthViewModel(
     }
 
     fun logout() {
-        auth.signOut()
-        _uiState.value = AuthUiState.Unauthenticated
+        viewModelScope.launch {
+            auth.signOut() // Logout dari Firebase
+            authRepository.logout() // PANGGIL INI UNTUK MEMBERSIHKAN DATA LOKAL
+            _uiState.value = AuthUiState.Unauthenticated
+        }
     }
 
     fun resetUiState() {

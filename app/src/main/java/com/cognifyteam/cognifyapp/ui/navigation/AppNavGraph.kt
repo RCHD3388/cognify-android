@@ -1,12 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.navigation
 
-import android.util.Log
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,16 +12,10 @@ import com.cognifyteam.cognifyapp.ui.course.CourseScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 
-// Hapus ProfileScreen dan ProfileNavigation dari file ini jika ada.
-// Kita akan langsung memanggil ProfilePage.
-
-// ... (HomeScreen dan SettingsScreen jika ada)
-
 object AppNavRoutes {
     const val HOME = "home"
     const val SMART = "smart"
     const val PROFILE = "profile"
-    // BARU: Tambahkan rute untuk detail kursus
     const val COURSE_DETAILS = "course_details/{courseId}"
 }
 
@@ -48,13 +36,12 @@ fun AppNavGraph(
         startDestination = AppBottomNavItem.Home.route
     ) {
         composable(AppNavRoutes.HOME) {
-            HomeScreen()
+            HomeScreen(appContainer)
         }
         composable(AppNavRoutes.SMART) {
             MainLearningPathScreen()
         }
 
-        // DIUBAH: Langsung panggil ProfilePage di sini
         composable(AppNavRoutes.PROFILE) {
             ProfilePage(
                 // Gunakan NavController utama
@@ -62,8 +49,7 @@ fun AppNavGraph(
                 authViewModel = authViewModel
             )
         }
-
-        // BARU: Tambahkan rute detail kursus ke grafik utama
+        
         composable(AppNavRoutes.COURSE_DETAILS) { backStackEntry ->
             // Anda mungkin perlu mengambil courseId jika dibutuhkan
             // val courseId = backStackEntry.arguments?.getString("courseId")

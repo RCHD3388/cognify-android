@@ -1,6 +1,5 @@
 package com.cognifyteam.cognifyapp.ui.home
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
@@ -47,8 +45,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.cognifyteam.cognifyapp.R
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.User
+import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 
-// Theme colors consistent with RegisterScreen
 private val PrimaryColor = Color(0xFF1F2343)
 private val BackgroundColor = Color.White
 private val TextPrimary = Color.Black
@@ -56,13 +59,17 @@ private val TextSecondary = Color.Gray
 private val SurfaceColor = Color(0xFFF8F9FA)
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(appContainer: AppContainer) {
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModel.provideFactory(appContainer.authRepository)
+    )
+    val user by userViewModel.userState.collectAsState()
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundColor)
     ) {
-        item { HeaderSection() }
+        item { HeaderSection(user) }
         item { SearchBar() }
         item { CategoriesSection() }
         item { ContinueWatchingSection() }
@@ -73,7 +80,7 @@ fun HomeScreen() {
 }
 
 @Composable
-fun HeaderSection() {
+fun HeaderSection(user: User?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -88,7 +95,7 @@ fun HeaderSection() {
                 fontWeight = FontWeight.Normal
             )
             Text(
-                text = "M Bilal",
+                text = user?.name ?: "...",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
