@@ -32,38 +32,45 @@ class AuthViewModel(
     val uiState: LiveData<AuthUiState> = _uiState
 
     init {
-        // DIUBAH: Periksa status login saat ini saat ViewModel dibuat
         val currentUser = auth.currentUser
-        if (currentUser != null) {
-            // Jika ada pengguna yang sudah login, set state ke Success
+        // UBAH LOGIKA DI SINI:
+        // User dianggap login HANYA JIKA dia ada DAN emailnya sudah terverifikasi.
+        if (currentUser != null && currentUser.isEmailVerified) {
             _uiState.value = AuthUiState.Success(currentUser.email)
         } else {
-            // Jika tidak ada, baru set state ke Unauthenticated
+            // Jika user ada tapi belum verifikasi, atau tidak ada user sama sekali,
+            // anggap sebagai Unauthenticated.
             _uiState.value = AuthUiState.Unauthenticated
         }
     }
 
-    fun register(name: String, email: String, password: String) {
+    // File: ui/auth/AuthViewModel.kt
+
+    fun register(name: String, email: String, password: String, role: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
-
             try {
-                // 1. Buat akun dengan email/password
+                // 1. Buat akun di Firebase
                 val authResult = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = authResult.user
 
                 user?.let { firebaseUser ->
-                    authRepository.register(user.uid, name, email);
+                    // 2. Daftarkan di backend Anda (melalui repository)
+                    // Repository sekarang hanya akan memanggil API, tidak ke Room.
+                    authRepository.register(firebaseUser.uid, name, email, role)
+
                     // 3. Kirim email verifikasi
                     firebaseUser.sendEmailVerification().await()
-                    // 4. Setelah semua berhasil, update UI
+
+                    // 4. PENTING: Logout agar user tidak langsung masuk
+                    auth.signOut()
+
+                    // 5. Update UI untuk memberitahu user
                     _uiState.value = AuthUiState.RegisterSuccess("Registrasi berhasil. Silakan cek email Anda untuk verifikasi.")
                 } ?: run {
                     _uiState.value = AuthUiState.Error("User object is null after registration.")
                 }
-
             } catch (e: Exception) {
-                // Tangani error
                 _uiState.value = AuthUiState.Error(e.message ?: "Register failed")
             }
         }
@@ -77,20 +84,16 @@ class AuthViewModel(
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val user = auth.currentUser
-
                         if (user != null && user.isEmailVerified) {
-                            // Auto refresh token
-                            user.getIdToken(true)
                             // Email sudah diverifikasi, lanjutkan ke aplikasi
                             viewModelScope.launch {
                                 authRepository.login(user.uid);
                                 _uiState.value = AuthUiState.Success(user.email)
                             }
-                        } else if (!user?.isEmailVerified!!) {
-                            _uiState.value = AuthUiState.Verified("lalala")
                         } else {
                             // Email belum diverifikasi
-                            _uiState.value = AuthUiState.Error("Email belum diverifikasi. Silakan cek email Anda.")
+                            // Kirim state Verified agar UI bisa menampilkan pesan yang tepat
+                            _uiState.value = AuthUiState.Verified("Email belum diverifikasi. Silakan cek email Anda.")
                         }
                     } else {
                         // Login gagal (password salah, user tidak ada, dll)
@@ -128,7 +131,7 @@ class AuthViewModel(
                             if (isNewUser == true) {
                                 // 🔵 REGISTRASI
                                 viewModelScope.launch {
-                                    authRepository.register(uid, displayName, email)
+                                    authRepository.register(uid, displayName, email, "user")
                                     _uiState.value = AuthUiState.Success(
                                         email = email,
                                     )

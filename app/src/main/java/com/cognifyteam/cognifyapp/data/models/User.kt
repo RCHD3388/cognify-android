@@ -6,11 +6,14 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.JsonClass
 import kotlinx.parcelize.Parcelize
 import java.util.Date
+
+
 @JsonClass(generateAdapter = true)
 data class UserJson(
     val firebaseId:String,
     var name:String,
-    var email:String
+    var email:String,
+    var role: String // <-- TAMBAHKAN INI
 )
 
 @Entity(tableName = "users")
@@ -44,6 +47,7 @@ data class User (
             firebaseId = firebaseId,
             name = name,
             email = email,
+            role = role
         )
     }
     fun toEntity(): UserEntity {

@@ -7,16 +7,16 @@ import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSo
 import com.cognifyteam.cognifyapp.data.sources.remote.auth.RemoteAuthDataSource
 
 interface AuthRepository {
-    suspend fun register(firebaseId: String, name: String, email: String): Result<User>
-    suspend fun login(firebaseId: String): Result<User>;
+    suspend fun register(firebaseId: String, name: String, email: String, role: String): Result<User>
+    suspend fun login(firebaseId: String): Result<User>
 }
 
 class AuthRepositoryImpl(
     private val localAuthDataSource: LocalAuthDataSource,
     private val remoteAuthDataSource: RemoteAuthDataSource
 ): AuthRepository {
-    override suspend fun register(firebaseId: String, name: String, email: String): Result<User> {
-        val result = remoteAuthDataSource.register(UserJson(firebaseId, name, email));
+    override suspend fun register(firebaseId: String, name: String, email: String, role: String): Result<User> {
+        val result = remoteAuthDataSource.register(UserJson(firebaseId, name, email, role));
         result.onSuccess {
             localAuthDataSource.register(it)
         }

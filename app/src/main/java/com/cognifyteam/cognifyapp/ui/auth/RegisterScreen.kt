@@ -5,12 +5,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -18,6 +20,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
@@ -32,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +60,8 @@ fun RegisterScreen(
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val confirm_password = remember { mutableStateOf("") }
+    val roles = listOf("user", "instructor")
+    val selectedRole = remember { mutableStateOf(roles[0]) }
 
     val viewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.provideFactory(
@@ -136,6 +143,51 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Text(
+            text = "Register as:",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 4.dp),
+            color = Color.Black,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            roles.forEach { role ->
+                Row(
+                    modifier = Modifier
+                        .selectable(
+                            selected = (role == selectedRole.value),
+                            onClick = { selectedRole.value = role },
+                            role = Role.RadioButton
+                        )
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (role == selectedRole.value),
+                        onClick = null,
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Color(0xFF1F2343)
+                        )
+                    )
+                    Text(
+                        text = role.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                        modifier = Modifier.padding(start = 8.dp),
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+
         OutlinedTextField(
             value = email.value,
             onValueChange = { email.value = it },
@@ -213,7 +265,12 @@ fun RegisterScreen(
         Button(
             onClick = {
                 if (password.value == confirm_password.value) {
-                    viewModel.register(name.value, email.value, password.value)
+                    viewModel.register(
+                        name = name.value,
+                        email = email.value,
+                        password = password.value,
+                        role = selectedRole.value // Kirim role yang dipilih
+                    )
                 } else {
                     Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                 }

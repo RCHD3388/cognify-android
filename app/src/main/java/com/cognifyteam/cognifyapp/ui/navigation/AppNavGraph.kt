@@ -12,15 +12,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
-import androidx.navigation.compose.rememberNavController
-import com.cognifyteam.cognifyapp.ui.profile.ProfileNavigation
-
-// BARU: Import ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
-import com.cognifyteam.cognifyapp.ui.course.CourseScreen // <-- BARU: Import CourseScreen
+import com.cognifyteam.cognifyapp.ui.course.CourseScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
-import com.cognifyteam.cognifyapp.ui.profile.ProfilePage // <-- BARU: Import ProfilePage
+import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 
 // Hapus ProfileScreen dan ProfileNavigation dari file ini jika ada.
 // Kita akan langsung memanggil ProfilePage.
