@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +17,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,98 +32,122 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.cognifyteam.cognifyapp.R
 
+// Theme colors consistent with RegisterScreen
+private val PrimaryColor = Color(0xFF1F2343)
+private val BackgroundColor = Color.White
+private val TextPrimary = Color.Black
+private val TextSecondary = Color.Gray
+private val SurfaceColor = Color(0xFFF8F9FA)
+
 @Composable
 fun HomeScreen() {
-    val scrollState = rememberScrollState()
-
-    LazyColumn (modifier = Modifier.fillMaxSize()) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundColor)
+    ) {
         item { HeaderSection() }
         item { SearchBar() }
         item { CategoriesSection() }
         item { ContinueWatchingSection() }
         item { PopularCoursesSection() }
         item { RecommendedForYouSection() }
+        item { Spacer(modifier = Modifier.height(24.dp)) }
     }
 }
 
 @Composable
 fun HeaderSection() {
-    Row (
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "Welcome M Bilal",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Column {
+            Text(
+                text = "Welcome Back! 👋",
+                fontSize = 16.sp,
+                color = TextSecondary,
+                fontWeight = FontWeight.Normal
+            )
+            Text(
+                text = "M Bilal",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            painter = painterResource(id = R.drawable.baseline_email_24),
-            contentDescription = "Profile Icon",
-            tint = Color.Blue,
-            modifier = Modifier.size(32.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(PrimaryColor.copy(alpha = 0.1f))
+                .clickable { },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Profile",
+                tint = PrimaryColor,
+                modifier = Modifier.size(28.dp)
+            )
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBar() {
+    val searchText = remember { mutableStateOf("") }
+
     OutlinedTextField(
-        value = "",
-        onValueChange = {},
-        label = { Text("Search Here") },
+        value = searchText.value,
+        onValueChange = { searchText.value = it },
+        placeholder = { Text("Search courses...", color = TextSecondary) },
         leadingIcon = {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_email_24),
-                contentDescription = "Search Icon",
-                tint = Color.Gray
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = TextSecondary
             )
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .height(50.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = Color.Gray,
-            unfocusedBorderColor = Color.Gray
-        )
+            focusedBorderColor = PrimaryColor,
+            unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f),
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary,
+            focusedLabelColor = PrimaryColor,
+            containerColor = SurfaceColor
+        ),
+        shape = RoundedCornerShape(12.dp)
     )
 }
 
 @Composable
 fun CategoriesSection() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Categories",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "See All",
-                color = Color.Gray,
-                modifier = Modifier.clickable {}
-            )
-        }
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        SectionHeader(title = "Categories", onSeeAllClick = {})
 
         LazyRow(
             modifier = Modifier.padding(top = 16.dp),
@@ -126,12 +155,23 @@ fun CategoriesSection() {
         ) {
             items(4) { index ->
                 CategoryItem(
-                    iconRes = R.drawable.baseline_email_24,
+                    icon = when (index) {
+//                        0 -> Icons.Outlined.DesignServices
+//                        1 -> Icons.Outlined.FitnessCenter
+//                        2 -> Icons.Outlined.Psychology
+                        else -> Icons.Outlined.Home
+                    },
                     categoryName = when (index) {
                         0 -> "UI Design"
                         1 -> "Health"
-                        2 -> "Figma"
+                        2 -> "Psychology"
                         else -> "Business"
+                    },
+                    backgroundColor = when (index) {
+                        0 -> Color(0xFF6366F1)
+                        1 -> Color(0xFF10B981)
+                        2 -> Color(0xFFF59E0B)
+                        else -> Color(0xFFEF4444)
                     }
                 )
             }
@@ -140,45 +180,43 @@ fun CategoriesSection() {
 }
 
 @Composable
-fun CategoryItem(iconRes: Int, categoryName: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null,
-            tint = Color.White,
+fun CategoryItem(icon: ImageVector, categoryName: String, backgroundColor: Color) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(80.dp) // Fixed width untuk semua category
+            .clickable { }
+    ) {
+        Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.Blue)
-        )
+                .size(64.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = categoryName,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
 fun ContinueWatchingSection() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Continue Watching",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "See All",
-                color = Color.Gray,
-                modifier = Modifier.clickable {}
-            )
-        }
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        SectionHeader(title = "Continue Watching", onSeeAllClick = {})
 
         LazyRow(
             modifier = Modifier.padding(top = 16.dp),
@@ -187,11 +225,11 @@ fun ContinueWatchingSection() {
             items(2) { index ->
                 CourseCard(
                     title = when (index) {
-                        0 -> "UI UX Design"
-                        else -> "App Design"
+                        0 -> "UI UX Design Fundamentals"
+                        else -> "Mobile App Design"
                     },
                     subtitle = "By Peter Parker",
-                    imageUrl = "https://www.deheus.id/siteassets/animal-nutrition/swine/de-heus-animal-nutrition_animals_swines_-pigs_sows_in_stables-1.jpg",
+                    imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop",
                     progress = when (index) {
                         0 -> 85
                         else -> 40
@@ -206,25 +244,65 @@ fun ContinueWatchingSection() {
 fun CourseCard(title: String, subtitle: String, imageUrl: String, progress: Int) {
     Card(
         modifier = Modifier
-            .width(180.dp)
-            .wrapContentHeight(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .width(200.dp)
+            .height(240.dp) // Fixed height untuk semua card
+            .clickable { },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column {
             AsyncImage(
-                model = imageUrl, // URL gambar
+                model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp),
-                placeholder = painterResource(id = R.drawable.baseline_email_24), // Gambar tempatan
-                error = painterResource(id = R.drawable.baseline_password_24) // Gambar jika gagal dimuat
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
             )
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, fontSize = 12.sp, color = Color.Gray)
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(progress = progress / 100f)
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 2, // Maksimal 2 baris
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(top = 4.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.weight(1f)) // Push progress ke bawah
+
+                if (progress > 0) {
+                    LinearProgressIndicator(
+                        progress = progress / 100f,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = PrimaryColor,
+                        trackColor = PrimaryColor.copy(alpha = 0.1f)
+                    )
+                    Text(
+                        text = "$progress% Complete",
+                        fontSize = 10.sp,
+                        color = PrimaryColor,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -232,23 +310,8 @@ fun CourseCard(title: String, subtitle: String, imageUrl: String, progress: Int)
 
 @Composable
 fun PopularCoursesSection() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Popular Courses",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "See All",
-                color = Color.Gray,
-                modifier = Modifier.clickable {}
-            )
-        }
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        SectionHeader(title = "Popular Courses", onSeeAllClick = {})
 
         LazyRow(
             modifier = Modifier.padding(top = 16.dp),
@@ -258,17 +321,14 @@ fun PopularCoursesSection() {
                 PopularCourseCard(
                     title = when (index) {
                         0 -> "UI UX Design"
-                        1 -> "App Design"
-                        else -> "3D & 3D Animation Course"
+                        1 -> "App Development"
+                        else -> "3D Animation"
                     },
-                    subtitle = "By Peter Parker",
-                    description = "Lorem ipsum dolor sit amet consectetur.",
-                    price = when (index) {
-                        0 -> "$50"
-                        1 -> "$50"
-                        else -> "$50"
-                    },
-                    imageRes = R.drawable.baseline_email_24
+                    subtitle = "By Expert Instructor",
+                    description = "Learn from industry experts with hands-on projects",
+                    price = "$49",
+                    rating = "4.8",
+                    imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop"
                 )
             }
         }
@@ -281,50 +341,79 @@ fun PopularCourseCard(
     subtitle: String,
     description: String,
     price: String,
-    imageRes: Int
+    rating: String,
+    imageUrl: String
 ) {
-    Card (
+    Card(
         modifier = Modifier
-            .width(150.dp)
-            .height(250.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .width(180.dp)
+            .height(280.dp) // Fixed height untuk semua popular course card
+            .clickable { },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column {
-            Image(
-                painter = painterResource(id = imageRes),
+            AsyncImage(
+                model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
             )
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(12.dp)
                     .fillMaxWidth()
             ) {
                 Text(
                     text = title,
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    fontSize = 11.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(top = 2.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = description,
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    fontSize = 11.sp,
+                    color = TextSecondary,
+                    maxLines = 3, // Maksimal 3 baris untuk description
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 6.dp),
+                    lineHeight = 14.sp
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = price,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Blue
-                )
+                Spacer(modifier = Modifier.weight(1f)) // Push price/rating ke bawah
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = price,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryColor
+                    )
+                    Text(
+                        text = "⭐ $rating",
+                        fontSize = 12.sp,
+                        color = Color(0xFFF59E0B),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
@@ -332,23 +421,8 @@ fun PopularCourseCard(
 
 @Composable
 fun RecommendedForYouSection() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Recommended For You",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "See All",
-                color = Color.Gray,
-                modifier = Modifier.clickable {}
-            )
-        }
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        SectionHeader(title = "Recommended For You", onSeeAllClick = {})
 
         LazyRow(
             modifier = Modifier.padding(top = 16.dp),
@@ -357,15 +431,38 @@ fun RecommendedForYouSection() {
             items(3) { index ->
                 CourseCard(
                     title = when (index) {
-                        0 -> "UI UX Design"
-                        1 -> "App Design"
-                        else -> "3D & 3D Animation Course"
+                        0 -> "Advanced UI Design"
+                        1 -> "React Native Development"
+                        else -> "Motion Graphics"
                     },
-                    subtitle = "By Peter Parker",
-                    imageUrl = "https://www.deheus.id/siteassets/animal-nutrition/swine/de-heus-animal-nutrition_animals_swines_-pigs_sows_in_stables-1.jpg",
+                    subtitle = "By Industry Expert",
+                    imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop",
                     progress = 0
                 )
             }
         }
+    }
+}
+
+@Composable
+fun SectionHeader(title: String, onSeeAllClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = "See All",
+            color = PrimaryColor,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.clickable { onSeeAllClick() }
+        )
     }
 }
