@@ -3,6 +3,8 @@ package com.cognifyteam.cognifyapp.ui.auth
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,16 +14,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
@@ -36,11 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +71,6 @@ fun RegisterScreen(
     )
 
     val uiState by viewModel.uiState.observeAsState()
-
     val context = LocalContext.current
 
     LaunchedEffect(uiState) {
@@ -141,13 +141,14 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
+        // Compact Radio Button Section - Hanya Kotak
         Text(
             text = "Register as:",
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 4.dp),
+                .padding(top = 4.dp, bottom = 6.dp),
             color = Color.Black,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium
@@ -156,37 +157,41 @@ fun RegisterScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             roles.forEach { role ->
-                Row(
+                Card(
                     modifier = Modifier
-                        .selectable(
-                            selected = (role == selectedRole.value),
-                            onClick = { selectedRole.value = role },
-                            role = Role.RadioButton
-                        )
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .weight(1f)
+                        .clickable { selectedRole.value = role },
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (role == selectedRole.value)
+                            Color(0xFF1F2343)
+                        else
+                            Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = if (role == selectedRole.value) null else CardDefaults.outlinedCardBorder()
                 ) {
-                    RadioButton(
-                        selected = (role == selectedRole.value),
-                        onClick = null,
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = Color(0xFF1F2343)
-                        )
-                    )
                     Text(
-                        text = role.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                        modifier = Modifier.padding(start = 8.dp),
-                        fontSize = 16.sp,
-                        color = Color.Black
+                        text = role.replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase() else it.toString()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (role == selectedRole.value) Color.White else Color.Black,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = email.value,
@@ -210,7 +215,7 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = password.value,
@@ -235,7 +240,7 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = confirm_password.value,
@@ -260,7 +265,7 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
@@ -269,7 +274,7 @@ fun RegisterScreen(
                         name = name.value,
                         email = email.value,
                         password = password.value,
-                        role = selectedRole.value // Kirim role yang dipilih
+                        role = selectedRole.value
                     )
                 } else {
                     Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
@@ -293,7 +298,7 @@ fun RegisterScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         TextButton(onClick = onNavigateToLogin) {
             Text(
