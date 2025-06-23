@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.profile
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,18 +26,18 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,39 +45,43 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.cognifyteam.cognifyapp.R
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.AsyncImagePainter
-import android.content.Intent
-import com.cognifyteam.cognifyapp.ui.MainActivity // <-- Pastikan ini menunjuk ke MainActivity Anda
+import com.cognifyteam.cognifyapp.R
+import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 
+// Theme colors consistent with other screens
+private val PrimaryColor = Color(0xFF1F2343)
+private val BackgroundColor = Color.White
+private val TextPrimary = Color.Black
+private val TextSecondary = Color.Gray
+private val SurfaceColor = Color(0xFFF8F9FA)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-// DIUBAH: Hapus parameter onLogout, kita tidak membutuhkannya lagi
 fun ProfilePage(
     navController: NavController,
     authViewModel: AuthViewModel
 ) {
     val authState by authViewModel.uiState.observeAsState()
-    val context = LocalContext.current // <-- BARU: Dapatkan context
+    val context = LocalContext.current
 
     LaunchedEffect(authState) {
-        // Jika state menjadi Unauthenticated (setelah logout)
         if (authState is AuthUiState.Unauthenticated) {
-            // BARU: Buat intent untuk kembali ke MainActivity
             val intent = Intent(context, MainActivity::class.java).apply {
-                // Hapus semua activity sebelumnya dari back stack
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
-            // Luncurkan MainActivity (layar login)
             context.startActivity(intent)
         }
     }
@@ -83,25 +89,39 @@ fun ProfilePage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = {
+                    Text(
+                        "Profile",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = PrimaryColor
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = {
-                        // Ini akan memicu LaunchedEffect di atas
                         authViewModel.logout()
                     }) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout"
+                            contentDescription = "Logout",
+                            tint = PrimaryColor
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BackgroundColor
+                )
             )
-        }
+        },
+        containerColor = BackgroundColor
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -111,70 +131,92 @@ fun ProfilePage(
         ) {
             ProfileHeader()
             AboutMeSection()
+            MySkillsSection()
             EnrolledCoursesSection(navController = navController)
         }
     }
 }
 
-
-// ... (sisa file ProfilePage.kt tidak perlu diubah)
-
 @Composable
 fun ProfileHeader() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(top = 24.dp).fillMaxSize()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
     ) {
-        Box() {
-            val imageUrl = "https://cultivatedculture.com/wp-content/uploads/2019/12/LinkedIn-Profile-Picture-Example-Rachel-Montan%CC%83ez.jpeg "
-            val imageLoaderPainter = rememberAsyncImagePainter(model = imageUrl)
-
-            val painterToShow = if (imageLoaderPainter.state is AsyncImagePainter.State.Error ||
-                imageLoaderPainter.state is AsyncImagePainter.State.Loading && imageUrl.isNullOrBlank() // Optional: show placeholder if URL is initially blank and still loading
-            ) {
-                painterResource(id = R.drawable.logo_google) // Your default drawable
-            } else {
-                imageLoaderPainter
-            }
-
-            Image(
-                painter = painterToShow,
+        Box {
+            AsyncImage(
+                model = "https://cultivatedculture.com/wp-content/uploads/2019/12/LinkedIn-Profile-Picture-Example-Rachel-Montan%CC%83ez.jpeg",
                 contentDescription = "Profile Picture",
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                contentScale = ContentScale.Crop
+                    .border(3.dp, PrimaryColor, CircleShape),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
             )
 
-            IconButton(
-                onClick = { /* Handle edit profile */ },
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .size(32.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        CircleShape
-                    )
+                    .size(36.dp)
+                    .background(PrimaryColor, CircleShape)
+                    .clickable { /* Handle edit profile */ },
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Edit,
                     contentDescription = "Edit Profile",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
 
-        // Name and Tagline
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = "Name Here",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(top = 16.dp)
+            text = "M Bilal",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary
         )
         Text(
-            text = "Tag Line",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary
+            text = "Mobile App Developer",
+            fontSize = 16.sp,
+            color = TextSecondary,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+
+        // Stats Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 20.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatItem(number = "12", label = "Courses")
+            StatItem(number = "4.8", label = "Rating")
+            StatItem(number = "156", label = "Hours")
+        }
+    }
+}
+
+@Composable
+fun StatItem(number: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = number,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = PrimaryColor
+        )
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = TextSecondary
         )
     }
 }
@@ -184,22 +226,26 @@ fun AboutMeSection() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .padding(bottom = 24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = "About Me",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
             Text(
-                text = "Lorem ipsum dolor sit amet consectetur. Lectus viverra sed aliquam quis enim leo. Turpis nec facilisis placerat dolor ac donec. Odio semper quis rutrum quis lacus odio vivamus ultricies. Ultrices ultricies platea feugiat.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
+                text = "Passionate mobile app developer with 3+ years of experience in creating innovative and user-friendly applications. Specialized in Android development using Kotlin and Jetpack Compose. Always eager to learn new technologies and solve complex problems.",
+                fontSize = 14.sp,
+                color = TextSecondary,
+                lineHeight = 20.sp
             )
         }
     }
@@ -207,70 +253,104 @@ fun AboutMeSection() {
 
 @Composable
 fun MySkillsSection() {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
         Text(
             text = "My Skills",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = 16.dp)
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
 
+        val skills = listOf(
+            "Android Development", "Kotlin", "Jetpack Compose",
+            "UI/UX Design", "Firebase", "REST APIs"
+        )
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            skills.take(3).forEach { skill ->
+                SkillChip(skill = skill, modifier = Modifier.weight(1f))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            skills.drop(3).forEach { skill ->
+                SkillChip(skill = skill, modifier = Modifier.weight(1f))
+            }
+        }
     }
 }
 
 @Composable
-fun SkillChip(skill: String) {
-    Surface (
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.padding(4.dp)
+fun SkillChip(skill: String, modifier: Modifier = Modifier) {
+    Surface(
+        color = PrimaryColor.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier
     ) {
         Text(
             text = skill,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            fontSize = 12.sp,
+            color = PrimaryColor,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
         )
     }
 }
 
 @Composable
 fun EnrolledCoursesSection(navController: NavController) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.padding(vertical = 16.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Enrolled Courses",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 12.dp)
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
             )
             TextButton(
-                onClick = { /* Handle See All */ },
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
+                onClick = { /* Handle See All */ }
             ) {
-                Text("See All")
+                Text(
+                    "See All",
+                    color = PrimaryColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(32.dp),
-
-            modifier = Modifier.padding(bottom = 32.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(top = 12.dp, bottom = 24.dp)
         ) {
-            items(5) { index ->
+            items(3) { index ->
                 CourseCard(
                     title = when (index) {
-                        0 -> "UI UX Design"
-                        else -> "App Design"
+                        0 -> "UI UX Design Fundamentals"
+                        1 -> "Advanced Android Development"
+                        else -> "Mobile App Design Patterns"
                     },
-                    author = "By Peter Parker",
-
-                    rating = 4.5f,
-                    progress = 85,
+                    author = "By Expert Instructor",
+                    rating = 4.8f,
+                    progress = when (index) {
+                        0 -> 85
+                        1 -> 60
+                        else -> 30
+                    },
+                    imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop",
                     onCourseClick = {
                         navController.navigate("course_details/123")
                     }
@@ -286,68 +366,89 @@ fun CourseCard(
     author: String,
     rating: Float,
     progress: Int,
+    imageUrl: String,
     onCourseClick: () -> Unit
 ) {
-    Row (){
-        Column(
-            modifier = Modifier
-                .width(200.dp)
-                .height(200.dp)
-                .clickable(onClick = onCourseClick)
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(model = "https://images.unsplash.com/photo-1575936123452-b67c3203c357?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aW1hZ2V8ZW58MHx8MHx8fDA%3D"),
+    Card(
+        modifier = Modifier
+            .width(200.dp)
+            .height(240.dp)
+            .clickable(onClick = onCourseClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = imageUrl,
                 contentDescription = title,
-                modifier = Modifier.height(120.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
             )
 
-            Row {
-                Column (
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = author,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = author,
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
 
-                }
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 10.dp)
-                    ) {
-                        repeat(5) { i ->
-                            val starColor = if (i < rating.toInt())
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = "Star $i",
-                                tint = starColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFF59E0B),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = rating.toString(),
+                            fontSize = 12.sp,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                     Text(
-                        text = "($progress%)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(start = 4.dp)
+                        text = "$progress%",
+                        fontSize = 12.sp,
+                        color = PrimaryColor,
+                        fontWeight = FontWeight.Medium
                     )
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                LinearProgressIndicator(
+                    progress = progress / 100f,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = PrimaryColor,
+                    trackColor = PrimaryColor.copy(alpha = 0.1f)
+                )
             }
         }
-
     }
-
 }
