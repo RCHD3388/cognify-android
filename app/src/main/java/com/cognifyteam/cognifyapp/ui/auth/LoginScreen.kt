@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -161,10 +162,13 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                if (email.value.isNotBlank() && password.value.isNotBlank()) {
-                    viewModel.login(email.value, password.value)
+                // Frontend validation
+                val emailValue = email.value.trim()
+                val passwordValue = password.value
+                if (emailValue.isNotBlank() && passwordValue.isNotBlank()) {
+                    viewModel.login(emailValue, passwordValue)
                 } else {
-                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Email dan password harus diisi", Toast.LENGTH_SHORT).show()
                 }
             },
             shape = RoundedCornerShape(24.dp),
@@ -172,11 +176,22 @@ fun LoginScreen(
                 containerColor = Color(0xFF1F2343),
                 contentColor = Color.White
             ),
+            // Nonaktifkan tombol saat loading untuk mencegah klik ganda
+            enabled = uiState !is AuthUiState.Loading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            Text("Login", fontSize = 16.sp)
+            // Tampilkan CircularProgressIndicator atau teks berdasarkan uiState
+            when (uiState) {
+                AuthUiState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White
+                )
+                else -> {
+                    Text("Login", fontSize = 16.sp)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -212,7 +227,10 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        TextButton(onClick = onNavigateToRegister) {
+        TextButton(
+            onClick = onNavigateToRegister,
+            enabled = uiState !is AuthUiState.Loading // Nonaktifkan saat loading
+        ) {
             Text(
                 buildAnnotatedString {
                     append("Don't have an account? ")

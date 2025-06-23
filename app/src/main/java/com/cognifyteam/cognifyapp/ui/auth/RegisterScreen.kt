@@ -320,7 +320,10 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        TextButton(onClick = onNavigateToLogin) {
+        TextButton(
+            onClick = onNavigateToLogin,
+            enabled = uiState !is AuthUiState.Loading // Nonaktifkan saat loading
+        ) {
             Text(
                 buildAnnotatedString {
                     append("Already have an account? ")
