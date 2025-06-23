@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +42,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -57,6 +60,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.cognifyteam.cognifyapp.R
+import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
@@ -72,8 +76,16 @@ private val SurfaceColor = Color(0xFFF8F9FA)
 @Composable
 fun ProfilePage(
     navController: NavController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    profileViewModel: ProfileViewModel,
+    userCoursesViewModel: UserCoursesViewModel,
+    firebaseId: String
 ) {
+    val isLoading by profileViewModel.isLoading.observeAsState(initial = false)
+    val userProfile by profileViewModel.userProfile.observeAsState()
+    val error by profileViewModel.error.observeAsState()
+
+    val coursesState by userCoursesViewModel.uiState.collectAsState()
     val authState by authViewModel.uiState.observeAsState()
     val context = LocalContext.current
 
@@ -84,6 +96,11 @@ fun ProfilePage(
             }
             context.startActivity(intent)
         }
+    }
+
+    LaunchedEffect(key1 = firebaseId) {
+        profileViewModel.loadProfile(firebaseId)
+        userCoursesViewModel.loadEnrolledCourses(firebaseId)
     }
 
     Scaffold(
@@ -123,22 +140,45 @@ fun ProfilePage(
         },
         containerColor = BackgroundColor
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            ProfileHeader()
-            AboutMeSection()
-            MySkillsSection()
-            EnrolledCoursesSection(navController = navController)
+            // Gunakan if-else untuk menampilkan UI berdasarkan state
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else if (error != null) {
+                Text(text = error!!, color = Color.Red)
+            } else if (userProfile != null) {
+                // Jika data berhasil dimuat, tampilkan konten utama
+                ProfileContent(user = userProfile!!, coursesState = coursesState, navController = navController)
+            }
         }
     }
 }
 
 @Composable
-fun ProfileHeader() {
+fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Berikan objek User ke ProfileHeader
+        ProfileHeader(user = user)
+        AboutMeSection()
+        MySkillsSection()
+        EnrolledCoursesSection(
+            coursesState = coursesState,
+            navController = navController
+        )
+    }
+}
+
+@Composable
+fun ProfileHeader(user: User) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -178,13 +218,13 @@ fun ProfileHeader() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "M Bilal",
+            text = user.name,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
         Text(
-            text = "Mobile App Developer",
+            text = user.role.replaceFirstChar { it.uppercase() }, // Contoh tagline dari role
             fontSize = 16.sp,
             color = TextSecondary,
             modifier = Modifier.padding(top = 4.dp)
@@ -307,7 +347,7 @@ fun SkillChip(skill: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun EnrolledCoursesSection(navController: NavController) {
+fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavController) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -332,28 +372,50 @@ fun EnrolledCoursesSection(navController: NavController) {
             }
         }
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(top = 12.dp, bottom = 24.dp)
-        ) {
-            items(3) { index ->
-                CourseCard(
-                    title = when (index) {
-                        0 -> "UI UX Design Fundamentals"
-                        1 -> "Advanced Android Development"
-                        else -> "Mobile App Design Patterns"
-                    },
-                    author = "By Expert Instructor",
-                    rating = 4.8f,
-                    progress = when (index) {
-                        0 -> 85
-                        1 -> 60
-                        else -> 30
-                    },
-                    imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop",
-                    onCourseClick = {
-                        navController.navigate("course_details/123")
+        when (coursesState) {
+            is UserCoursesUiState.Loading -> {
+                // Tampilkan loading di bagian ini
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            is UserCoursesUiState.Success -> {
+                // Jika sukses dan ada kursus, tampilkan LazyRow
+                if (coursesState.courses.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(top = 12.dp, bottom = 24.dp)
+                    ) {
+                        items(coursesState.courses) { course ->
+                            CourseCard(
+                                title = course.name,
+                                author = course.description, // Ganti dengan data author jika ada
+                                rating = course.rating.toFloatOrNull() ?: 0f,
+                                progress = (30..85).random(), // Progress masih statis/acak
+                                imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop", // Ganti jika ada URL gambar
+                                onCourseClick = {
+                                    navController.navigate("course_details/${course.courseId}")
+                                }
+                            )
+                        }
                     }
+                } else {
+                    // Jika sukses tapi tidak ada kursus
+                    Text(
+                        text = "You haven't enrolled in any courses yet.",
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            }
+            is UserCoursesUiState.Error -> {
+                // Jika error, tampilkan pesan error
+                Text(
+                    text = coursesState.message,
+                    color = Color.Red,
+                    modifier = Modifier.padding(vertical = 16.dp)
                 )
             }
         }

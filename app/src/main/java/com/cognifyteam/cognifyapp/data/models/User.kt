@@ -41,6 +41,14 @@ data class User (
                 role = entity.role,
             )
         }
+        fun fromJson(json: UserJson): User {
+            return User(
+                firebaseId = json.firebaseId,
+                name = json.name,
+                email = json.email,
+                role = json.role
+            )
+        }
     }
     fun toJson(): UserJson {
         return UserJson(
