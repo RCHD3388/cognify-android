@@ -69,16 +69,17 @@ fun LoginScreen(
     )
 
     LaunchedEffect(uiState) {
-        when (uiState) {
+        when (val currentState = uiState) {
             is AuthUiState.Success -> {
-                Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
                 onLoginSuccess()
             }
             is AuthUiState.Error -> {
-                Toast.makeText(context, "Username atau Password Salah!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, currentState.message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUiState()
             }
             is AuthUiState.Verified -> {
-                Toast.makeText(context, "Email belum diverifikasi. Silakan cek email Anda.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, currentState.message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUiState()
             }
             AuthUiState.Loading, AuthUiState.Unauthenticated -> Unit
             is AuthUiState.RegisterSuccess -> {}

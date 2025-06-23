@@ -6,8 +6,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
@@ -47,29 +49,57 @@ class AuthViewModel(
     fun register(name: String, email: String, password: String, role: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
+            var userToRollback: FirebaseUser? = null
+
             try {
-                // 1. Buat akun di Firebase
                 val authResult = auth.createUserWithEmailAndPassword(email, password).await()
-                val user = authResult.user
+                userToRollback = authResult.user
 
-                user?.let { firebaseUser ->
-                    // 2. Daftarkan di backend Anda (melalui repository)
-                    // Repository sekarang hanya akan memanggil API, tidak ke Room.
-                    authRepository.register(firebaseUser.uid, name, email, role)
+                userToRollback?.let { firebaseUser ->
+                    val backendResult = authRepository.register(firebaseUser.uid, name, email, role)
 
-                    // 3. Kirim email verifikasi
-                    firebaseUser.sendEmailVerification().await()
+                    if (backendResult.isSuccess) {
+                        firebaseUser.sendEmailVerification().await()
+                        auth.signOut()
+                        _uiState.value = AuthUiState.RegisterSuccess("Registrasi berhasil. Silakan cek email Anda untuk verifikasi.")
+                    } else {
+                        val originalErrorMessage = backendResult.exceptionOrNull()?.message
+                        Log.e("AuthViewModel", "Backend registration failed: $originalErrorMessage")
 
-                    // 4. PENTING: Logout agar user tidak langsung masuk
-                    auth.signOut()
-
-                    // 5. Update UI untuk memberitahu user
-                    _uiState.value = AuthUiState.RegisterSuccess("Registrasi berhasil. Silakan cek email Anda untuk verifikasi.")
+                        firebaseUser.delete().await()
+                        // Pesan error jika backend gagal, bisa lebih spesifik
+                        _uiState.value = AuthUiState.Error("Registrasi gagal. Tidak dapat terhubung ke server.")
+                    }
                 } ?: run {
-                    _uiState.value = AuthUiState.Error("User object is null after registration.")
+                    Log.e("AuthViewModel", "Firebase user is null after creation.")
+                    _uiState.value = AuthUiState.Error("Registrasi gagal, terjadi kesalahan.")
                 }
+
+                // 👇 MODIFIKASI UTAMA ADA DI BLOK CATCH INI
             } catch (e: Exception) {
-                _uiState.value = AuthUiState.Error(e.message ?: "Register failed")
+                // Log error asli terlebih dahulu
+                Log.e("AuthViewModel", "Registration process failed with exception: ${e.message}")
+
+                // Coba rollback jika user sudah sempat dibuat sebelum error utama terjadi
+                // Ini jarang terjadi, tapi merupakan praktik yang aman
+                try {
+                    userToRollback?.delete()?.await()
+                } catch (deleteEx: Exception) {
+                    Log.e("AuthViewModel", "Failed to cleanup user during exception handling: ${deleteEx.message}")
+                }
+
+                // Periksa jenis Exception
+                when (e) {
+                    is FirebaseAuthUserCollisionException -> {
+                        // KASUS SPESIFIK: Email sudah ada
+                        _uiState.value = AuthUiState.Error("Registrasi gagal. Email ini sudah terdaftar.")
+                    }
+                    else -> {
+                        // KASUS UMUM: Error lain dari Firebase atau jaringan
+                        // (Contoh: format email salah, password lemah, tidak ada koneksi)
+                        _uiState.value = AuthUiState.Error("Registrasi gagal. Periksa kembali data Anda dan koneksi internet.")
+                    }
+                }
             }
         }
     }
@@ -77,27 +107,44 @@ class AuthViewModel(
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
+            try {
+                val authResult = auth.signInWithEmailAndPassword(email, password).await()
 
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val user = auth.currentUser
-                        if (user != null && user.isEmailVerified) {
-                            // Email sudah diverifikasi, lanjutkan ke aplikasi
-                            viewModelScope.launch {
-                                authRepository.login(user.uid);
-                                _uiState.value = AuthUiState.Success(user.email)
-                            }
-                        } else {
-                            // Email belum diverifikasi
-                            // Kirim state Verified agar UI bisa menampilkan pesan yang tepat
-                            _uiState.value = AuthUiState.Verified("Email belum diverifikasi. Silakan cek email Anda.")
-                        }
-                    } else {
-                        // Login gagal (password salah, user tidak ada, dll)
-                        _uiState.value = AuthUiState.Error(task.exception?.message ?: "Login gagal")
+                authResult.user?.let { user ->
+                    if (!user.isEmailVerified) {
+                        auth.signOut()
+                        _uiState.value = AuthUiState.Verified("Email belum diverifikasi. Silakan cek email Anda.")
+                        return@let
                     }
+
+                    val backendResult = authRepository.login(user.uid)
+
+                    if (backendResult.isSuccess) {
+                        _uiState.value = AuthUiState.Success(user.email)
+                    } else {
+                        // Backend GAGAL
+                        val originalErrorMessage = backendResult.exceptionOrNull()?.message
+                        Log.e("AuthViewModel", "Backend login failed: $originalErrorMessage")
+
+                        auth.signOut()
+
+                        // 👇 PERUBAHAN DI SINI: Pesan generik untuk kegagalan server
+                        _uiState.value = AuthUiState.Error("Login gagal. Terjadi masalah pada server.")
+                    }
+
+                } ?: run {
+                    Log.e("AuthViewModel", "Firebase user is null after login.")
+                    // 👇 PERUBAHAN DI SINI: Pesan generik
+                    _uiState.value = AuthUiState.Error("Login gagal, terjadi kesalahan.")
                 }
+
+            } catch (e: Exception) {
+                // Firebase GAGAL (misal: password salah, user tidak ada)
+                Log.e("AuthViewModel", "Firebase login failed: ${e.message}")
+
+                // 👇 PERUBAHAN DI SINI: Pesan generik untuk email/password salah
+                _uiState.value = AuthUiState.Error("Login gagal. Periksa kembali email dan password Anda.")
+            }
         }
     }
 
@@ -110,52 +157,64 @@ class AuthViewModel(
     }
 
     fun resetUiState() {
-        _uiState.value = AuthUiState.Unauthenticated
+        // Pastikan kita tidak mereset jika sedang loading
+        if (_uiState.value !is AuthUiState.Loading) {
+            _uiState.value = AuthUiState.Unauthenticated
+        }
     }
 
     fun firebaseAuthWithGoogle(idToken: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
-            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            try {
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                val authResult = auth.signInWithCredential(credential).await()
 
-            auth.signInWithCredential(credential)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val user = task.result?.user
-                        val isNewUser = task.result?.additionalUserInfo?.isNewUser // <-- PENGECEKAN UTAMA
-
-                        user?.let { firebaseUser ->
-                            val displayName = firebaseUser.displayName ?: "Nama tidak tersedia"
-                            val email = firebaseUser.email ?: "Email tidak tersedia"
-                            val uid = firebaseUser.uid
-
-                            if (isNewUser == true) {
-                                // 🔵 REGISTRASI
-                                viewModelScope.launch {
-                                    authRepository.register(uid, displayName, email, "user")
-                                    _uiState.value = AuthUiState.Success(
-                                        email = email,
-                                    )
-                                }
-                            }else{
-                                // 🔵 LOGIN
-                                viewModelScope.launch {
-                                    authRepository.login(uid);
-                                    _uiState.value = AuthUiState.Success(
-                                        email = email,
-                                    )
-                                }
-                            }
-                        } ?: run {
-                            _uiState.value = AuthUiState.Error("User null setelah login Google")
-                        }
-
-                    } else {
-                        val errorMessage = task.exception?.message ?: "Login gagal"
-                        Log.e("GoogleAuth", "Error: $errorMessage")
-                        _uiState.value = AuthUiState.Error(errorMessage)
+                authResult.user?.let { user ->
+                    val isNewUser = authResult.additionalUserInfo?.isNewUser
+                    val displayName = user.displayName ?: "Pengguna Baru"
+                    val email = user.email
+                    if (email == null) {
+                        Log.e("GoogleAuth", "Email from Google is null.")
+                        user.delete().await()
+                        // 👇 PERUBAHAN DI SINI: Pesan generik
+                        _uiState.value = AuthUiState.Error("Login gagal. Email tidak ditemukan pada akun Google Anda.")
+                        return@let
                     }
+
+                    val uid = user.uid
+                    val backendResult: Result<User>
+
+                    if (isNewUser == true) {
+                        backendResult = authRepository.register(uid, displayName, email, "user")
+                    } else {
+                        backendResult = authRepository.login(uid)
+                    }
+
+                    if (backendResult.isSuccess) {
+                        _uiState.value = AuthUiState.Success(email = email)
+                    } else {
+                        // Backend GAGAL
+                        val originalErrorMessage = backendResult.exceptionOrNull()?.message
+                        Log.e("GoogleAuth", "Backend sync failed: $originalErrorMessage")
+
+                        if (isNewUser == true) user.delete().await() else auth.signOut()
+
+                        // 👇 PERUBAHAN DI SINI: Pesan generik
+                        _uiState.value = AuthUiState.Error("Login gagal. Terjadi masalah pada server.")
+                    }
+
+                } ?: run {
+                    Log.e("GoogleAuth", "Firebase user is null after Google Sign-In.")
+                    // 👇 PERUBAHAN DI SINI: Pesan generik
+                    _uiState.value = AuthUiState.Error("Login dengan Google gagal.")
                 }
+
+            } catch (e: Exception) {
+                Log.e("GoogleAuth", "Google sign-in failed: ${e.message}")
+                // 👇 PERUBAHAN DI SINI: Pesan generik
+                _uiState.value = AuthUiState.Error("Login dengan Google gagal. Silakan coba lagi.")
+            }
         }
     }
 

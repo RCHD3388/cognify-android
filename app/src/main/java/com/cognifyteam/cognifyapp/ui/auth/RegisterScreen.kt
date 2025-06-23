@@ -74,23 +74,16 @@ fun RegisterScreen(
     val context = LocalContext.current
 
     LaunchedEffect(uiState) {
-        when (uiState) {
-            is AuthUiState.Success -> {}
+        when (val currentState = uiState) {
             is AuthUiState.Error -> {
-                Toast.makeText(
-                    context,
-                    (uiState as AuthUiState.Error).message,
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(context, currentState.message, Toast.LENGTH_LONG).show()
+                viewModel.resetUiState()
             }
-            AuthUiState.Loading -> {}
-            AuthUiState.Unauthenticated -> {}
-            null -> {}
-            is AuthUiState.Verified -> {}
             is AuthUiState.RegisterSuccess -> {
+                Toast.makeText(context, currentState.message, Toast.LENGTH_LONG).show()
                 onRegisterSuccess()
-                Toast.makeText(context, "Register Success, Silahkan Cek Email Anda", Toast.LENGTH_LONG).show()
             }
+            else -> Unit
         }
     }
 
@@ -268,17 +261,44 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
+            // 👇 MODIFIKASI UTAMA ADA DI SINI, DI DALAM onClick
             onClick = {
-                if (password.value == confirm_password.value) {
-                    viewModel.register(
-                        name = name.value,
-                        email = email.value,
-                        password = password.value,
-                        role = selectedRole.value
-                    )
-                } else {
-                    Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                val nameValue = name.value.trim()
+                val emailValue = email.value.trim()
+                val passwordValue = password.value
+                val confirmPasswordValue = confirm_password.value
+
+                // 1. Validasi field kosong
+                if (nameValue.isBlank() || emailValue.isBlank() || passwordValue.isBlank() || confirmPasswordValue.isBlank()) {
+                    Toast.makeText(context, "Semua field wajib diisi", Toast.LENGTH_SHORT).show()
+                    return@Button
                 }
+
+                // 2. Validasi format email (sederhana)
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(emailValue).matches()) {
+                    Toast.makeText(context, "Format email tidak valid", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                // 3. Validasi panjang password
+                if (passwordValue.length < 6) {
+                    Toast.makeText(context, "Password minimal harus 6 karakter", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                // 4. Validasi konfirmasi password
+                if (passwordValue != confirmPasswordValue) {
+                    Toast.makeText(context, "Password dan konfirmasi password tidak cocok", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                // Jika semua validasi frontend lolos, baru panggil ViewModel
+                viewModel.register(
+                    name = nameValue,
+                    email = emailValue,
+                    password = passwordValue,
+                    role = selectedRole.value
+                )
             },
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(
