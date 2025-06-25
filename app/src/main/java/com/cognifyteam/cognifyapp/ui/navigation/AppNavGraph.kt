@@ -10,6 +10,8 @@ import androidx.navigation.compose.composable
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.course.CourseScreen
@@ -92,11 +94,20 @@ fun AppNavGraph(
 //                authViewModel.logout()
             }
         }
-        
-        composable(AppNavRoutes.COURSE_DETAILS) { backStackEntry ->
-            // Anda mungkin perlu mengambil courseId jika dibutuhkan
-            // val courseId = backStackEntry.arguments?.getString("courseId")
-            CourseScreen()
+
+        composable(
+            route = AppNavRoutes.COURSE_DETAILS,
+            arguments = listOf(navArgument("courseId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId")
+            Log.d("CourseDetails", "Navigating to CourseScreen with courseId: $courseId")
+            if (courseId != null) {
+                // Panggil CourseScreen hanya dengan parameter yang dibutuhkan
+                CourseScreen(
+                    courseId = courseId.toString(),
+                    appContainer = appContainer
+                )
+            }
         }
     }
 }

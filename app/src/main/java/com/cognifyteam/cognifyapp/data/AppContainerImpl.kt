@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepositoryImpl
+import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepository
+import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.profile.ProfileRepository
@@ -12,13 +14,16 @@ import com.cognifyteam.cognifyapp.data.sources.local.AppDatabase
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSource
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalDiscussionDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalProfileDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.ErrorResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.auth.RemoteAuthDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteCourseDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteDiscussionDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.profile.RemoteProfileDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.services.AuthService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.DiscussionService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -29,13 +34,14 @@ interface AppContainer{
     val authRepository: AuthRepository
     val profileRepository: ProfileRepository
     val courseRepository: CourseRepository
+    val discussionRepository: DiscussionRepository
 }
 
 class AppContainerImpl(private val applicationContext: Context) : AppContainer {
     val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     val retrofit = Retrofit.Builder().addConverterFactory(
         MoshiConverterFactory.create(moshi)
-    ).baseUrl("http://172.21.128.1:3000/api/v1/").build()
+    ).baseUrl("http://192.168.1.132:3000/api/v1/").build()
 
     override val authRepository: AuthRepository by lazy {
         AuthRepositoryImpl(
@@ -55,6 +61,15 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
         CourseRepositoryImpl(
             LocalCourseDataSourceImpl(AppDatabase.getInstance(applicationContext).courseDao()),
             RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java))
+        )
+    }
+
+    override val discussionRepository: DiscussionRepository by lazy {
+        DiscussionRepositoryImpl(
+            LocalDiscussionDataSourceImpl(
+                AppDatabase.getInstance(applicationContext).discussionDao()
+            ),
+            RemoteDiscussionDataSourceImpl(retrofit.create(DiscussionService::class.java))
         )
     }
 

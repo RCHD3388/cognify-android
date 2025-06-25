@@ -1,6 +1,7 @@
 package com.cognifyteam.cognifyapp.data.sources.remote
 
 import com.cognifyteam.cognifyapp.data.models.CourseJson
+import com.cognifyteam.cognifyapp.data.models.DiscussionJson
 import com.cognifyteam.cognifyapp.data.models.UserJson
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -46,4 +47,27 @@ data class EnrolledCoursesData(
 
     @Json(name = "data")
     val courses: List<CourseJson>
+)
+
+@JsonClass(generateAdapter = true)
+data class DiscussionListData(
+    @Json(name = "message") val message: String,
+    @Json(name = "data") val discussions: List<DiscussionJson>
+)
+
+// DTO untuk mengirim data saat membuat post utama
+@JsonClass(generateAdapter = true)
+data class CreatePostRequest(
+    @Json(name = "content")
+    val content: String,
+
+    @Json(name = "courseId")
+    val courseId: String
+)
+
+// DTO untuk mengirim data saat membuat balasan
+@JsonClass(generateAdapter = true)
+data class CreateReplyRequest(
+    @Json(name = "content")
+    val content: String
 )

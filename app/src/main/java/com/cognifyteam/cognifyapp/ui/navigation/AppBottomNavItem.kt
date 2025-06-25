@@ -12,5 +12,6 @@ import com.cognifyteam.cognifyapp.R
 sealed class AppBottomNavItem(val route: String, val title: String, val icon: Int) {
     object Home : AppBottomNavItem("home", "Home", R.drawable.bnav_home)
     object Profile : AppBottomNavItem("profile", "Profile", R.drawable.bnav_profile)
-    object Smart : AppBottomNavItem("smart", "Smart", R.drawable.bnav_smart)
+    object Smart : AppBottomNavItem("course_details/CR001", "Smart", R.drawable.bnav_smart)
+//    object Smart : AppBottomNavItem("smart", "Smart", R.drawable.bnav_smart)
 }

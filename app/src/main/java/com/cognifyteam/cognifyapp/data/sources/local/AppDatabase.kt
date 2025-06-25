@@ -5,22 +5,26 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
+import com.cognifyteam.cognifyapp.data.models.DiscussionEntity
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.sources.local.dao.AuthDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.CourseDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.DiscussionDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.ProfileDao
 
 @Database(entities = [
     UserEntity::class,
     CourseEntity::class,
-    UserCourseCrossRef::class
-], version = 3)
+    UserCourseCrossRef::class,
+    DiscussionEntity::class
+], version = 4)
 abstract class AppDatabase : RoomDatabase() {
 
      abstract fun authDao(): AuthDao
      abstract fun profileDao(): ProfileDao
      abstract fun courseDao(): CourseDao
+     abstract fun discussionDao(): DiscussionDao
 
     companion object {
         @Volatile

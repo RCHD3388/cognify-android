@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.User
+import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 
 private val PrimaryColor = Color(0xFF1F2343)
@@ -69,7 +70,7 @@ fun HomeScreen(appContainer: AppContainer) {
             .fillMaxSize()
             .background(BackgroundColor)
     ) {
-        item { HeaderSection(user) }
+        item { HeaderSection(appContainer, user) }
         item { SearchBar() }
         item { CategoriesSection() }
         item { ContinueWatchingSection() }
@@ -80,7 +81,10 @@ fun HomeScreen(appContainer: AppContainer) {
 }
 
 @Composable
-fun HeaderSection(user: User?) {
+fun HeaderSection(appContainer: AppContainer, user: User?) {
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModel.provideFactory(appContainer.authRepository)
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,6 +119,9 @@ fun HeaderSection(user: User?) {
                 contentDescription = "Profile",
                 tint = PrimaryColor,
                 modifier = Modifier.size(28.dp)
+                    .clickable {
+                        authViewModel.logout()
+                    }
             )
         }
     }

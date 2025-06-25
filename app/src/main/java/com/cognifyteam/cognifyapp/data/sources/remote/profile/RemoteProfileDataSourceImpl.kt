@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.data.sources.remote.profile
 
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
+import com.cognifyteam.cognifyapp.data.sources.remote.DiscussionListData
 import com.cognifyteam.cognifyapp.data.sources.remote.ProfileData
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
 
