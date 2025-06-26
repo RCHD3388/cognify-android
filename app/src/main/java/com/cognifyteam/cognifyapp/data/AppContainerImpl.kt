@@ -6,6 +6,8 @@ import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepository
 import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepositoryImpl
+import com.cognifyteam.cognifyapp.data.repositories.FollowRepository
+import com.cognifyteam.cognifyapp.data.repositories.FollowRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.profile.ProfileRepository
@@ -15,6 +17,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSo
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalDiscussionDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalFollowDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalProfileDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.ErrorResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.auth.RemoteAuthDataSourceImpl
@@ -24,7 +27,9 @@ import com.cognifyteam.cognifyapp.data.sources.remote.profile.RemoteProfileDataS
 import com.cognifyteam.cognifyapp.data.sources.remote.services.AuthService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.DiscussionService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.FollowService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
+import com.cognifyteam.cognifyapp.data.sources.remote.users.RemoteFollowDataSourceImpl
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
@@ -35,13 +40,14 @@ interface AppContainer{
     val profileRepository: ProfileRepository
     val courseRepository: CourseRepository
     val discussionRepository: DiscussionRepository
+    val followRepository: FollowRepository
 }
 
 class AppContainerImpl(private val applicationContext: Context) : AppContainer {
     val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     val retrofit = Retrofit.Builder().addConverterFactory(
         MoshiConverterFactory.create(moshi)
-    ).baseUrl("http://192.168.1.132:3000/api/v1/").build()
+    ).baseUrl("http://192.168.1.133:3000/api/v1/").build()
 
     override val authRepository: AuthRepository by lazy {
         AuthRepositoryImpl(
@@ -70,6 +76,15 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
                 AppDatabase.getInstance(applicationContext).discussionDao()
             ),
             RemoteDiscussionDataSourceImpl(retrofit.create(DiscussionService::class.java))
+        )
+    }
+
+    override val followRepository: FollowRepository by lazy {
+        FollowRepositoryImpl(
+            LocalFollowDataSourceImpl(
+                AppDatabase.getInstance(applicationContext).followDao()
+            ),
+            RemoteFollowDataSourceImpl(retrofit.create(FollowService::class.java))
         )
     }
 

@@ -16,6 +16,7 @@ import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.course.CourseScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
+import com.cognifyteam.cognifyapp.ui.home.UserSearchScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 import com.cognifyteam.cognifyapp.ui.profile.ProfileViewModel
 import com.cognifyteam.cognifyapp.ui.profile.UserCoursesViewModel
@@ -26,6 +27,7 @@ object AppNavRoutes {
     const val SMART = "smart"
     const val PROFILE = "profile"
     const val COURSE_DETAILS = "course_details/{courseId}"
+    const val SEARCH = "search"
 }
 
 @Composable
@@ -53,10 +55,13 @@ fun AppNavGraph(
         startDestination = AppBottomNavItem.Home.route
     ) {
         composable(AppNavRoutes.HOME) {
-            HomeScreen(appContainer)
+            HomeScreen(navController, appContainer)
         }
         composable(AppNavRoutes.SMART) {
             MainLearningPathScreen()
+        }
+        composable(AppNavRoutes.SEARCH) {
+            UserSearchScreen(appContainer)
         }
 
         composable(AppNavRoutes.PROFILE) {

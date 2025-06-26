@@ -48,6 +48,7 @@ import com.cognifyteam.cognifyapp.R
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
@@ -60,7 +61,7 @@ private val TextSecondary = Color.Gray
 private val SurfaceColor = Color(0xFFF8F9FA)
 
 @Composable
-fun HomeScreen(appContainer: AppContainer) {
+fun HomeScreen(navController: NavController, appContainer: AppContainer) {
     val userViewModel: UserViewModel = viewModel(
         factory = UserViewModel.provideFactory(appContainer.authRepository)
     )
@@ -70,7 +71,7 @@ fun HomeScreen(appContainer: AppContainer) {
             .fillMaxSize()
             .background(BackgroundColor)
     ) {
-        item { HeaderSection(appContainer, user) }
+        item { HeaderSection(navController, appContainer, user) }
         item { SearchBar() }
         item { CategoriesSection() }
         item { ContinueWatchingSection() }
@@ -81,7 +82,7 @@ fun HomeScreen(appContainer: AppContainer) {
 }
 
 @Composable
-fun HeaderSection(appContainer: AppContainer, user: User?) {
+fun HeaderSection(navController: NavController, appContainer: AppContainer, user: User?) {
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.provideFactory(appContainer.authRepository)
     )
@@ -120,7 +121,8 @@ fun HeaderSection(appContainer: AppContainer, user: User?) {
                 tint = PrimaryColor,
                 modifier = Modifier.size(28.dp)
                     .clickable {
-                        authViewModel.logout()
+                        navController.navigate("search")
+//                        authViewModel.logout()
                     }
             )
         }

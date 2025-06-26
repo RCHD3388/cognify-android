@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.data.sources.remote
 
 import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.DiscussionJson
+import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.models.UserJson
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -70,4 +71,24 @@ data class CreatePostRequest(
 data class CreateReplyRequest(
     @Json(name = "content")
     val content: String
+)
+
+@JsonClass(generateAdapter = true)
+data class GenericSuccessData(
+    @Json(name = "message")
+    val message: String
+)
+
+data class UserUiState(
+    val user: User,
+    val isFollowing: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
+data class UserSearchData(
+    @Json(name = "message")
+    val message: String,
+
+    @Json(name = "data")
+    val users: List<UserJson>
 )

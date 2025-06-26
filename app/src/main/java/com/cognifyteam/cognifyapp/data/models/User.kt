@@ -3,6 +3,7 @@ package com.cognifyteam.cognifyapp.data.models
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.cognifyteam.cognifyapp.data.sources.remote.UserSearchData
 import com.squareup.moshi.JsonClass
 import kotlinx.parcelize.Parcelize
 import java.util.Date
@@ -23,6 +24,7 @@ data class UserEntity (
     var name:String,
     var email: String,
     var role: String,
+    val isFollowing: Boolean = false
 )
 
 @Parcelize
