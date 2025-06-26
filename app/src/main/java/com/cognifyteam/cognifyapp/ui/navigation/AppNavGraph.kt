@@ -14,6 +14,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.course.AddCourseScreen
 import com.cognifyteam.cognifyapp.ui.course.CourseScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
 import com.cognifyteam.cognifyapp.ui.home.UserSearchScreen
@@ -28,6 +29,7 @@ object AppNavRoutes {
     const val PROFILE = "profile"
     const val COURSE_DETAILS = "course_details/{courseId}"
     const val SEARCH = "search"
+    const val COURSE = "course"
 }
 
 @Composable
@@ -54,6 +56,7 @@ fun AppNavGraph(
         // DIUBAH: startDestination sekarang bisa jadi rute profil atau home
         startDestination = AppBottomNavItem.Home.route
     ) {
+
         composable(AppNavRoutes.HOME) {
             HomeScreen(navController, appContainer)
         }
@@ -62,6 +65,9 @@ fun AppNavGraph(
         }
         composable(AppNavRoutes.SEARCH) {
             UserSearchScreen(appContainer)
+        }
+        composable(AppNavRoutes.COURSE) {
+            AddCourseScreen(navController, appContainer)
         }
 
         composable(AppNavRoutes.PROFILE) {
