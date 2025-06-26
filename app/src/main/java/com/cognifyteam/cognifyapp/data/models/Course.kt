@@ -7,25 +7,41 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import kotlinx.parcelize.Parcelize
 
+/**
+ * PERBAIKAN: Model JSON untuk komunikasi dengan API.
+ * Field yang dibuat oleh server (course_id, course_rating, course_thumbnail)
+ * dibuat nullable (String?) agar class ini bisa digunakan untuk:
+ * 1. MENGIRIM data (saat membuat course, field ini akan null/tidak ada).
+ * 2. MENERIMA data (saat mendapat detail course, field ini akan berisi data dari server).
+ */
 @JsonClass(generateAdapter = true)
 data class CourseJson(
+    // Dibuat nullable karena tidak ada saat MEMBUAT course baru.
     @Json(name = "course_id")
-    val courseId: String,
+    val course_id: String?,
 
     @Json(name = "course_name")
-    val courseName: String,
+    val course_name: String,
 
     @Json(name = "course_description")
-    val courseDescription: String,
+    val course_description: String,
 
+    @Json(name = "course_owner")
+    val course_owner: String,
+
+    @Json(name="course_price")
+    val course_price: Int,
+
+    @Json(name = "category_id")
+    val category_id: String,
+
+    // Dibuat nullable karena diatur oleh server.
     @Json(name = "course_rating")
-    val courseRating: String,
+    val course_rating: String?,
 
+    // Dibuat nullable karena URL-nya diatur oleh server setelah upload.
     @Json(name = "course_thumbnail")
-    val courseThumbnail: String,
-
-    @Json(name = "course_price")
-    val coursePrice: Int,
+    val course_thumbnail: String?
 )
 
 @Entity(tableName = "courses")
@@ -51,12 +67,13 @@ data class Course(
     companion object {
         fun fromJson(json: CourseJson): Course {
             return Course(
-                courseId = json.courseId,
-                name = json.courseName,
-                description = json.courseDescription,
-                rating = json.courseRating,
-                thumbnail = json.courseThumbnail,
-                price = json.coursePrice
+                // Tambahkan pengecekan null untuk keamanan
+                courseId = json.course_id ?: "",
+                name = json.course_name,
+                description = json.course_description,
+                rating = json.course_rating ?: "0.0",
+                thumbnail = json.course_thumbnail ?: "",
+                price = json.course_price
             )
         }
 
