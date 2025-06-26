@@ -7,7 +7,7 @@ import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteCourseDataSou
 
 interface CourseRepository {
     suspend fun getEnrolledCourses(firebaseId: String): Result<List<Course>>
-    suspend fun addCourse(course: Course): Result<Unit>
+//    suspend fun addCourse(course: Course): Result<Unit>
 }
 
 class CourseRepositoryImpl(
@@ -35,19 +35,19 @@ class CourseRepositoryImpl(
             } catch (cacheError: Exception) { Result.failure(cacheError) }
         }
     }
-    override suspend fun addCourse(course: Course): Result<Unit> {
-        try {
-            val response = remoteDataSource.addCourse(course)
-
-            if (response.isSuccessful) {
-                localDataSource.upsertCourses(listOf(course.toEntity()))
-                return Result.success(Unit)
-            } else {
-                return Result.failure(Exception("Failed to add course"))
-            }
-        } catch (e: Exception) {
-            return Result.failure(e)
-        }
-    }
-    }
+//    override suspend fun addCourse(course: Course): Result<Unit> {
+//        try {
+//            val response = remoteDataSource.addCourse(course)
+//
+//            if (response.isSuccessful) {
+//                localDataSource.upsertCourses(listOf(course.toEntity()))
+//                return Result.success(Unit)
+//            } else {
+//                return Result.failure(Exception("Failed to add course"))
+//            }
+//        } catch (e: Exception) {
+//            return Result.failure(e)
+//        }
+//    }
+//    }
 }

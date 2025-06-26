@@ -85,6 +85,15 @@ data class UserUiState(
 )
 
 @JsonClass(generateAdapter = true)
+data class UpdateProfileRequest(
+    @Json(name = "name")
+    val name: String?,
+
+    @Json(name = "description")
+    val description: String?
+)
+
+@JsonClass(generateAdapter = true)
 data class UserSearchData(
     @Json(name = "message")
     val message: String,

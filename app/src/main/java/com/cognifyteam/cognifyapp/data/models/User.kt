@@ -14,7 +14,8 @@ data class UserJson(
     val firebaseId:String,
     var name:String,
     var email:String,
-    var role: String // <-- TAMBAHKAN INI
+    var role: String,
+    var description: String? = null
 )
 
 @Entity(tableName = "users")
@@ -24,7 +25,8 @@ data class UserEntity (
     var name:String,
     var email: String,
     var role: String,
-    val isFollowing: Boolean = false
+    val isFollowing: Boolean = false,
+    var description: String? = null
 )
 
 @Parcelize
@@ -33,6 +35,7 @@ data class User (
     val name: String,
     val email: String,
     var role: String,
+    var description: String? = null
 ): Parcelable{
     companion object {
         fun fromEntity(entity: UserEntity): User {
@@ -41,6 +44,7 @@ data class User (
                 name = entity.name,
                 email = entity.email,
                 role = entity.role,
+                description = entity.description
             )
         }
         fun fromJson(json: UserJson): User {
@@ -48,7 +52,8 @@ data class User (
                 firebaseId = json.firebaseId,
                 name = json.name,
                 email = json.email,
-                role = json.role
+                role = json.role,
+                description = json.description
             )
         }
     }
@@ -57,7 +62,8 @@ data class User (
             firebaseId = firebaseId,
             name = name,
             email = email,
-            role = role
+            role = role,
+            description = this.description
         )
     }
     fun toEntity(): UserEntity {
@@ -65,7 +71,8 @@ data class User (
             firebaseId = firebaseId,
             name = name,
             email = email,
-            role = role
+            role = role,
+            description = this.description
         )
     }
 }
