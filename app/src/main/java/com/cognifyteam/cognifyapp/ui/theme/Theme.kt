@@ -1,6 +1,5 @@
 package com.cognifyteam.cognifyapp.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,89 +11,83 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-// DARK THEME
-val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF90CAF9),              // Light Blue
-    onPrimary = Color(0xFF0D47A1),            // Darker Blue (for contrast)
-    primaryContainer = Color(0xFF1E88E5),     // Medium Blue
-    onPrimaryContainer = Color.White,
+// Definisikan warna utama Anda di sini agar mudah digunakan kembali
+val CognifyPrimaryBlue = Color(0xFF1F2343)
+val CognifyLightBlue = Color(0xFF535A8F) // Versi lebih terang untuk container
+val CognifyOnPrimaryText = Color.White
 
-    inversePrimary = Color(0xFFCE93D8),       // Soft Purple
+// Warna sekunder (contoh: ungu lembut)
+val CognifySecondaryPurple = Color(0xFFBA8BDB)
+val CognifyOnSecondaryText = Color(0xFF33004A)
+val CognifySecondaryContainer = Color(0xFF4A148C)
 
-    secondary = Color(0xFFCE93D8),            // Light Purple
-    onSecondary = Color(0xFF4A148C),          // Dark Purple
-    secondaryContainer = Color(0xFFAB47BC),   // Medium Purple
+
+// LIGHT THEME (Mode Terang)
+private val LightColorScheme = lightColorScheme(
+    primary = CognifyPrimaryBlue,             // Warna utama: Biru Gelap
+    onPrimary = CognifyOnPrimaryText,         // Teks di atas warna utama: Putih
+    primaryContainer = CognifyLightBlue,      // Warna container yang lebih terang
+    onPrimaryContainer = CognifyOnPrimaryText,// Teks di atas container
+
+    secondary = CognifySecondaryPurple,       // Warna sekunder
+    onSecondary = CognifyOnSecondaryText,     // Teks di atas warna sekunder
+    secondaryContainer = CognifySecondaryContainer,
     onSecondaryContainer = Color.White,
 
-    tertiary = Color(0xFF80CBC4),             // Teal hint (educational touch)
-    onTertiary = Color(0xFF004D40),
-    tertiaryContainer = Color(0xFF4DB6AC),
-    onTertiaryContainer = Color.White,
+    background = Color(0xFFFDFDFD),           // Background sedikit off-white
+    onBackground = Color(0xFF1A1C1E),         // Teks di atas background (hampir hitam)
 
-    error = Color(0xFFEF9A9A),
-    onError = Color(0xFFB71C1C),
-    errorContainer = Color(0xFFE57373),
-    onErrorContainer = Color.White,
+    surface = Color(0xFFFDFDFD),              // Warna dasar kartu, dialog, dll.
+    onSurface = Color(0xFF1A1C1E),            // Teks di atas surface
 
-    background = Color(0xFF121212),
-    onBackground = Color(0xFFE0E0E0),
+    surfaceVariant = Color(0xFFE0E2EC),       // Warna untuk komponen yang tidak terlalu menonjol (misal: chip)
+    onSurfaceVariant = Color(0xFF44474F),     // Teks di atas surfaceVariant
 
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFF5F5F5),
+    outline = Color(0xFF74777F),              // Border untuk OutlinedTextField, dll.
 
-    inverseSurface = Color(0xFFECEFF1),
-    inverseOnSurface = Color(0xFF212121),
-
-    surfaceVariant = Color(0xFF37474F),
-    onSurfaceVariant = Color(0xFFB0BEC5),
-
-    outline = Color(0xFF90A4AE)
-)
-
-// LIGHT THEME
-val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF1976D2),              // Blue
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFBBDEFB),     // Light Blue
-    onPrimaryContainer = Color(0xFF0D47A1),
-
-    inversePrimary = Color(0xFFBA68C8),       // Light Purple
-
-    secondary = Color(0xFFAB47BC),            // Purple
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE1BEE7),
-    onSecondaryContainer = Color(0xFF4A148C),
-
-    tertiary = Color(0xFF26A69A),             // Teal
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFB2DFDB),
-    onTertiaryContainer = Color(0xFF004D40),
-
-    error = Color(0xFFD32F2F),
+    error = Color(0xFFB3261E),
     onError = Color.White,
-    errorContainer = Color(0xFFFFCDD2),
-    onErrorContainer = Color(0xFFB71C1C),
-
-    background = Color(0xFFF5F5F5),
-    onBackground = Color(0xFF212121),
-
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF212121),
-
-    inverseSurface = Color(0xFF263238),
-    inverseOnSurface = Color(0xFFF5F5F5),
-
-    surfaceVariant = Color(0xFFCFD8DC),
-    onSurfaceVariant = Color(0xFF455A64),
-
-    outline = Color(0xFF90A4AE)
+    errorContainer = Color(0xFFF9DEDC),
+    onErrorContainer = Color(0xFF410E0B)
 )
+
+
+// DARK THEME (Mode Gelap)
+private val DarkColorScheme = darkColorScheme(
+    primary = CognifyLightBlue,               // Di mode gelap, primary biasanya lebih terang agar menonjol
+    onPrimary = CognifyOnPrimaryText,
+    primaryContainer = CognifyPrimaryBlue,    // Container menggunakan warna dasar yang lebih gelap
+    onPrimaryContainer = Color(0xFFE0E0FF),
+
+    secondary = CognifySecondaryPurple,
+    onSecondary = CognifyOnSecondaryText,
+    secondaryContainer = CognifySecondaryContainer,
+    onSecondaryContainer = Color.White,
+
+    background = Color(0xFF121212),           // Background khas mode gelap
+    onBackground = Color(0xFFE2E2E6),         // Teks di atas background (putih keabuan)
+
+    surface = Color(0xFF1A1C1E),              // Warna dasar kartu, dll. di mode gelap
+    onSurface = Color(0xFFE2E2E6),
+
+    surfaceVariant = Color(0xFF44474F),
+    onSurfaceVariant = Color(0xFFC4C6D0),
+
+    outline = Color(0xFF8E9099),
+
+    error = Color(0xFFF2B8B5),
+    onError = Color(0xFF601410),
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Color(0xFFF9DEDC)
+)
+
 
 @Composable
 fun CognifyApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Dynamic color adalah fitur Android 12+ yang mengambil warna dari wallpaper pengguna.
+    // Biasanya lebih baik dinonaktifkan jika Anda ingin branding warna yang kuat.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
