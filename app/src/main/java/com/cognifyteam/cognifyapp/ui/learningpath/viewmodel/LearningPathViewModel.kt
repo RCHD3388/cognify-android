@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.ui.learningpath.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cognifyteam.cognifyapp.ui.learningpath.viewmodel.Comment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ data class LearningPath(
     val tags: List<String>,
     val likes: Int, // Kembali ke `val`
     val comments: Int,
+    val comment_contents: List<Comment> = listOf(),
     val liked_by_you: Boolean,
     val steps: List<LearningPathStep>
 )

@@ -3,6 +3,7 @@ package com.cognifyteam.cognifyapp.ui.learningpath.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
+import com.cognifyteam.cognifyapp.ui.learningpath.viewmodel.Comment
 import com.cognifyteam.cognifyapp.ui.learningpath.viewmodel.LearningPathDetailViewModel
 import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
 
@@ -31,7 +33,7 @@ import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LearningPathDetailScreen(
-    navController: NavController? = null,
+    navController: NavController,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit,
@@ -40,13 +42,12 @@ fun LearningPathDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Memuat data saat composable pertama kali ditampilkan atau saat id berubah
     LaunchedEffect(learningPathId) {
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(TopBarState(isVisible = true,
             title = "Detail Learning Path",
             navigationIcon = {
-                IconButton(onClick = { navController!!.navigateUp() }) {
+                IconButton(onClick = { navController.navigateUp() }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
                 }
             },
@@ -80,6 +81,21 @@ fun LearningPathDetailScreen(
                     isLastItem = index == path.steps.lastIndex
                 )
             }
+            // --- BAGIAN KOMENTAR BARU DITAMBAHKAN DI SINI ---
+            item { Divider(modifier = Modifier.padding(vertical = 8.dp)) }
+            item {
+                CommentHeader(commentCount = path.comment_contents.size)
+            }
+            item {
+                CommentInput(
+                    commentInput = uiState.commentInput,
+                    onCommentInputChange = { viewModel.onCommentInputChange(it) },
+                    onPostComment = { viewModel.postComment() }
+                )
+            }
+            items(path.comment_contents, key = { it.id }) { comment ->
+                CommentItem(comment = comment)
+            }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     } else {
@@ -89,6 +105,110 @@ fun LearningPathDetailScreen(
     }
 }
 
+@Composable
+fun CommentHeader(commentCount: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 8.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.MailOutline,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "Komentar ($commentCount)",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun CommentInput(
+    commentInput: String,
+    onCommentInputChange: (String) -> Unit,
+    onPostComment: () -> Unit
+) {
+    val isButtonEnabled = commentInput.isNotBlank()
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = commentInput,
+            onValueChange = onCommentInputChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 120.dp),
+            placeholder = { Text("Bagikan pengalaman atau pertanyaan Anda tentang learning path ini...") },
+            shape = RoundedCornerShape(12.dp),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${commentInput.length} / 500",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = onPostComment,
+                enabled = isButtonEnabled,
+                shape = RoundedCornerShape(50)
+                // Warna akan otomatis diatur oleh MaterialTheme berdasarkan status enabled/disabled
+            ) {
+                Text("Kirim")
+            }
+        }
+    }
+}
+
+@Composable
+fun CommentItem(comment: Comment) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Avatar
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = comment.authorInitials,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+        // Konten Komentar
+        Column(modifier = Modifier.weight(1f)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = comment.authorName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "• ${comment.timestamp}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = comment.content,
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 20.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
 
 @Composable
 fun PathDetailHeader(path: LearningPath) {
