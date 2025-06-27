@@ -21,7 +21,7 @@ data class CourseJson(
     @Json(name = "course_rating")
     val courseRating: String,
 
-    @Json(name = "course_thumbnail")
+    @Json(name = "thumbnail")
     val courseThumbnail: String,
 
     @Json(name = "course_price")

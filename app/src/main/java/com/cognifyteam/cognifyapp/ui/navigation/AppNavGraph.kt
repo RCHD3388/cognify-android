@@ -63,7 +63,9 @@ fun AppNavGraph(
     ) {
 
         composable(AppNavRoutes.HOME) {
-            HomeScreen(navController, appContainer)
+            HomeScreen(navController, appContainer,onFabStateChange = onFabStateChange,
+                onTopBarStateChange = onTopBarStateChange,
+                onShowSnackbar = onShowSnackbar) // Meneruskan
         }
         composable(AppNavRoutes.SMART) {
             MainLearningPathScreen(
@@ -113,7 +115,10 @@ fun AppNavGraph(
                     authViewModel = authViewModel, // Untuk aksi logout
                     profileViewModel = profileViewModel, // Untuk data profil
                     userCoursesViewModel = userCoursesViewModel,
-                    firebaseId = firebaseId // Berikan ID user
+                    firebaseId = firebaseId, // Berikan ID user
+                    onFabStateChange = onFabStateChange,
+                    onTopBarStateChange = onTopBarStateChange,
+                    onShowSnackbar = onShowSnackbar // Meneruskan
                 )
             } else {
 //                Log.d("ProfileViewModel", "User not authenticated or firebaseId is null")

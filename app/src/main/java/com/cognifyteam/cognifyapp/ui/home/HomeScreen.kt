@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,6 +53,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.User
+import com.cognifyteam.cognifyapp.ui.FabState
+import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 
@@ -62,10 +65,18 @@ private val TextSecondary = Color.Gray
 private val SurfaceColor = Color(0xFFF8F9FA)
 
 @Composable
-fun HomeScreen(navController: NavController, appContainer: AppContainer) {
+fun HomeScreen(navController: NavController, appContainer: AppContainer, onFabStateChange: (FabState) -> Unit,
+               onTopBarStateChange: (TopBarState) -> Unit,
+               onShowSnackbar: (String) -> Unit) {
     val userViewModel: UserViewModel = viewModel(
         factory = UserViewModel.provideFactory(appContainer.authRepository)
     )
+
+    LaunchedEffect (key1 = Unit) {
+        onFabStateChange(FabState(isVisible = false))
+        onTopBarStateChange(TopBarState(isVisible = false))
+    }
+
     val user by userViewModel.userState.collectAsState()
     LazyColumn(
         modifier = Modifier

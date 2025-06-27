@@ -4,6 +4,7 @@ import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.cognifyteam.cognifyapp.data.sources.remote.UserSearchData
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import kotlinx.parcelize.Parcelize
 import java.util.Date
@@ -15,7 +16,13 @@ data class UserJson(
     var name:String,
     var email:String,
     var role: String,
-    var description: String? = null
+    var description: String? = null,
+    // --- TAMBAHKAN DUA PROPERTI INI ---
+    @Json(name = "followingCount")
+    val followingCount: Int?, // Dibuat nullable untuk keamanan jika API tidak mengirimnya
+
+    @Json(name = "followersCount")
+    val followersCount: Int? // Dibuat nullable untuk keamanan
 )
 
 @Entity(tableName = "users")
@@ -35,7 +42,9 @@ data class User (
     val name: String,
     val email: String,
     var role: String,
-    var description: String? = null
+    var description: String? = null,
+    val followingCount: Int? = 0,
+    val followersCount: Int? = 0
 ): Parcelable{
     companion object {
         fun fromEntity(entity: UserEntity): User {
@@ -53,7 +62,9 @@ data class User (
                 name = json.name,
                 email = json.email,
                 role = json.role,
-                description = json.description
+                description = json.description,
+                followingCount = json.followingCount ?: 0,
+                followersCount = json.followersCount ?: 0
             )
         }
     }
@@ -63,7 +74,9 @@ data class User (
             name = name,
             email = email,
             role = role,
-            description = this.description
+            description = this.description,
+            followingCount = followingCount,
+            followersCount = followersCount
         )
     }
     fun toEntity(): UserEntity {

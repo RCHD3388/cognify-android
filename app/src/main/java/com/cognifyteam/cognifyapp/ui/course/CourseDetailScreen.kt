@@ -75,6 +75,7 @@ import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 
+
 @Composable
 fun CourseScreen(
     appContainer: AppContainer,

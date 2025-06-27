@@ -36,7 +36,7 @@ class AuthRepositoryImpl(
 
     override suspend fun register(firebaseId: String, name: String, email: String, role: String): Result<User> {
         // 1. Panggil remote data source untuk mendaftarkan user
-        val result = remoteAuthDataSource.register(UserJson(firebaseId, name, email, role))
+        val result = remoteAuthDataSource.register(UserJson(firebaseId, name, email, role, "", 0 , 0))
 
         // 2. Jika remote registrasi BERHASIL, simpan hasilnya ke database lokal
         //    dan update state flow. Ini adalah langkah yang hilang sebelumnya.

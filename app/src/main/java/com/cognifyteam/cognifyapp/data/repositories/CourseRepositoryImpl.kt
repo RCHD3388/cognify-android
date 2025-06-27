@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.data.repositories
 
+import android.util.Log
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSource
@@ -31,7 +32,10 @@ class CourseRepositoryImpl(
                 val userWithCourses = localDataSource.getUserWithCourses(firebaseId)
                 val cachedCourses = userWithCourses?.courses?.map { Course.fromEntity(it) }
                 if (!cachedCourses.isNullOrEmpty()) Result.success(cachedCourses)
-                else Result.failure(Exception("No courses found"))
+                else {
+                    Log.d("CourseRepositoryImpl", "No cached courses found for user: $e")
+                    Result.failure(Exception("No courses found"))
+                }
             } catch (cacheError: Exception) { Result.failure(cacheError) }
         }
     }
