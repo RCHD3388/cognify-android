@@ -94,15 +94,6 @@ fun ProfilePage(
     val authState by authViewModel.uiState.observeAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(authState) {
-        if (authState is AuthUiState.Unauthenticated) {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            context.startActivity(intent)
-        }
-    }
-
     LaunchedEffect(key1 = firebaseId) {
         profileViewModel.loadProfile(firebaseId)
         userCoursesViewModel.loadEnrolledCourses(firebaseId)
