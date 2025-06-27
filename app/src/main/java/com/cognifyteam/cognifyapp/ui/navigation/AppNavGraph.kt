@@ -12,8 +12,6 @@ import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.cognifyteam.cognifyapp.ui.FabState
-import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.course.AddCourseScreen
@@ -37,10 +35,7 @@ object AppNavRoutes {
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    appContainer: AppContainer,
-    onFabStateChange: (FabState) -> Unit,
-    onTopBarStateChange: (TopBarState) -> Unit,
-    onShowSnackbar: (String) -> Unit
+    appContainer: AppContainer
 ) {
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.provideFactory(
@@ -66,20 +61,10 @@ fun AppNavGraph(
             HomeScreen(navController, appContainer)
         }
         composable(AppNavRoutes.SMART) {
-            MainLearningPathScreen(
-                // --- Meneruskan callbacks ke MainLearningPathScreen ---
-                onFabStateChange = onFabStateChange,
-                onTopBarStateChange = onTopBarStateChange,
-                onShowSnackbar = onShowSnackbar // Meneruskan
-            )
+            MainLearningPathScreen()
         }
         composable(AppNavRoutes.SEARCH) {
-            UserSearchScreen(
-                appContainer,
-                onFabStateChange = onFabStateChange,
-                onTopBarStateChange = onTopBarStateChange,
-                onShowSnackbar = onShowSnackbar // Meneruskan
-            )
+            UserSearchScreen(appContainer)
         }
         composable(AppNavRoutes.COURSE) {
             AddCourseScreen(navController, appContainer)
