@@ -34,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,6 +46,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -153,14 +158,14 @@ fun ProfilePage(
                 Text(text = error!!, color = Color.Red)
             } else if (userProfile != null) {
                 // Jika data berhasil dimuat, tampilkan konten utama
-                ProfileContent(user = userProfile!!, coursesState = coursesState, navController = navController)
+                ProfileContent(user = userProfile!!, coursesState = coursesState, navController = navController, profileViewModel = profileViewModel)
             }
         }
     }
 }
 
 @Composable
-fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: NavController) {
+fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: NavController, profileViewModel: ProfileViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -168,7 +173,7 @@ fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: 
     ) {
         // Berikan objek User ke ProfileHeader
         ProfileHeader(user = user)
-        AboutMeSection()
+        AboutMeSection(user = user, viewModel = profileViewModel)
         MySkillsSection()
         EnrolledCoursesSection(
             coursesState = coursesState,
@@ -262,7 +267,32 @@ fun StatItem(number: String, label: String) {
 }
 
 @Composable
-fun AboutMeSection() {
+fun AboutMeSection(user: User, viewModel: ProfileViewModel) {
+    // State untuk mengontrol mode edit
+    var isEditing by rememberSaveable { mutableStateOf(false) }
+    // State untuk menampung teks yang sedang diedit
+    var descriptionText by remember { mutableStateOf(user.description ?: "") }
+
+    LaunchedEffect(isEditing) {
+        if (isEditing) {
+            descriptionText = user.description ?: ""
+        }
+    }
+
+    val isLoadingUpdate by viewModel.isLoading.observeAsState(false)
+    val updateResults by viewModel.updateResult.observeAsState()
+
+    LaunchedEffect(updateResults) {
+        updateResults?.onSuccess { updatedUser ->
+            // Update berhasil, tutup mode edit.
+            isEditing = false
+            // Kita tidak perlu mengupdate `descriptionText` di sini karena
+            // `userProfile` di ViewModel sudah diupdate, dan `Text` di bawah
+            // akan otomatis menampilkan nilai baru dari `user.description`.
+        }
+        // TODO: Handle onFailure untuk menampilkan Toast error
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -274,19 +304,86 @@ fun AboutMeSection() {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Text(
-                text = "About Me",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            Text(
-                text = "Passionate mobile app developer with 3+ years of experience in creating innovative and user-friendly applications. Specialized in Android development using Kotlin and Jetpack Compose. Always eager to learn new technologies and solve complex problems.",
-                fontSize = 14.sp,
-                color = TextSecondary,
-                lineHeight = 20.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "About Me",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+                // Tombol aksi berubah tergantung mode edit
+                if (isEditing) {
+                    Row {
+                        // Tombol Cancel
+                        TextButton(
+                            onClick = {
+                                // Batalkan perubahan dan kembali ke mode tampilan
+                                isEditing = false
+                            },
+                            enabled = !isLoadingUpdate
+                        ) {
+                            Text("Cancel")
+                        }
+                        // Tombol Save
+                        TextButton(
+                            onClick = {
+                                viewModel.updateProfile(user.firebaseId, user.name, descriptionText)
+                                // Kita akan matikan mode edit saat update berhasil
+                                // Ini bisa di-handle dengan mengamati state update
+                            },
+                            enabled = !isLoadingUpdate
+                        ) {
+                            Text("Save", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    // Tombol Edit
+                    IconButton(onClick = { isEditing = true }, modifier = Modifier.size(24.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Description",
+                            tint = PrimaryColor
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Tampilkan Text atau TextField berdasarkan mode edit
+            if (isEditing) {
+                // Mode Edit: Tampilkan TextField
+                OutlinedTextField(
+                    value = descriptionText,
+                    onValueChange = { descriptionText = it },
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    label = { Text("Your description") }
+                )
+            } else {
+                // Mode Tampilan: Tampilkan Text
+                Text(
+                    text = user.description.toString() ?: "No description provided yet. Click edit to add one.",
+                    fontSize = 14.sp,
+                    color = if (user.description != null) TextSecondary else Color.Gray.copy(alpha = 0.7f),
+                    lineHeight = 20.sp
+                )
+            }
+
+            // Tampilkan loading indicator kecil saat menyimpan
+            if (isEditing && isLoadingUpdate) {
+                CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp).size(24.dp))
+            }
+        }
+    }
+
+    val updateResult by viewModel.updateResult.observeAsState()
+    LaunchedEffect(updateResult) {
+        updateResult?.onSuccess {
+            isEditing = false
         }
     }
 }

@@ -15,6 +15,9 @@ class ProfileViewModel(
     private val repository: ProfileRepository
 ) : ViewModel() {
 
+    private val _updateResult = MutableLiveData<Result<User>?>()
+    val updateResult: LiveData<Result<User>?> = _updateResult
+
     private val _userProfile = MutableLiveData<User?>()
     val userProfile: LiveData<User?> = _userProfile
 
@@ -45,6 +48,35 @@ class ProfileViewModel(
             // 3. Selalu set isLoading menjadi false di akhir
             _isLoading.value = false
         }
+    }
+
+    fun updateProfile(firebaseId: String, name: String, description: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            // 1. Panggil repository untuk mengupdate data.
+            //    Hasilnya sudah berisi data User yang terbaru.
+            val result = repository.updateProfile(firebaseId, name, description)
+
+            // 2. "Buka" hasilnya
+            result.onSuccess { updatedUser ->
+                // JIKA SUKSES:
+                // a. Perbarui state utama (_userProfile) dengan data yang baru.
+                _userProfile.value = updatedUser
+                // b. Kirim sinyal sukses ke UI dengan data yang baru.
+                _updateResult.value = Result.success(updatedUser)
+            }.onFailure { exception ->
+                // JIKA GAGAL:
+                // a. Langsung kirim sinyal gagal ke UI.
+                _updateResult.value = Result.failure(exception)
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    fun onUpdateResultConsumed() {
+        _updateResult.value = null
     }
 
     companion object {

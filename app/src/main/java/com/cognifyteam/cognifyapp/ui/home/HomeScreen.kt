@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Card
@@ -107,6 +108,14 @@ fun HeaderSection(navController: NavController, appContainer: AppContainer, user
             )
         }
         Spacer(modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Add Course",
+            tint = PrimaryColor,
+            modifier = Modifier.size(28.dp).clickable {
+                navController.navigate("course")
+            }
+        )
         Box(
             modifier = Modifier
                 .size(48.dp)
@@ -115,6 +124,7 @@ fun HeaderSection(navController: NavController, appContainer: AppContainer, user
                 .clickable { },
             contentAlignment = Alignment.Center
         ) {
+
             Icon(
                 imageVector = Icons.Default.AccountCircle,
                 contentDescription = "Profile",

@@ -19,7 +19,13 @@ data class CourseJson(
     val courseDescription: String,
 
     @Json(name = "course_rating")
-    val courseRating: String
+    val courseRating: String,
+
+    @Json(name = "course_thumbnail")
+    val courseThumbnail: String,
+
+    @Json(name = "course_price")
+    val coursePrice: Int,
 )
 
 @Entity(tableName = "courses")
@@ -28,7 +34,9 @@ data class CourseEntity(
     val courseId: String,
     val name: String,
     val description: String,
-    val rating: String
+    val rating: String,
+    val thumbnail: String,
+    val price: Int
 )
 
 @Parcelize
@@ -36,7 +44,9 @@ data class Course(
     val courseId: String,
     val name: String,
     val description: String,
-    val rating: String
+    val rating: String,
+    val thumbnail: String,
+    val price: Int
 ) : Parcelable {
     companion object {
         fun fromJson(json: CourseJson): Course {
@@ -44,7 +54,9 @@ data class Course(
                 courseId = json.courseId,
                 name = json.courseName,
                 description = json.courseDescription,
-                rating = json.courseRating
+                rating = json.courseRating,
+                thumbnail = json.courseThumbnail,
+                price = json.coursePrice
             )
         }
 
@@ -53,7 +65,9 @@ data class Course(
                 courseId = entity.courseId,
                 name = entity.name,
                 description = entity.description,
-                rating = entity.rating
+                rating = entity.rating,
+                thumbnail = entity.thumbnail,
+                price = entity.price
             )
         }
     }
@@ -63,7 +77,9 @@ data class Course(
             courseId = this.courseId,
             name = this.name,
             description = this.description,
-            rating = this.rating
+            rating = this.rating,
+            thumbnail = this.thumbnail,
+            price = this.price
         )
     }
 }
