@@ -1,3 +1,5 @@
+// LoginScreen.kt
+
 package com.cognifyteam.cognifyapp.ui.auth
 
 import android.app.Activity
@@ -14,10 +16,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -57,7 +59,6 @@ fun LoginScreen(
     )
 
     val uiState by viewModel.uiState.observeAsState(AuthUiState.Unauthenticated)
-
     val context = LocalContext.current
 
     val onGoogleLogin = rememberGoogleSignLauncher(
@@ -90,7 +91,7 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background) // Menggunakan warna background dari tema
             .padding(horizontal = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -106,11 +107,12 @@ fun LoginScreen(
             text = "Welcome Back 👋",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onBackground // Menggunakan warna teks dari tema
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // TextField menggunakan warna default dari tema
         OutlinedTextField(
             value = email.value,
             onValueChange = { email.value = it },
@@ -123,13 +125,6 @@ fun LoginScreen(
                     modifier = Modifier.size(20.dp)
                 )
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF1F2343),
-                unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color(0xFF1F2343)
-            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -148,13 +143,6 @@ fun LoginScreen(
                     modifier = Modifier.size(20.dp)
                 )
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF1F2343),
-                unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color(0xFF1F2343)
-            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -162,7 +150,6 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                // Frontend validation
                 val emailValue = email.value.trim()
                 val passwordValue = password.value
                 if (emailValue.isNotBlank() && passwordValue.isNotBlank()) {
@@ -173,20 +160,20 @@ fun LoginScreen(
             },
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1F2343),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.primary,
+                disabledContentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            // Nonaktifkan tombol saat loading untuk mencegah klik ganda
             enabled = uiState !is AuthUiState.Loading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            // Tampilkan CircularProgressIndicator atau teks berdasarkan uiState
             when (uiState) {
                 AuthUiState.Loading -> CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
                 else -> {
                     Text("Login", fontSize = 16.sp)
@@ -198,19 +185,20 @@ fun LoginScreen(
 
         Text(
             "or",
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, // Warna teks yang lebih lembut
             fontSize = 14.sp
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Tombol Google menggunakan warna surface agar kontras
         Button(
             onClick = onGoogleLogin,
             shape = RoundedCornerShape(24.dp),
             border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -229,13 +217,17 @@ fun LoginScreen(
 
         TextButton(
             onClick = onNavigateToRegister,
-            enabled = uiState !is AuthUiState.Loading // Nonaktifkan saat loading
+            enabled = uiState !is AuthUiState.Loading
         ) {
             Text(
                 buildAnnotatedString {
-                    append("Don't have an account? ")
-                    withStyle(SpanStyle(color = Color(0xFF1F2343), fontWeight = FontWeight.Bold)) {
-                        append("Register")
+                    // Terapkan gaya dengan warna teks standar
+                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
+                        append("Don't have an account? ") // Atau "Already have an account? "
+                    }
+                    // Terapkan gaya dengan warna utama untuk teks yang bisa diklik
+                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+                        append("Register") // Atau "Login"
                     }
                 }
             )
