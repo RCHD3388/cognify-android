@@ -1,9 +1,10 @@
+// RegisterScreen.kt
+
 package com.cognifyteam.cognifyapp.ui.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,7 +36,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,7 +63,7 @@ fun RegisterScreen(
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val confirm_password = remember { mutableStateOf("") }
-    val roles = listOf("user", "instructor")
+    val roles = listOf("user")
     val selectedRole = remember { mutableStateOf(roles[0]) }
 
     val viewModel: AuthViewModel = viewModel(
@@ -90,7 +92,7 @@ fun RegisterScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background) // Menggunakan warna background dari tema
             .padding(horizontal = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -107,11 +109,12 @@ fun RegisterScreen(
             text = "Create Account ✨",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onBackground // Menggunakan warna teks dari tema
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // TextField menggunakan warna default dari tema, ini lebih baik
         OutlinedTextField(
             value = name.value,
             onValueChange = { name.value = it },
@@ -124,65 +127,9 @@ fun RegisterScreen(
                     modifier = Modifier.size(20.dp)
                 )
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF1F2343),
-                unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color(0xFF1F2343)
-            ),
+            // Menghapus `colors` akan membuat TextField otomatis menggunakan warna tema
             modifier = Modifier.fillMaxWidth()
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Compact Radio Button Section - Hanya Kotak
-        Text(
-            text = "Register as:",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 6.dp),
-            color = Color.Black,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            roles.forEach { role ->
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { selectedRole.value = role },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (role == selectedRole.value)
-                            Color(0xFF1F2343)
-                        else
-                            Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = if (role == selectedRole.value) null else CardDefaults.outlinedCardBorder()
-                ) {
-                    Text(
-                        text = role.replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase() else it.toString()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp, horizontal = 16.dp),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (role == selectedRole.value) Color.White else Color.Black,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -198,13 +145,6 @@ fun RegisterScreen(
                     modifier = Modifier.size(20.dp)
                 )
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF1F2343),
-                unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color(0xFF1F2343)
-            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -223,13 +163,6 @@ fun RegisterScreen(
                     modifier = Modifier.size(20.dp)
                 )
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF1F2343),
-                unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color(0xFF1F2343)
-            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -248,51 +181,36 @@ fun RegisterScreen(
                     modifier = Modifier.size(20.dp)
                 )
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF1F2343),
-                unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color(0xFF1F2343)
-            ),
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Tombol menggunakan warna primary dari tema
         Button(
-            // 👇 MODIFIKASI UTAMA ADA DI SINI, DI DALAM onClick
             onClick = {
                 val nameValue = name.value.trim()
                 val emailValue = email.value.trim()
                 val passwordValue = password.value
                 val confirmPasswordValue = confirm_password.value
 
-                // 1. Validasi field kosong
                 if (nameValue.isBlank() || emailValue.isBlank() || passwordValue.isBlank() || confirmPasswordValue.isBlank()) {
                     Toast.makeText(context, "Semua field wajib diisi", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
-
-                // 2. Validasi format email (sederhana)
                 if (!android.util.Patterns.EMAIL_ADDRESS.matcher(emailValue).matches()) {
                     Toast.makeText(context, "Format email tidak valid", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
-
-                // 3. Validasi panjang password
                 if (passwordValue.length < 6) {
                     Toast.makeText(context, "Password minimal harus 6 karakter", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
-
-                // 4. Validasi konfirmasi password
                 if (passwordValue != confirmPasswordValue) {
                     Toast.makeText(context, "Password dan konfirmasi password tidak cocok", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
 
-                // Jika semua validasi frontend lolos, baru panggil ViewModel
                 viewModel.register(
                     name = nameValue,
                     email = emailValue,
@@ -301,10 +219,7 @@ fun RegisterScreen(
                 )
             },
             shape = RoundedCornerShape(24.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1F2343),
-                contentColor = Color.White
-            ),
+            // Menghapus `colors` akan membuat Button otomatis menggunakan warna primary
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
@@ -312,7 +227,7 @@ fun RegisterScreen(
             when (uiState) {
                 AuthUiState.Loading -> CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary // Warna progress di atas tombol primary
                 )
                 else -> Text("Register", fontSize = 16.sp)
             }
@@ -322,12 +237,14 @@ fun RegisterScreen(
 
         TextButton(
             onClick = onNavigateToLogin,
-            enabled = uiState !is AuthUiState.Loading // Nonaktifkan saat loading
+            enabled = uiState !is AuthUiState.Loading
         ) {
             Text(
                 buildAnnotatedString {
-                    append("Already have an account? ")
-                    withStyle(SpanStyle(color = Color(0xFF1F2343), fontWeight = FontWeight.Bold)) {
+                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
+                        append("Already have an account? ")
+                    }
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
                         append("Login")
                     }
                 }

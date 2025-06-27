@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
@@ -30,6 +31,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.sources.remote.UserUiState
+import com.cognifyteam.cognifyapp.ui.FabState
+import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.FollowViewModel
 import com.cognifyteam.cognifyapp.ui.common.SearchUiState
 import com.cognifyteam.cognifyapp.ui.common.SearchViewModel
@@ -38,9 +41,28 @@ import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSearchScreen(
-    appContainer: AppContainer
+    appContainer: AppContainer,
     // navController: NavController // Mungkin akan dibutuhkan nanti
+    onFabStateChange: (FabState) -> Unit,
+    onTopBarStateChange: (TopBarState) -> Unit,
+    onShowSnackbar: (String) -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        // --- Konfigurasi FAB untuk UserSearchScreen ---
+        onFabStateChange(FabState(
+            isVisible = false,
+        ))
+        onTopBarStateChange(TopBarState( // Konfigurasi eksplisit untuk Top Bar
+            isVisible = true,
+            title = "Search Users",
+            navigationIcon = {
+                IconButton(onClick = { /* Handle back navigation */ }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+            },
+            actions = null
+        ))
+    }
     // --- Inisialisasi ViewModel ---
     val searchViewModel: SearchViewModel = viewModel(
         factory = SearchViewModel.provideFactory(
@@ -73,23 +95,23 @@ fun UserSearchScreen(
             .background(Color(0xFFF8F9FA))
     ) {
         // Header (tidak berubah)
-        TopAppBar(
-            title = {
-                Text(
-                    "Search Users",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = { /* Handle back navigation */ }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.White
-            )
-        )
+//        TopAppBar(
+//            title = {
+//                Text(
+//                    "Search Users",
+//                    style = MaterialTheme.typography.titleLarge,
+//                    fontWeight = FontWeight.Medium
+//                )
+//            },
+//            navigationIcon = {
+//                IconButton(onClick = { /* Handle back navigation */ }) {
+//                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+//                }
+//            },
+//            colors = TopAppBarDefaults.topAppBarColors(
+//                containerColor = Color.White
+//            )
+//        )
 
         // Search Box (sekarang terhubung ke ViewModel)
         SearchBox(
