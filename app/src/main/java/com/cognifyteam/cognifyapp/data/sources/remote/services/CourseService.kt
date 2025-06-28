@@ -39,4 +39,6 @@ interface CourseService {
     suspend fun getUserCreatedCourses(
         @Path("firebaseId") userId: String
     ): BaseResponse<UserCoursesDataWrapper>
+
+
 }

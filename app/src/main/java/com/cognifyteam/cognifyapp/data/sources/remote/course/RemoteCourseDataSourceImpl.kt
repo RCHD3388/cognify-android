@@ -30,6 +30,8 @@ interface RemoteCourseDataSource {
     ): BaseResponse<CourseDataWrapper>
 
     suspend fun getUserCreatedCourses(firebaseId: String): BaseResponse<UserCoursesDataWrapper>
+
+
 }
 
 class RemoteCourseDataSourceImpl(

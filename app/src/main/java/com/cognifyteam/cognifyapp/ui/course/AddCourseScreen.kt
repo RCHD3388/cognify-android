@@ -2,7 +2,6 @@ package com.cognifyteam.cognifyapp.ui.course
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,15 +28,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.cognifyteam.cognifyapp.data.AppContainer
-import com.cognifyteam.cognifyapp.data.models.CourseJson
+
+import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionsManager
 import java.io.File
 import java.io.FileOutputStream
 
-// PERBAIKAN: Menggunakan snake_case agar konsisten dengan model API.
+
 data class CourseFormState(
     val course_name: String = "",
     val course_description: String = "",
@@ -56,13 +59,9 @@ fun AddCourseScreen(
     )
 
     val loggedInUser by appContainer.authRepository.loggedInUser.collectAsState(initial = null)
-
     var formState by remember { mutableStateOf(CourseFormState()) }
-    var showCategoryDropdown by remember { mutableStateOf(false) }
-
     val createCourseState by viewModel.createCourseState.collectAsState()
     val context = LocalContext.current
-
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -71,32 +70,18 @@ fun AddCourseScreen(
         }
     }
 
+    // Mengambil state sections dari ViewModel
+    val sections by viewModel.sections.collectAsState()
+
     LaunchedEffect(key1 = createCourseState) {
         when (val state = createCourseState) {
             is CourseViewModel.CreateCourseState.Success -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                formState = CourseFormState() // Reset form
                 navController.popBackStack()
                 viewModel.resetCreateCourseState()
             }
             is CourseViewModel.CreateCourseState.Error -> {
-                val errorMessage = state.message
-                Log.e("AddCourseScreen", "Error reported from ViewModel: $errorMessage")
-
-                // PERBAIKAN UTAMA: Menangani kasus 'data masuk tapi response error'
-                // Jika error disebabkan oleh JSON parsing (karena response server tidak lengkap)
-                // tapi kita tahu data sudah masuk, kita anggap sukses dari sisi UI.
-                if (errorMessage.contains("missing", ignoreCase = true) ||
-                    errorMessage.contains("JsonDataException", ignoreCase = true) ||
-                    errorMessage.contains("Expected a BEGIN_OBJECT but was BEGIN_ARRAY", ignoreCase = true)
-                ) {
-                    Toast.makeText(context, "Course created successfully!", Toast.LENGTH_LONG).show()
-                    formState = CourseFormState() // Reset form
-                    navController.popBackStack() // Kembali ke layar sebelumnya
-                } else {
-                    // Untuk error lainnya (misal: tidak ada internet)
-                    Toast.makeText(context, "Error: $errorMessage", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(context, "Error: ${state.message}", Toast.LENGTH_LONG).show()
                 viewModel.resetCreateCourseState()
             }
             else -> { /* Do nothing for Idle or Loading */ }
@@ -109,11 +94,7 @@ fun AddCourseScreen(
     )
     val isLoading = createCourseState is CourseViewModel.CreateCourseState.Loading
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
-    ) {
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FA))) {
         TopAppBar(
             title = { Text("Create Course", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium) },
             navigationIcon = {
@@ -131,6 +112,7 @@ fun AddCourseScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // --- UI UNTUK DETAIL COURSE ---
             CourseThumbnailSection(
                 selectedImageUri = formState.thumbnail_uri,
                 isError = formState.errors.containsKey("thumbnail_uri"),
@@ -160,6 +142,7 @@ fun AddCourseScreen(
                 supportingText = { formState.errors["course_description"]?.let { Text(it, color = MaterialTheme.colorScheme.error) } }
             )
 
+            var showCategoryDropdown by remember { mutableStateOf(false) }
             DropdownSection(
                 label = "Category *",
                 selectedValue = formState.category,
@@ -184,6 +167,18 @@ fun AddCourseScreen(
                 supportingText = { formState.errors["price"]?.let { Text(it, color = MaterialTheme.colorScheme.error) } ?: Text("Set to 0 for free course") }
             )
 
+            // --- UI BARU UNTUK MENGELOLA SECTIONS ---
+            Divider(modifier = Modifier.padding(vertical = 16.dp))
+            SectionsManager(
+                sections = sections,
+                onAddSection = viewModel::addSection,
+                onRemoveSection = viewModel::removeSection,
+                onAddMaterial = viewModel::addMaterialToSection,
+                onRemoveMaterial = viewModel::removeMaterialFromSection,
+                onUpdateMaterial = viewModel::updateMaterialInSection
+            )
+            // --- AKHIR DARI UI BARU ---
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
@@ -193,24 +188,25 @@ fun AddCourseScreen(
                         val thumbnailFile = formState.thumbnail_uri?.let { uriToFile(context, it) }
                         val currentUserId = loggedInUser?.firebaseId
 
-                        if (currentUserId == null) {
-                            Toast.makeText(context, "Error: User not logged in.", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        if (thumbnailFile == null) {
-                            Toast.makeText(context, "Failed to process thumbnail image.", Toast.LENGTH_SHORT).show()
+                        if (currentUserId == null || thumbnailFile == null) {
+                            Toast.makeText(context, "User or thumbnail is missing.", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
+                        val courseName = formState.course_name.trim()
+                        val courseDescription = formState.course_description.trim()
+                        val coursePrice = formState.price.toIntOrNull() ?: 0
+                        val categoryId = (categories.indexOf(formState.category) + 1).toString()
 
-
-                        val course_name = formState.course_name.trim()
-                        val course_description = formState.course_description.trim()
-                        val course_owner = currentUserId
-                        val course_price = formState.price.toIntOrNull() ?: 0
-                        val category_id = (categories.indexOf(formState.category) + 1).toString()
-
-                        viewModel.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile)
+                        // PANGGIL FUNGSI BARU DI VIEWMODEL UNTUK MENGIRIM SEMUA DATA
+                        viewModel.createCourseWithContents(
+                            course_name = courseName,
+                            course_description = courseDescription,
+                            course_owner = currentUserId,
+                            course_price = coursePrice,
+                            category_id = categoryId,
+                            thumbnailFile = thumbnailFile
+                        )
 
                     } else {
                         formState = formState.copy(errors = errors)
@@ -224,28 +220,12 @@ fun AddCourseScreen(
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Create Course", style = MaterialTheme.typography.titleMedium)
+                    Text("Create Course & Content", style = MaterialTheme.typography.titleMedium)
                 }
             }
         }
     }
 }
-
-private fun uriToFile(context: Context, uri: Uri): File? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val file = File(context.cacheDir, "temp_thumbnail_${System.currentTimeMillis()}.jpg")
-        val outputStream = FileOutputStream(file)
-        inputStream?.copyTo(outputStream)
-        inputStream?.close()
-        outputStream.close()
-        file
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
 
 @Composable
 fun CourseThumbnailSection(
@@ -301,7 +281,6 @@ fun CourseThumbnailSection(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DropdownSection(
@@ -342,8 +321,21 @@ fun DropdownSection(
     }
 }
 
+private fun uriToFile(context: Context, uri: Uri): File? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val file = File(context.cacheDir, "temp_thumbnail_${System.currentTimeMillis()}.jpg")
+        val outputStream = FileOutputStream(file)
+        inputStream?.copyTo(outputStream)
+        inputStream?.close()
+        outputStream.close()
+        file
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 
-// PERBAIKAN: Menyesuaikan validasi dengan state snake_case.
 fun validateForm(formState: CourseFormState): Map<String, String> {
     val errors = mutableMapOf<String, String>()
 
@@ -357,3 +349,7 @@ fun validateForm(formState: CourseFormState): Map<String, String> {
 
     return errors
 }
+
+
+
+
