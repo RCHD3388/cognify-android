@@ -73,6 +73,7 @@ import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
+import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,11 +82,17 @@ fun ProfilePage(
     authViewModel: AuthViewModel,
     profileViewModel: ProfileViewModel,
     userCoursesViewModel: UserCoursesViewModel,
+    userViewModel: UserViewModel,
     firebaseId: String,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit
 ) {
+    val loggedInUser by userViewModel.userState.collectAsState()
+
+    // --- Tentukan apakah ini profil milik sendiri ---
+    val isMyProfile = loggedInUser?.firebaseId == firebaseId
+
     val isLoading by profileViewModel.isLoading.observeAsState(initial = false)
     val userProfile by profileViewModel.userProfile.observeAsState()
     val error by profileViewModel.error.observeAsState()
@@ -99,7 +106,7 @@ fun ProfilePage(
         userCoursesViewModel.initialize(firebaseId)
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(TopBarState(isVisible = true,
-            title = "Profile",
+            title = (if (isMyProfile) "My Profile" else "User Profile"),
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
@@ -110,14 +117,10 @@ fun ProfilePage(
                 }
             },
             actions = {
-                IconButton(onClick = {
-                    authViewModel.logout()
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = "Logout",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                if (isMyProfile) {
+                    IconButton(onClick = { authViewModel.logout() }) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
+                    }
                 }
             }
             ))
@@ -134,21 +137,21 @@ fun ProfilePage(
             Text(text = error!!, color = MaterialTheme.colorScheme.error)
         } else if (userProfile != null) {
             // Jika data berhasil dimuat, tampilkan konten utama
-            ProfileContent(user = userProfile!!, coursesState = coursesState, navController = navController, profileViewModel = profileViewModel)
+            ProfileContent(user = userProfile!!, isMyProfile = isMyProfile, coursesState = coursesState, navController = navController, profileViewModel = profileViewModel)
         }
     }
 }
 
 @Composable
-fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: NavController, profileViewModel: ProfileViewModel) {
+fun ProfileContent(user: User, isMyProfile: Boolean, coursesState: UserCoursesUiState, navController: NavController, profileViewModel: ProfileViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
         // Berikan objek User ke ProfileHeader
-        ProfileHeader(user = user)
-        AboutMeSection(user = user, viewModel = profileViewModel)
+        ProfileHeader(user = user, isMyProfile)
+        AboutMeSection(user = user, viewModel = profileViewModel, isMyProfile)
         EnrolledCoursesSection(
             coursesState = coursesState,
             navController = navController
@@ -157,7 +160,7 @@ fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: 
 }
 
 @Composable
-fun ProfileHeader(user: User) {
+fun ProfileHeader(user: User, isMyProfile: Boolean) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -177,20 +180,17 @@ fun ProfileHeader(user: User) {
                 error = painterResource(id = R.drawable.robot)
             )
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(36.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .clickable { /* Handle edit profile */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "Edit Profile",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
+            if (isMyProfile) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(36.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .clickable { /* Handle edit profile picture */ },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Profile Picture")
+                }
             }
         }
 
@@ -240,7 +240,7 @@ fun StatItem(number: String, label: String) {
 }
 
 @Composable
-fun AboutMeSection(user: User, viewModel: ProfileViewModel) {
+fun AboutMeSection(user: User, viewModel: ProfileViewModel, isMyProfile: Boolean) {
     // State untuk mengontrol mode edit
     var isEditing by rememberSaveable { mutableStateOf(false) }
     // State untuk menampung teks yang sedang diedit
@@ -285,36 +285,45 @@ fun AboutMeSection(user: User, viewModel: ProfileViewModel) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 // Tombol aksi berubah tergantung mode edit
-                if (isEditing) {
-                    Row {
-                        // Tombol Cancel
-                        TextButton(
-                            onClick = {
-                                // Batalkan perubahan dan kembali ke mode tampilan
-                                isEditing = false
-                            },
-                            enabled = !isLoadingUpdate
-                        ) {
-                            Text("Cancel")
+                if (isMyProfile) {
+                    if (isEditing) {
+                        Row {
+                            // Tombol Cancel
+                            TextButton(
+                                onClick = {
+                                    // Batalkan perubahan dan kembali ke mode tampilan
+                                    isEditing = false
+                                },
+                                enabled = !isLoadingUpdate
+                            ) {
+                                Text("Cancel")
+                            }
+                            // Tombol Save
+                            TextButton(
+                                onClick = {
+                                    viewModel.updateProfile(
+                                        user.firebaseId,
+                                        user.name,
+                                        descriptionText
+                                    )
+                                },
+                                enabled = !isLoadingUpdate
+                            ) {
+                                Text("Save", fontWeight = FontWeight.Bold)
+                            }
                         }
-                        // Tombol Save
-                        TextButton(
-                            onClick = {
-                                viewModel.updateProfile(user.firebaseId, user.name, descriptionText)
-                            },
-                            enabled = !isLoadingUpdate
+                    } else {
+                        // Tombol Edit
+                        IconButton(
+                            onClick = { isEditing = true },
+                            modifier = Modifier.size(24.dp)
                         ) {
-                            Text("Save", fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Description",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
-                    }
-                } else {
-                    // Tombol Edit
-                    IconButton(onClick = { isEditing = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Description",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }

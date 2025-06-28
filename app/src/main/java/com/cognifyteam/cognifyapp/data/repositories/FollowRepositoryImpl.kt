@@ -19,21 +19,37 @@ class FollowRepositoryImpl(
 ) : FollowRepository {
 
     override suspend fun getFollowing(userId: String): Result<List<User>> {
-        return try {
+        try {
+            // --- JALUR NETWORK ---
             val response = remoteDataSource.getFollowing(userId)
             val users = response.data.map { User.fromJson(it) }
 
-            // Sinkronisasi ke cache
-            localDataSource.clearFollowingForUser(userId)
-            val crossRefs = users.map { FollowsCrossRef(followerId = userId, followingId = it.firebaseId) }
-            localDataSource.insertFollows(crossRefs)
+            // --- SINKRONISASI CACHE ---
+            // 1. Simpan data pengguna yang didapat ke dalam tabel 'users'
+            if (users.isNotEmpty()) {
+                localDataSource.upsertUsers(users.map { it.toEntity() })
+            }
 
-            Result.success(users)
+            // 2. Bersihkan relasi 'following' yang lama untuk user ini
+            localDataSource.clearFollowingForUser(userId)
+
+            // 3. Masukkan relasi 'following' yang baru
+            if (users.isNotEmpty()) {
+                val crossRefs = users.map { FollowsCrossRef(followerId = userId, followingId = it.firebaseId) }
+                localDataSource.insertFollows(crossRefs)
+            }
+
+            return Result.success(users)
+
         } catch (e: Exception) {
-            try {
+            // --- JALUR CACHE (FALLBACK) ---
+            println("Failed to fetch 'following' from network, using cache. Error: ${e.message}")
+            // Bungkus logika cache dalam Result.runCatching untuk keamanan
+            return Result.runCatching {
                 val userWithFollowing = localDataSource.getFollowing(userId)
-                Result.success(userWithFollowing?.following?.map { User.fromEntity(it) } ?: emptyList())
-            } catch (cacheError: Exception) { Result.failure(cacheError) }
+                // Jika tidak ada apa-apa di cache, kembalikan list kosong
+                userWithFollowing?.following?.map { User.fromEntity(it) } ?: emptyList()
+            }
         }
     }
 

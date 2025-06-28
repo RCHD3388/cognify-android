@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.data.sources.local.dao
 
 import androidx.room.*
 import com.cognifyteam.cognifyapp.data.models.FollowsCrossRef
+import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.models.UserWithFollowers
 import com.cognifyteam.cognifyapp.data.models.UserWithFollowing
 
@@ -24,4 +25,7 @@ interface FollowDao {
     @Transaction
     @Query("SELECT * FROM users WHERE firebaseId = :userId")
     suspend fun getFollowers(userId: String): UserWithFollowers?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertUsers(users: List<UserEntity>)
 }

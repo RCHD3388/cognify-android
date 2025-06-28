@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,6 +39,7 @@ import com.cognifyteam.cognifyapp.ui.common.FollowViewModel
 import com.cognifyteam.cognifyapp.ui.common.SearchUiState
 import com.cognifyteam.cognifyapp.ui.common.SearchViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.navigation.AppNavRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,6 +88,7 @@ fun UserSearchScreen(
     // Muat daftar 'following' dari user yang login sekali saja
     LaunchedEffect(loggedInUser) {
         loggedInUser?.firebaseId?.let {
+            Log.d("SearchScreen", "User is available: $it. Loading initial state.")
             searchViewModel.loadInitialFollowingState(it)
         }
     }
@@ -141,7 +144,7 @@ fun UserSearchScreen(
                 }
             }
             is SearchUiState.EmptyResult -> {
-                SearchResultsSection(users = emptyList(), searchQuery = searchQuery, onFollowClick = {userId, isFollowing -> })
+                SearchResultsSection(users = emptyList(), searchQuery = searchQuery, onFollowClick = {userId, isFollowing -> }, onUserClick = {userId -> })
             }
             is SearchUiState.Success -> {
                 SearchResultsSection(
@@ -157,6 +160,11 @@ fun UserSearchScreen(
                             // Update UI secara optimis
                             searchViewModel.toggleFollowState(userIdToFollow)
                         }
+                    },
+                    onUserClick = { userId ->
+                        // Buat rute yang benar dengan mengganti placeholder
+                        val route = AppNavRoutes.USER_PROFILE.replace("{firebaseId}", userId)
+                        navController.navigate(route)
                     }
                 )
             }
@@ -216,7 +224,8 @@ fun SearchBox(
 fun SearchResultsSection(
     users: List<UserUiState>,
     searchQuery: String,
-    onFollowClick: (userId: String, isCurrentlyFollowing: Boolean) -> Unit
+    onFollowClick: (userId: String, isCurrentlyFollowing: Boolean) -> Unit,
+    onUserClick: (userId: String) -> Unit,
 ) {
     if (users.isEmpty() && searchQuery.isNotEmpty()) {
         Box(
@@ -254,8 +263,10 @@ fun SearchResultsSection(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(users, key = { it.user.firebaseId }) { uiUser ->
+                Log.d("test", uiUser.user.toString() + " ---- " + uiUser.isFollowing)
                 UserCard(
                     uiUser = uiUser,
+                    onClick = { onUserClick(uiUser.user.firebaseId) },
                     onFollowClick = { onFollowClick(uiUser.user.firebaseId, uiUser.isFollowing) }
                 )
             }
@@ -266,13 +277,14 @@ fun SearchResultsSection(
 @Composable
 fun UserCard(
     uiUser: UserUiState,
+    onClick: () -> Unit,
     onFollowClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val user = uiUser.user // Ekstrak model domain asli
 
     Card(
-        modifier = modifier.fillMaxWidth().clickable { /* Navigasi ke profil user */ },
+        modifier = modifier.fillMaxWidth().clickable { onClick() },
         // ...
     ) {
         Row(
