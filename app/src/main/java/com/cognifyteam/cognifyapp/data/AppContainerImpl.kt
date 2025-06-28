@@ -67,7 +67,7 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
         CourseRepositoryImpl(
             LocalCourseDataSourceImpl(AppDatabase.getInstance(applicationContext).courseDao()),
             RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java)),
-            moshi
+
         )
     }
 

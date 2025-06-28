@@ -30,7 +30,7 @@ data class CourseJson(
     val course_owner: String,
 
     @Json(name="course_price")
-    val course_price: Int,
+    val course_price: String,
 
     @Json(name = "category_id")
     val category_id: String,
@@ -44,6 +44,16 @@ data class CourseJson(
     val course_thumbnail: String?
 )
 
+//wrapper untuk course yang dibuat oleh user
+@JsonClass(generateAdapter = true)
+data class UserCoursesDataWrapper(
+    @Json(name = "message")
+    val message: String,
+
+    @Json(name = "data")
+    val data: List<CourseJson>
+)
+
 @Entity(tableName = "courses")
 data class CourseEntity(
     @PrimaryKey
@@ -52,7 +62,8 @@ data class CourseEntity(
     val description: String,
     val rating: String,
     val thumbnail: String,
-    val price: Int
+    val price: Int,
+    val course_owner: String
 )
 
 @Parcelize
@@ -62,17 +73,25 @@ data class Course(
     val description: String,
     val rating: String,
     val thumbnail: String,
-    val price: Int
+    val price: String,
+    val course_owner: String = ""
 ) : Parcelable {
     companion object {
         fun fromJson(json: CourseJson): Course {
+            val fullThumbnailUrl = if (!json.course_thumbnail.isNullOrBlank()) {
+                // Hapus garis miring di awal jika ada, untuk menghindari URL ganda seperti http://...//uploads
+                val cleanPath = json.course_thumbnail.removePrefix("/")
+                "http://10.0.2.2:3000/$cleanPath"
+            } else {
+                json.course_thumbnail
+            }
             return Course(
                 // Tambahkan pengecekan null untuk keamanan
                 courseId = json.course_id ?: "",
                 name = json.course_name,
                 description = json.course_description,
                 rating = json.course_rating ?: "0.0",
-                thumbnail = json.course_thumbnail ?: "",
+                thumbnail = fullThumbnailUrl ?: "",
                 price = json.course_price
             )
         }
@@ -84,7 +103,7 @@ data class Course(
                 description = entity.description,
                 rating = entity.rating,
                 thumbnail = entity.thumbnail,
-                price = entity.price
+                price = entity.price.toString()
             )
         }
     }
@@ -96,7 +115,8 @@ data class Course(
             description = this.description,
             rating = this.rating,
             thumbnail = this.thumbnail,
-            price = this.price
+            price = this.price.toInt(),
+            course_owner = this.course_owner
         )
     }
 }

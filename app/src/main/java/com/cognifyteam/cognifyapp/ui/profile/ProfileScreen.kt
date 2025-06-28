@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
@@ -64,6 +65,9 @@ import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
+// --- BARU: Import ViewModel dan State yang dibutuhkan ---
+import com.cognifyteam.cognifyapp.ui.course.CourseUiState
+import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
 
 // Theme colors consistent with other screens
 private val PrimaryColor = Color(0xFF1F2343)
@@ -79,13 +83,18 @@ fun ProfilePage(
     authViewModel: AuthViewModel,
     profileViewModel: ProfileViewModel,
     userCoursesViewModel: UserCoursesViewModel,
+    // --- BARU: Tambahkan CourseViewModel sebagai parameter ---
+    courseViewModel: CourseViewModel,
     firebaseId: String
 ) {
     val isLoading by profileViewModel.isLoading.observeAsState(initial = false)
     val userProfile by profileViewModel.userProfile.observeAsState()
     val error by profileViewModel.error.observeAsState()
 
-    val coursesState by userCoursesViewModel.uiState.collectAsState()
+    val enrolledCoursesState by userCoursesViewModel.uiState.collectAsState()
+    // --- BARU: Ambil state untuk course yang dibuat ---
+    val createdCoursesState by courseViewModel.uiState.collectAsState()
+
     val authState by authViewModel.uiState.observeAsState()
     val context = LocalContext.current
 
@@ -101,6 +110,7 @@ fun ProfilePage(
     LaunchedEffect(key1 = firebaseId) {
         profileViewModel.loadProfile(firebaseId)
         userCoursesViewModel.loadEnrolledCourses(firebaseId)
+        courseViewModel.loadCreateCourses(firebaseId)
     }
 
     Scaffold(
@@ -146,36 +156,212 @@ fun ProfilePage(
                 .padding(innerPadding),
             contentAlignment = Alignment.Center
         ) {
-            // Gunakan if-else untuk menampilkan UI berdasarkan state
             if (isLoading) {
                 CircularProgressIndicator()
             } else if (error != null) {
                 Text(text = error!!, color = Color.Red)
             } else if (userProfile != null) {
-                // Jika data berhasil dimuat, tampilkan konten utama
-                ProfileContent(user = userProfile!!, coursesState = coursesState, navController = navController)
+                // --- BARU: Teruskan state baru ke ProfileContent ---
+                ProfileContent(
+                    user = userProfile!!,
+                    enrolledCoursesState = enrolledCoursesState,
+                    createdCoursesState = createdCoursesState,
+                    navController = navController
+                )
             }
         }
     }
 }
 
 @Composable
-fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: NavController) {
+fun ProfileContent(
+    user: User,
+    enrolledCoursesState: UserCoursesUiState,
+    // --- BARU: Tambahkan parameter untuk state course yang dibuat ---
+    createdCoursesState: CourseUiState,
+    navController: NavController
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Berikan objek User ke ProfileHeader
         ProfileHeader(user = user)
         AboutMeSection()
         MySkillsSection()
         EnrolledCoursesSection(
-            coursesState = coursesState,
+            coursesState = enrolledCoursesState,
             navController = navController
         )
+        // --- BARU: Panggil section baru di sini ---
+        MyCreatedCoursesSection(
+            coursesState = createdCoursesState,
+            navController = navController
+        )
+        Spacer(modifier = Modifier.height(24.dp)) // Tambah spasi di bawah
     }
 }
+
+
+// =======================================================================
+// --- BARU: SECTION DAN CARD UNTUK "MY CREATED COURSES" ---
+// =======================================================================
+
+@Composable
+fun MyCreatedCoursesSection(coursesState: CourseUiState, navController: NavController) {
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "My Created Courses",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            TextButton(
+                onClick = { /* Handle See All Created Courses */ }
+            ) {
+                Text(
+                    "See All",
+                    color = PrimaryColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+//        // Gunakan when untuk menangani semua state dari CourseUiState
+        when (coursesState) {
+            is CourseUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            is CourseUiState.Success -> {
+
+                if (coursesState.courses.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(top = 12.dp)
+                    ) {
+                        items(coursesState.courses) { course ->
+                            // Gunakan Card yang didesain untuk menampilkan course yang dibuat
+                            CreatedCourseCard(
+                                title = course.name,
+                                description = course.description,
+                                imageUrl =  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=300&h=200&fit=crop", // Ganti dengan URL gambar dari course
+                                rating = course.rating,
+                                onCourseClick = {
+                                    // Arahkan ke halaman detail atau edit course
+                                    // navController.navigate("edit_course/${course.courseId}")
+                                }
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "You haven't created any courses yet.",
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        color = TextSecondary
+                    )
+                }
+            }
+            is CourseUiState.Error -> {
+                Text(
+                    text = coursesState.message,
+                    color = Color.Red,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CreatedCourseCard(
+    title: String,
+    description: String,
+    imageUrl: String,
+    rating : String,
+    onCourseClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(200.dp)
+            .height(240.dp) // Sedikit lebih pendek karena tidak ada progress bar
+            .clickable(onClick = onCourseClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
+            )
+
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxSize(), // Gunakan sisa ruang
+                verticalArrangement = Arrangement.SpaceBetween // Dorong deskripsi ke bawah
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically // Agar ikon dan teks sejajar
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Rating",
+                        modifier = Modifier.size(16.dp), // Sesuaikan ukuran ikon
+                        tint = Color(0xFFF59E0B) // Warna kuning keemasan untuk bintang
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp)) // Beri sedikit jarak
+
+                    Text(
+                        text = rating,
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+
+// =======================================================================
+// --- KODE LAMA (TIDAK ADA PERUBAHAN) ---
+// =======================================================================
 
 @Composable
 fun ProfileHeader(user: User) {
@@ -374,7 +560,6 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
 
         when (coursesState) {
             is UserCoursesUiState.Loading -> {
-                // Tampilkan loading di bagian ini
                 Box(
                     modifier = Modifier.fillMaxWidth().height(100.dp),
                     contentAlignment = Alignment.Center
@@ -383,7 +568,6 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                 }
             }
             is UserCoursesUiState.Success -> {
-                // Jika sukses dan ada kursus, tampilkan LazyRow
                 if (coursesState.courses.isNotEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -392,10 +576,10 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                         items(coursesState.courses) { course ->
                             CourseCard(
                                 title = course.name,
-                                author = course.description, // Ganti dengan data author jika ada
+                                author = course.description,
                                 rating = course.rating.toFloatOrNull() ?: 0f,
-                                progress = (30..85).random(), // Progress masih statis/acak
-                                imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop", // Ganti jika ada URL gambar
+                                progress = (30..85).random(),
+                                imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop",
                                 onCourseClick = {
                                     navController.navigate("course_details/${course.courseId}")
                                 }
@@ -403,7 +587,6 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                         }
                     }
                 } else {
-                    // Jika sukses tapi tidak ada kursus
                     Text(
                         text = "You haven't enrolled in any courses yet.",
                         modifier = Modifier.padding(vertical = 16.dp)
@@ -411,7 +594,6 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                 }
             }
             is UserCoursesUiState.Error -> {
-                // Jika error, tampilkan pesan error
                 Text(
                     text = coursesState.message,
                     color = Color.Red,

@@ -202,17 +202,15 @@ fun AddCourseScreen(
                             return@Button
                         }
 
-                        val courseJsonToSend = CourseJson(
-                            course_id = null,
-                            course_name = formState.course_name.trim(),
-                            course_description = formState.course_description.trim(),
-                            course_owner = currentUserId,
-                            course_price = formState.price.toIntOrNull() ?: 0,
-                            category_id = (categories.indexOf(formState.category) + 1).toString(),
-                            course_rating = null,
-                            course_thumbnail = null
-                        )
-                        viewModel.createCourse(courseJsonToSend, thumbnailFile)
+
+
+                        val course_name = formState.course_name.trim()
+                        val course_description = formState.course_description.trim()
+                        val course_owner = currentUserId
+                        val course_price = formState.price.toIntOrNull() ?: 0
+                        val category_id = (categories.indexOf(formState.category) + 1).toString()
+
+                        viewModel.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile)
 
                     } else {
                         formState = formState.copy(errors = errors)

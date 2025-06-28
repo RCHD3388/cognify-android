@@ -16,4 +16,12 @@ interface CourseDao {
     @Transaction
     @Query("SELECT * FROM users WHERE firebaseId = :firebaseId")
     suspend fun getUserWithCourses(firebaseId: String): UserWithCourses?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun createCourse(course: CourseEntity): Long
+
+    @Query("SELECT * FROM courses WHERE course_owner = :firebaseId")
+    suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity>
+
+
 }
