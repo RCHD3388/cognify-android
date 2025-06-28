@@ -96,7 +96,7 @@ fun ProfilePage(
 
     LaunchedEffect(key1 = firebaseId) {
         profileViewModel.loadProfile(firebaseId)
-        userCoursesViewModel.loadEnrolledCourses(firebaseId)
+        userCoursesViewModel.initialize(firebaseId)
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(TopBarState(isVisible = true,
             title = "Profile",
@@ -370,7 +370,9 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                 color = MaterialTheme.colorScheme.onBackground
             )
             TextButton(
-                onClick = { /* Handle See All */ }
+                onClick = {
+                    navController.navigate("allcourse")
+                }
             ) {
                 Text(
                     "See All",

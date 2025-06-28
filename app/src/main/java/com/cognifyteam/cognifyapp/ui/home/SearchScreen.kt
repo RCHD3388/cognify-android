@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.sources.remote.UserUiState
@@ -42,7 +43,7 @@ import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 @Composable
 fun UserSearchScreen(
     appContainer: AppContainer,
-    // navController: NavController // Mungkin akan dibutuhkan nanti
+     navController: NavController, // Mungkin akan dibutuhkan nanti
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit
@@ -56,7 +57,7 @@ fun UserSearchScreen(
             isVisible = true,
             title = "Search Users",
             navigationIcon = {
-                IconButton(onClick = { /* Handle back navigation */ }) {
+                IconButton(onClick = { navController.popBackStack() }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
             },

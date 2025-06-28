@@ -46,7 +46,7 @@ class FollowRepositoryImpl(
     override suspend fun followUser(followerId: String, userIdToFollow: String): Result<Unit> {
         return try {
             // Backend tidak butuh followerId, karena sudah didapat dari token otentikasi
-            remoteDataSource.followUser(userIdToFollow)
+            remoteDataSource.followUser(userIdToFollow, followerId)
 
             // Update cache secara optimis menggunakan parameter yang diberikan
             localDataSource.insertFollow(FollowsCrossRef(followerId = followerId, followingId = userIdToFollow))
@@ -60,7 +60,7 @@ class FollowRepositoryImpl(
     override suspend fun unfollowUser(followerId: String, userIdToUnfollow: String): Result<Unit> {
         return try {
             // Backend tidak butuh followerId
-            remoteDataSource.unfollowUser(userIdToUnfollow)
+            remoteDataSource.unfollowUser(userIdToUnfollow, followerId)
 
             // Update cache secara optimis menggunakan parameter yang diberikan
             localDataSource.deleteFollow(FollowsCrossRef(followerId = followerId, followingId = userIdToUnfollow))

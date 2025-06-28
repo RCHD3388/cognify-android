@@ -9,8 +9,8 @@ import com.cognifyteam.cognifyapp.data.sources.remote.services.FollowService
 interface RemoteFollowDataSource {
     suspend fun getFollowing(userId: String): BaseResponse<List<UserJson>>
     suspend fun getFollowers(userId: String): BaseResponse<List<UserJson>>
-    suspend fun followUser(userIdToFollow: String): BaseResponse<GenericSuccessData>
-    suspend fun unfollowUser(userIdToUnfollow: String): BaseResponse<GenericSuccessData>
+    suspend fun followUser(userIdToFollow: String, firebaseId: String): BaseResponse<GenericSuccessData>
+    suspend fun unfollowUser(userIdToUnfollow: String, firebaseId: String): BaseResponse<GenericSuccessData>
     suspend fun searchUsers(query: String): BaseResponse<UserSearchData>
 }
 
@@ -26,12 +26,12 @@ class RemoteFollowDataSourceImpl(
         return followService.getFollowers(userId)
     }
 
-    override suspend fun followUser(userIdToFollow: String): BaseResponse<GenericSuccessData> {
-        return followService.followUser(userIdToFollow)
+    override suspend fun followUser(userIdToFollow: String, firebaseId: String): BaseResponse<GenericSuccessData> {
+        return followService.followUser(userIdToFollow, firebaseId)
     }
 
-    override suspend fun unfollowUser(userIdToUnfollow: String): BaseResponse<GenericSuccessData> {
-        return followService.unfollowUser(userIdToUnfollow)
+    override suspend fun unfollowUser(userIdToUnfollow: String, firebaseId: String): BaseResponse<GenericSuccessData> {
+        return followService.unfollowUser(userIdToUnfollow, firebaseId)
     }
 
     override suspend fun searchUsers(query: String): BaseResponse<UserSearchData> {

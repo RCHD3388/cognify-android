@@ -15,7 +15,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 interface CourseRepository {
-    suspend fun getEnrolledCourses(firebaseId: String): Result<List<Course>>
+    suspend fun getEnrolledCourses(firebaseId: String, query: String? = null): Result<List<Course>>
     suspend fun createCourse(courseData: CourseJson, thumbnailFile: File): Result<Course>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
@@ -26,9 +26,9 @@ class CourseRepositoryImpl(
     private val remoteDataSource: RemoteCourseDataSource,
     private val moshi: Moshi
 ) : CourseRepository {
-    override suspend fun getEnrolledCourses(firebaseId: String): Result<List<Course>> {
+    override suspend fun getEnrolledCourses(firebaseId: String, query: String?): Result<List<Course>> {
         try {
-            val response = remoteDataSource.getEnrolledCourses(firebaseId)
+            val response = remoteDataSource.getEnrolledCourses(firebaseId, query)
             val courseJsons = response.data.courses
             val courses = courseJsons.map { Course.fromJson(it) }
 

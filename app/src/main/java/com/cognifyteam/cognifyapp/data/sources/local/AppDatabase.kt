@@ -21,7 +21,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.ProfileDao
     UserCourseCrossRef::class,
     DiscussionEntity::class,
     FollowsCrossRef::class
-], version = 10)
+], version = 11)
 abstract class AppDatabase : RoomDatabase() {
 
      abstract fun authDao(): AuthDao

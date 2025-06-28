@@ -14,9 +14,14 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
 import okhttp3.RequestBody
+import retrofit2.http.Query
+
 interface CourseService {
     @GET("course/getUserCourse/{firebaseId}")
-    suspend fun getEnrolledCourses(@Path("firebaseId") firebaseId: String): BaseResponse<EnrolledCoursesData>
+    suspend fun getEnrolledCourses(
+        @Path("firebaseId") firebaseId: String,
+        @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
+    ): BaseResponse<EnrolledCoursesData>
 
     @Multipart
     @POST("course/createCourse")

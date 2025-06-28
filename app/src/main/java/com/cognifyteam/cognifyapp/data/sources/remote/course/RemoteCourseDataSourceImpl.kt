@@ -11,7 +11,7 @@ import okhttp3.RequestBody
 import retrofit2.Response
 
 interface RemoteCourseDataSource {
-    suspend fun getEnrolledCourses(firebaseId: String): BaseResponse<EnrolledCoursesData>
+    suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData>
     suspend fun createCourse(
         thumbnail: MultipartBody.Part,
         courseData: Map<String, RequestBody> // Kita buat lebih simpel dengan Map
@@ -22,8 +22,8 @@ class RemoteCourseDataSourceImpl(
     private val courseService: CourseService
 ) : RemoteCourseDataSource {
 
-    override suspend fun getEnrolledCourses(firebaseId: String): BaseResponse<EnrolledCoursesData> {
-        return courseService.getEnrolledCourses(firebaseId)
+    override suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData> {
+        return courseService.getEnrolledCourses(firebaseId, query)
     }
     override suspend fun createCourse(
         thumbnail: MultipartBody.Part,
