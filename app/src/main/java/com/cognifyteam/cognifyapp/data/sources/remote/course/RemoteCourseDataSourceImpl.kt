@@ -1,58 +1,64 @@
+// Berkas: data/sources/remote/course/RemoteCourseDataSource.kt
+
 package com.cognifyteam.cognifyapp.data.sources.remote.course
 
-import com.cognifyteam.cognifyapp.data.AppContainerImpl
-import com.cognifyteam.cognifyapp.data.models.Course
-import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
+import com.cognifyteam.cognifyapp.data.models.CourseJson
+import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
+import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import retrofit2.Response
 
 interface RemoteCourseDataSource {
+    // --- FUNGSI BARU ---
+    suspend fun getCourseById(courseId: String): BaseResponse<CourseDataWrapper>
+
     suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData>
     suspend fun createCourse(
         thumbnail: MultipartBody.Part,
-        courseData: Map<String, RequestBody> // Kita buat lebih simpel dengan Map
-    ): Result<Course>
+        course_name: RequestBody,
+        course_description: RequestBody,
+        course_owner: RequestBody,
+        course_price: RequestBody,
+        category_id: RequestBody
+    ): BaseResponse<CourseDataWrapper>
+
+    suspend fun getUserCreatedCourses(firebaseId: String): BaseResponse<UserCoursesDataWrapper>
 }
 
 class RemoteCourseDataSourceImpl(
     private val courseService: CourseService
 ) : RemoteCourseDataSource {
 
+    override suspend fun getCourseById(courseId: String): BaseResponse<CourseDataWrapper> {
+        return courseService.getCourseById(courseId)
+    }
+
     override suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData> {
         return courseService.getEnrolledCourses(firebaseId, query)
     }
     override suspend fun createCourse(
         thumbnail: MultipartBody.Part,
-        courseData: Map<String, RequestBody>
-    ): Result<Course> {
-        try {
-            val response = courseService.createCourse(
-                thumbnail = thumbnail,
-                courseName = courseData["course_name"]!!,
-                courseDescription = courseData["course_description"]!!,
-                courseOwner = courseData["course_owner"]!!,
-                coursePrice = courseData["course_price"]!!,
-                categoryId = courseData["category_id"]!!
-            )
-            // ... sisa logika try-catch Anda yang sudah benar ...
-            if (response.isSuccessful) {
-                val body = response.body()?.data
-                if (body?.data != null) {
-                    return Result.success(body.data)
-                } else {
-                    return Result.failure(Exception("Nested course data is null"))
-                }
-            } else {
-                val errorMsg = AppContainerImpl.parseErrorMessage(response.errorBody()?.string())
-                return Result.failure(Exception(errorMsg ?: "Failed to create course"))
-            }
-        } catch (e: Exception) {
-            return Result.failure(e)
-        }
+        courseName: RequestBody,
+        courseDescription: RequestBody,
+        courseOwner: RequestBody,
+        coursePrice: RequestBody,
+        categoryId: RequestBody
+    ): BaseResponse<CourseDataWrapper> {
+
+        return courseService.createCourse(
+            thumbnail = thumbnail,
+            course_name = courseName,
+            course_description = courseDescription,
+            course_owner = courseOwner,
+            course_price = coursePrice,
+            category_id = categoryId
+        )
     }
 
+    override suspend fun getUserCreatedCourses(firebaseId: String): BaseResponse<UserCoursesDataWrapper> {
+        return courseService.getUserCreatedCourses(firebaseId)
+    }
 }

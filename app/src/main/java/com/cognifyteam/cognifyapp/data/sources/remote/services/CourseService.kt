@@ -4,7 +4,13 @@ import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
 import com.cognifyteam.cognifyapp.data.models.CourseJson
+import com.cognifyteam.cognifyapp.data.models.DiscussionJson
+import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
+
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
+import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
+import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
+import com.cognifyteam.cognifyapp.data.sources.remote.CreateReplyRequest
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -23,14 +29,24 @@ interface CourseService {
         @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
     ): BaseResponse<EnrolledCoursesData>
 
+    @GET("course/{courseId}") // Sesuaikan dengan path route di backend Anda
+    suspend fun getCourseById(
+        @Path("courseId") courseId: String
+    ): BaseResponse<CourseDataWrapper>
+
     @Multipart
     @POST("course/createCourse")
     suspend fun createCourse(
         @Part thumbnail: MultipartBody.Part,
-        @Part("course_name") courseName: RequestBody,
-        @Part("course_description") courseDescription: RequestBody,
-        @Part("course_owner") courseOwner: RequestBody,
-        @Part("course_price") coursePrice: RequestBody,
-        @Part("category_id") categoryId: RequestBody
-    ): Response<ApiResponse<Course>>
+        @Part("course_name") course_name: RequestBody,
+        @Part("course_description") course_description: RequestBody,
+        @Part("course_owner") course_owner: RequestBody,
+        @Part("course_price") course_price: RequestBody,
+        @Part("category_id") category_id: RequestBody
+    ): BaseResponse<CourseDataWrapper>
+
+    @GET("course/courses/{firebaseId} ")
+    suspend fun getUserCreatedCourses(
+        @Path("firebaseId") userId: String
+    ): BaseResponse<UserCoursesDataWrapper>
 }

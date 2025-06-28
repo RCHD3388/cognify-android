@@ -20,6 +20,12 @@ interface LocalCourseDataSource {
      * Mengambil data user beserta semua kursus yang diikutinya dari database.
      */
     suspend fun getUserWithCourses(firebaseId: String): UserWithCourses?
+
+    //create course
+    suspend fun createCourse(course: CourseEntity): Long
+
+    //get user created courses
+    suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity>
 }
 
 class LocalCourseDataSourceImpl(
@@ -37,4 +43,14 @@ class LocalCourseDataSourceImpl(
     override suspend fun getUserWithCourses(firebaseId: String): UserWithCourses? {
         return courseDao.getUserWithCourses(firebaseId)
     }
+
+    override suspend fun createCourse(course: CourseEntity): Long {
+        return courseDao.createCourse(course)
+    }
+
+    override suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity> {
+        return courseDao.getUserCreatedCourses(firebaseId)
+    }
+
+
 }
