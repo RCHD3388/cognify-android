@@ -21,6 +21,7 @@ import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.course.AddCourseScreen
 import com.cognifyteam.cognifyapp.ui.course.CourseScreen
 import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
+import com.cognifyteam.cognifyapp.ui.course.SeeAllCoursesScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
 import com.cognifyteam.cognifyapp.ui.home.UserSearchScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
@@ -35,6 +36,7 @@ object AppNavRoutes {
     const val COURSE_DETAILS = "course_details/{courseId}"
     const val SEARCH = "search"
     const val COURSE = "course"
+    const val ALLCOURSE = "allcourse"
 }
 
 @Composable
@@ -81,6 +83,7 @@ fun AppNavGraph(
         composable(AppNavRoutes.SEARCH) {
             UserSearchScreen(
                 appContainer,
+                navController,
                 onFabStateChange = onFabStateChange,
                 onTopBarStateChange = onTopBarStateChange,
                 onShowSnackbar = onShowSnackbar // Meneruskan
@@ -134,6 +137,12 @@ fun AppNavGraph(
 //                Log.d("ProfileViewModel", "User not authenticated or firebaseId is null")
 //                authViewModel.logout()
             }
+        }
+
+        composable(AppNavRoutes.ALLCOURSE) {
+            SeeAllCoursesScreen(onFabStateChange = onFabStateChange,
+                onTopBarStateChange = onTopBarStateChange,
+                onShowSnackbar = onShowSnackbar, appContainer, onBackClick = { navController.popBackStack() }, onCourseClick = { courseId -> navController.navigate("course_details/$courseId") })
         }
 
         composable(

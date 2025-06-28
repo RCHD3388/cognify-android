@@ -20,18 +20,21 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.math.log
 
 interface CourseRepository {
-    suspend fun getEnrolledCourses(firebaseId: String): Result<List<Course>>
     suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File): Result<Course>
     suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>>
+    suspend fun getEnrolledCourses(firebaseId: String, query: String? = null): Result<List<Course>>
+}
+fun String.toPlainTextRequestBody(): RequestBody {
+    return this.toRequestBody("text/plain".toMediaTypeOrNull())
 }
 
 class CourseRepositoryImpl(
     private val localDataSource: LocalCourseDataSource,
     private val remoteDataSource: RemoteCourseDataSource,
 ) : CourseRepository {
-    override suspend fun getEnrolledCourses(firebaseId: String): Result<List<Course>> {
+    override suspend fun getEnrolledCourses(firebaseId: String, query: String?): Result<List<Course>> {
         try {
-            val response = remoteDataSource.getEnrolledCourses(firebaseId)
+            val response = remoteDataSource.getEnrolledCourses(firebaseId, query)
             val courseJsons = response.data.courses
             val courses = courseJsons.map { Course.fromJson(it) }
 

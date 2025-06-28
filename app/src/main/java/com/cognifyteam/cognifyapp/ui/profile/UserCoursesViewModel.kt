@@ -5,8 +5,15 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 /**
@@ -36,38 +43,59 @@ sealed interface UserCoursesUiState {
  * ViewModel yang bertanggung jawab untuk mengambil dan menampung
  * state dari daftar kursus yang diikuti oleh pengguna.
  */
+@OptIn(FlowPreview::class) // Diperlukan untuk menggunakan .debounce()
 class UserCoursesViewModel(
     private val courseRepository: CourseRepository
 ) : ViewModel() {
 
-    // StateFlow privat untuk menampung state, hanya bisa diubah di dalam ViewModel.
-    // Diinisialisasi dengan state Loading.
-    private val _uiState = MutableStateFlow<UserCoursesUiState>(UserCoursesUiState.Loading)
+    // StateFlow untuk menampung query pencarian dari UI
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // StateFlow publik yang hanya bisa dibaca (read-only) oleh UI.
-    val uiState: StateFlow<UserCoursesUiState> = _uiState
+    // StateFlow utama untuk UI, sekarang didasarkan pada perubahan searchQuery
+    private val _uiState = MutableStateFlow<UserCoursesUiState>(UserCoursesUiState.Loading)
+    val uiState: StateFlow<UserCoursesUiState> = _uiState.asStateFlow()
+
+    // ID user yang datanya sedang ditampilkan
+    private var currentFirebaseId: String? = null
 
     /**
-     * Memulai proses untuk mengambil daftar kursus yang diikuti dari repository.
-     * @param firebaseId ID dari pengguna yang kursusnya akan diambil.
+     * Fungsi inisialisasi yang dipanggil sekali oleh UI untuk memulai pemantauan.
      */
-    fun loadEnrolledCourses(firebaseId: String) {
+    fun initialize(firebaseId: String) {
+        if (firebaseId == currentFirebaseId) return // Hindari re-inisialisasi yang tidak perlu
+        currentFirebaseId = firebaseId
+
         viewModelScope.launch {
-            // Set state menjadi Loading setiap kali fungsi ini dipanggil
-            _uiState.value = UserCoursesUiState.Loading
-
-            // Panggil repository untuk mendapatkan hasilnya
-            val result = courseRepository.getEnrolledCourses(firebaseId)
-
-            // "Buka" hasil dari repository
-            result.onSuccess { courses ->
-                // Jika sukses, perbarui state dengan daftar kursus
-                _uiState.value = UserCoursesUiState.Success(courses)
-            }.onFailure { exception ->
-                // Jika gagal, perbarui state dengan pesan error
-                _uiState.value = UserCoursesUiState.Error(exception.message ?: "Failed to load courses")
-            }
+            _searchQuery
+                .debounce(300) // Tunggu 300ms setelah user berhenti mengetik
+                .distinctUntilChanged() // Hanya proses jika teks benar-benar berubah
+                .flatMapLatest { query ->
+                    // flatMapLatest akan membatalkan pemanggilan repository sebelumnya
+                    // jika ada query baru yang masuk.
+                    flow {
+                        val result = courseRepository.getEnrolledCourses(
+                            firebaseId = firebaseId,
+                            query = query.ifBlank { null }
+                        )
+                        result.onSuccess { courses ->
+                            emit(UserCoursesUiState.Success(courses))
+                        }.onFailure { exception ->
+                            emit(UserCoursesUiState.Error(exception.message ?: "Error"))
+                        }
+                    }.onStart { emit(UserCoursesUiState.Loading) } // Tampilkan loading setiap kali pencarian baru dimulai
+                }
+                .collect { state ->
+                    _uiState.value = state
+                }
         }
+    }
+
+    /**
+     * Fungsi yang dipanggil oleh UI setiap kali teks di SearchBox berubah.
+     */
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
     }
 
     /**

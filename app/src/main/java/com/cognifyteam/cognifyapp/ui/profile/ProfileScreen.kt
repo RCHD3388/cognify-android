@@ -123,6 +123,31 @@ fun ProfilePage(
         profileViewModel.loadProfile(firebaseId)
         userCoursesViewModel.loadEnrolledCourses(firebaseId)
         courseViewModel.loadCreateCourses(firebaseId)
+        userCoursesViewModel.initialize(firebaseId)
+        onFabStateChange(FabState(isVisible = false))
+        onTopBarStateChange(TopBarState(isVisible = true,
+            title = "Profile",
+            navigationIcon = {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = {
+                    authViewModel.logout()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            ))
     }
 
     Scaffold(
@@ -560,7 +585,9 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                 color = TextPrimary
             )
             TextButton(
-                onClick = { /* Handle See All */ }
+                onClick = {
+                    navController.navigate("allcourse")
+                }
             ) {
                 Text(
                     "See All",

@@ -33,18 +33,20 @@ interface FollowService {
      * Aksi untuk user yang sedang login untuk mengikuti user lain.
      * Endpoint: POST /api/v1/users/:userIdToFollow/follow
      */
-    @POST("users/{userIdToFollow}/follow")
+    @POST("users/{userIdToFollow}/follow/{firebaseId}")
     suspend fun followUser(
-        @Path("userIdToFollow") userIdToFollow: String
+        @Path("userIdToFollow") userIdToFollow: String,
+        @Path("firebaseId") firebaseId: String
     ): BaseResponse<GenericSuccessData> // API mengembalikan pesan sukses
 
     /**
      * Aksi untuk user yang sedang login untuk berhenti mengikuti user lain.
      * Endpoint: DELETE /api/v1/users/:userIdToUnfollow/unfollow
      */
-    @DELETE("users/{userIdToUnfollow}/unfollow")
+    @DELETE("users/{userIdToUnfollow}/unfollow/{firebaseId}")
     suspend fun unfollowUser(
-        @Path("userIdToUnfollow") userIdToUnfollow: String
+        @Path("userIdToUnfollow") userIdToUnfollow: String,
+        @Path("firebaseId") firebaseId: String
     ): BaseResponse<GenericSuccessData> // API juga mengembalikan pesan sukses
 
     @GET("users/search")
