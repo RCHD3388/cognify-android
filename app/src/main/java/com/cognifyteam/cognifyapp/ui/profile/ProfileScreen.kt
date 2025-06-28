@@ -132,7 +132,7 @@ fun ProfilePage(
                     Icon(
                         Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = PrimaryColor // Match the desired color
                     )
                 }
             },
@@ -143,69 +143,33 @@ fun ProfilePage(
                     Icon(
                         imageVector = Icons.Default.ExitToApp,
                         contentDescription = "Logout",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = PrimaryColor // Match the desired color
                     )
                 }
             }
-            ))
+        ))
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Profile",
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = PrimaryColor
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        authViewModel.logout()
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = PrimaryColor
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundColor
-                )
+    // --- FIX: REMOVED the Scaffold from here. The main Scaffold in AppMainScreen will handle the layout. ---
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundColor), // Set background color here
+        contentAlignment = Alignment.Center
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else if (error != null) {
+            Text(text = error!!, color = Color.Red)
+        } else if (userProfile != null) {
+            // --- BARU: Teruskan state baru ke ProfileContent ---
+            ProfileContent(
+                user = userProfile!!,
+                enrolledCoursesState = enrolledCoursesState,
+                createdCoursesState = createdCoursesState,
+                navController = navController
             )
-        },
-        containerColor = BackgroundColor
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator()
-            } else if (error != null) {
-                Text(text = error!!, color = Color.Red)
-            } else if (userProfile != null) {
-                // --- BARU: Teruskan state baru ke ProfileContent ---
-                ProfileContent(
-                    user = userProfile!!,
-                    enrolledCoursesState = enrolledCoursesState,
-                    createdCoursesState = createdCoursesState,
-                    navController = navController
-                )
-            }
         }
     }
 }

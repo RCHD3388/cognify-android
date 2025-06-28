@@ -59,6 +59,25 @@ class UserCoursesViewModel(
     // ID user yang datanya sedang ditampilkan
     private var currentFirebaseId: String? = null
 
+    fun loadEnrolledCourses(firebaseId: String) {
+        viewModelScope.launch {
+            // Set state menjadi Loading setiap kali fungsi ini dipanggil
+            _uiState.value = UserCoursesUiState.Loading
+
+            // Panggil repository untuk mendapatkan hasilnya
+            val result = courseRepository.getEnrolledCourses(firebaseId)
+
+            // "Buka" hasil dari repository
+            result.onSuccess { courses ->
+                // Jika sukses, perbarui state dengan daftar kursus
+                _uiState.value = UserCoursesUiState.Success(courses)
+            }.onFailure { exception ->
+                // Jika gagal, perbarui state dengan pesan error
+                _uiState.value = UserCoursesUiState.Error(exception.message ?: "Failed to load courses")
+            }
+        }
+    }
+
     /**
      * Fungsi inisialisasi yang dipanggil sekali oleh UI untuk memulai pemantauan.
      */
