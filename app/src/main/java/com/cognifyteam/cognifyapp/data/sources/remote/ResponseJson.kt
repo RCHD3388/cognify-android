@@ -55,6 +55,10 @@ data class DiscussionListData(
     @Json(name = "message") val message: String,
     @Json(name = "data") val discussions: List<DiscussionJson>
 )
+data class CourseDataWrapper(
+    val message: String,
+    val data: CourseJson
+)
 
 // DTO untuk mengirim data saat membuat post utama
 @JsonClass(generateAdapter = true)
@@ -71,6 +75,20 @@ data class CreatePostRequest(
 data class CreateReplyRequest(
     @Json(name = "content")
     val content: String
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateCourseRequest(
+    @Json(name = "course_name")
+    val course_name: String,
+    @Json(name = "course_description")
+    val course_description: String,
+    @Json(name = "course_owner")
+    val course_owner: String,
+    @Json(name = "course_price")
+    val course_price: Int,
+    @Json(name = "category_id")
+    val category_id: String
 )
 
 @JsonClass(generateAdapter = true)

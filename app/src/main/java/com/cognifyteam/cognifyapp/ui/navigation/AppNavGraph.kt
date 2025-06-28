@@ -1,6 +1,8 @@
 package com.cognifyteam.cognifyapp.ui.navigation
 
 import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,6 +20,7 @@ import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.course.AddCourseScreen
 import com.cognifyteam.cognifyapp.ui.course.CourseScreen
+import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
 import com.cognifyteam.cognifyapp.ui.home.UserSearchScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
@@ -107,6 +110,11 @@ fun AppNavGraph(
                         courseRepository = appContainer.courseRepository
                     )
                 )
+                val coursesViewModel: CourseViewModel = viewModel(
+                    factory = CourseViewModel.provideFactory(
+                        courseRepository = appContainer.courseRepository
+                    )
+                )
 
                 // Panggil ProfilePage dengan semua parameter yang dibutuhkan
 //                Log.d("ProfileViewModel", "ProfileViewModel created with firebaseId: $firebaseId")
@@ -118,8 +126,10 @@ fun AppNavGraph(
                     firebaseId = firebaseId, // Berikan ID user
                     onFabStateChange = onFabStateChange,
                     onTopBarStateChange = onTopBarStateChange,
-                    onShowSnackbar = onShowSnackbar // Meneruskan
+                    onShowSnackbar = onShowSnackbar, // Meneruskan
+                    courseViewModel = coursesViewModel
                 )
+
             } else {
 //                Log.d("ProfileViewModel", "User not authenticated or firebaseId is null")
 //                authViewModel.logout()

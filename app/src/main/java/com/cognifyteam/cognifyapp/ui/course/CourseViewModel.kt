@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.course
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.log
 
 /**
  * Sealed interface untuk merepresentasikan semua kemungkinan state UI
@@ -69,15 +71,28 @@ class CourseViewModel(
     val createCourseState: StateFlow<CreateCourseState> = _createCourseState.asStateFlow()
 
 
-    fun createCourse(courseData: CourseJson, thumbnailFile: File) {
+    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File) {
         viewModelScope.launch {
             _createCourseState.value = CreateCourseState.Loading
-            val result = courseRepository.createCourse(courseData, thumbnailFile)
+
+            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile)
 
             result.onSuccess { newCourse ->
                 _createCourseState.value = CreateCourseState.Success("Course '${newCourse.name}' berhasil dibuat!")
             }.onFailure { exception ->
                 _createCourseState.value = CreateCourseState.Error(exception.message ?: "Gagal membuat course")
+            }
+        }
+    }
+    fun loadCreateCourses(firebaseId : String) {
+        viewModelScope.launch {
+            _uiState.value = CourseUiState.Loading
+            val result = courseRepository.getUserCreatedCourses(firebaseId)
+            Log.d("CourseViewModel", "Result: $result")
+            result.onSuccess { courses ->
+                _uiState.value = CourseUiState.Success(courses)
+            }.onFailure { exception ->
+                _uiState.value = CourseUiState.Error("PESAN ERRORNYA " + exception.message ?: "Failed to load courses")
             }
         }
     }

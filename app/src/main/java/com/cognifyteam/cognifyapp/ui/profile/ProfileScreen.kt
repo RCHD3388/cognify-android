@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
@@ -73,6 +74,16 @@ import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
+// --- BARU: Import ViewModel dan State yang dibutuhkan ---
+import com.cognifyteam.cognifyapp.ui.course.CourseUiState
+import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
+
+// Theme colors consistent with other screens
+private val PrimaryColor = Color(0xFF1F2343)
+private val BackgroundColor = Color.White
+private val TextPrimary = Color.Black
+private val TextSecondary = Color.Gray
+private val SurfaceColor = Color(0xFFF8F9FA)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,63 +95,104 @@ fun ProfilePage(
     firebaseId: String,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
-    onShowSnackbar: (String) -> Unit
+    onShowSnackbar: (String) -> Unit,
+    // --- BARU: Tambahkan CourseViewModel sebagai parameter ---
+    courseViewModel: CourseViewModel,
 ) {
     val isLoading by profileViewModel.isLoading.observeAsState(initial = false)
     val userProfile by profileViewModel.userProfile.observeAsState()
     val error by profileViewModel.error.observeAsState()
 
-    val coursesState by userCoursesViewModel.uiState.collectAsState()
+    val enrolledCoursesState by userCoursesViewModel.uiState.collectAsState()
+    // --- BARU: Ambil state untuk course yang dibuat ---
+    val createdCoursesState by courseViewModel.uiState.collectAsState()
+
     val authState by authViewModel.uiState.observeAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(authState) {
+        if (authState is AuthUiState.Unauthenticated) {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            context.startActivity(intent)
+        }
+    }
 
     LaunchedEffect(key1 = firebaseId) {
         profileViewModel.loadProfile(firebaseId)
         userCoursesViewModel.loadEnrolledCourses(firebaseId)
-        onFabStateChange(FabState(isVisible = false))
-        onTopBarStateChange(TopBarState(isVisible = true,
-            title = "Profile",
-            navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = {
-                    authViewModel.logout()
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = "Logout",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            ))
+        courseViewModel.loadCreateCourses(firebaseId)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Gunakan if-else untuk menampilkan UI berdasarkan state
-        if (isLoading) {
-            CircularProgressIndicator()
-        } else if (error != null) {
-            Text(text = error!!, color = MaterialTheme.colorScheme.error)
-        } else if (userProfile != null) {
-            // Jika data berhasil dimuat, tampilkan konten utama
-            ProfileContent(user = userProfile!!, coursesState = coursesState, navController = navController, profileViewModel = profileViewModel)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Profile",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = PrimaryColor
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        authViewModel.logout()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = PrimaryColor
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BackgroundColor
+                )
+            )
+        },
+        containerColor = BackgroundColor
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else if (error != null) {
+                Text(text = error!!, color = Color.Red)
+            } else if (userProfile != null) {
+                // --- BARU: Teruskan state baru ke ProfileContent ---
+                ProfileContent(
+                    user = userProfile!!,
+                    enrolledCoursesState = enrolledCoursesState,
+                    createdCoursesState = createdCoursesState,
+                    navController = navController
+                )
+            }
         }
     }
 }
 
 @Composable
-fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: NavController, profileViewModel: ProfileViewModel) {
+fun ProfileContent(
+    user: User,
+    enrolledCoursesState: UserCoursesUiState,
+    // --- BARU: Tambahkan parameter untuk state course yang dibuat ---
+    createdCoursesState: CourseUiState,
+    navController: NavController
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -148,13 +200,181 @@ fun ProfileContent(user: User, coursesState: UserCoursesUiState, navController: 
     ) {
         // Berikan objek User ke ProfileHeader
         ProfileHeader(user = user)
-        AboutMeSection(user = user, viewModel = profileViewModel)
+        AboutMeSection()
+        MySkillsSection()
         EnrolledCoursesSection(
-            coursesState = coursesState,
+            coursesState = enrolledCoursesState,
             navController = navController
         )
+        // --- BARU: Panggil section baru di sini ---
+        MyCreatedCoursesSection(
+            coursesState = createdCoursesState,
+            navController = navController
+        )
+        Spacer(modifier = Modifier.height(24.dp)) // Tambah spasi di bawah
     }
 }
+
+
+// =======================================================================
+// --- BARU: SECTION DAN CARD UNTUK "MY CREATED COURSES" ---
+// =======================================================================
+
+@Composable
+fun MyCreatedCoursesSection(coursesState: CourseUiState, navController: NavController) {
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "My Created Courses",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            TextButton(
+                onClick = { /* Handle See All Created Courses */ }
+            ) {
+                Text(
+                    "See All",
+                    color = PrimaryColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+//        // Gunakan when untuk menangani semua state dari CourseUiState
+        when (coursesState) {
+            is CourseUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            is CourseUiState.Success -> {
+
+                if (coursesState.courses.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(top = 12.dp)
+                    ) {
+                        items(coursesState.courses) { course ->
+                            // Gunakan Card yang didesain untuk menampilkan course yang dibuat
+                            CreatedCourseCard(
+                                title = course.name,
+                                description = course.description,
+                                imageUrl =  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=300&h=200&fit=crop", // Ganti dengan URL gambar dari course
+                                rating = course.rating,
+                                onCourseClick = {
+                                    // Arahkan ke halaman detail atau edit course
+                                    // navController.navigate("edit_course/${course.courseId}")
+                                }
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "You haven't created any courses yet.",
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        color = TextSecondary
+                    )
+                }
+            }
+            is CourseUiState.Error -> {
+                Text(
+                    text = coursesState.message,
+                    color = Color.Red,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CreatedCourseCard(
+    title: String,
+    description: String,
+    imageUrl: String,
+    rating : String,
+    onCourseClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(200.dp)
+            .height(240.dp) // Sedikit lebih pendek karena tidak ada progress bar
+            .clickable(onClick = onCourseClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
+            )
+
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxSize(), // Gunakan sisa ruang
+                verticalArrangement = Arrangement.SpaceBetween // Dorong deskripsi ke bawah
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically // Agar ikon dan teks sejajar
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Rating",
+                        modifier = Modifier.size(16.dp), // Sesuaikan ukuran ikon
+                        tint = Color(0xFFF59E0B) // Warna kuning keemasan untuk bintang
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp)) // Beri sedikit jarak
+
+                    Text(
+                        text = rating,
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+
+// =======================================================================
+// --- KODE LAMA (TIDAK ADA PERUBAHAN) ---
+// =======================================================================
 
 @Composable
 fun ProfileHeader(user: User) {
@@ -171,7 +391,7 @@ fun ProfileHeader(user: User) {
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape),
+                    .border(3.dp, PrimaryColor, CircleShape),
                 contentScale = ContentScale.Crop,
                 placeholder = painterResource(id = R.drawable.robot),
                 error = painterResource(id = R.drawable.robot)
@@ -181,14 +401,14 @@ fun ProfileHeader(user: User) {
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .size(36.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .background(PrimaryColor, CircleShape)
                     .clickable { /* Handle edit profile */ },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Edit,
                     contentDescription = "Edit Profile",
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -200,12 +420,12 @@ fun ProfileHeader(user: User) {
             text = user.name,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = TextPrimary
         )
         Text(
-            text = "@" + user.role.replaceFirstChar { it.uppercase() }, // Contoh tagline dari role
+            text = user.role.replaceFirstChar { it.uppercase() }, // Contoh tagline dari role
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = TextSecondary,
             modifier = Modifier.padding(top = 4.dp)
         )
 
@@ -216,8 +436,9 @@ fun ProfileHeader(user: User) {
                 .padding(top = 20.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatItem(number = user.followersCount.toString(), label = "Followers")
-            StatItem(number = user.followingCount.toString(), label = "Following")
+            StatItem(number = "12", label = "Courses")
+            StatItem(number = "4.8", label = "Rating")
+            StatItem(number = "156", label = "Hours")
         }
     }
 }
@@ -229,129 +450,98 @@ fun StatItem(number: String, label: String) {
             text = number,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = PrimaryColor
         )
         Text(
             text = label,
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = TextSecondary
         )
     }
 }
 
 @Composable
-fun AboutMeSection(user: User, viewModel: ProfileViewModel) {
-    // State untuk mengontrol mode edit
-    var isEditing by rememberSaveable { mutableStateOf(false) }
-    // State untuk menampung teks yang sedang diedit
-    var descriptionText by remember { mutableStateOf(user.description ?: "") }
-
-    LaunchedEffect(isEditing) {
-        if (isEditing) {
-            descriptionText = user.description ?: ""
-        }
-    }
-
-    val isLoadingUpdate by viewModel.isLoading.observeAsState(false)
-    val updateResults by viewModel.updateResult.observeAsState()
-
-    LaunchedEffect(updateResults) {
-        updateResults?.onSuccess { updatedUser ->
-            isEditing = false
-        }
-        // TODO: Handle onFailure untuk menampilkan Toast error
-    }
-
+fun AboutMeSection() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "About Me",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                // Tombol aksi berubah tergantung mode edit
-                if (isEditing) {
-                    Row {
-                        // Tombol Cancel
-                        TextButton(
-                            onClick = {
-                                // Batalkan perubahan dan kembali ke mode tampilan
-                                isEditing = false
-                            },
-                            enabled = !isLoadingUpdate
-                        ) {
-                            Text("Cancel")
-                        }
-                        // Tombol Save
-                        TextButton(
-                            onClick = {
-                                viewModel.updateProfile(user.firebaseId, user.name, descriptionText)
-                            },
-                            enabled = !isLoadingUpdate
-                        ) {
-                            Text("Save", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                } else {
-                    // Tombol Edit
-                    IconButton(onClick = { isEditing = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Description",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+            Text(
+                text = "About Me",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Text(
+                text = "Passionate mobile app developer with 3+ years of experience in creating innovative and user-friendly applications. Specialized in Android development using Kotlin and Jetpack Compose. Always eager to learn new technologies and solve complex problems.",
+                fontSize = 14.sp,
+                color = TextSecondary,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun MySkillsSection() {
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+        Text(
+            text = "My Skills",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        val skills = listOf(
+            "Android Development", "Kotlin", "Jetpack Compose",
+            "UI/UX Design", "Firebase", "REST APIs"
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            skills.take(3).forEach { skill ->
+                SkillChip(skill = skill, modifier = Modifier.weight(1f))
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            // Tampilkan Text atau TextField berdasarkan mode edit
-            if (isEditing) {
-                // Mode Edit: Tampilkan TextField
-                OutlinedTextField(
-                    value = descriptionText,
-                    onValueChange = { descriptionText = it },
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
-                    label = { Text("Your description") }
-                )
-            } else {
-                // Mode Tampilan: Tampilkan Text
-                Text(
-                    text = user.description ?: "No description provided yet. Click edit to add one.",
-                    fontSize = 14.sp,
-                    color = if (user.description != null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    lineHeight = 20.sp
-                )
-            }
-
-            // Tampilkan loading indicator kecil saat menyimpan
-            if (isEditing && isLoadingUpdate) {
-                CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp).size(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            skills.drop(3).forEach { skill ->
+                SkillChip(skill = skill, modifier = Modifier.weight(1f))
             }
         }
     }
+}
 
-    val updateResult by viewModel.updateResult.observeAsState()
-    LaunchedEffect(updateResult) {
-        updateResult?.onSuccess {
-            isEditing = false
-        }
+@Composable
+fun SkillChip(skill: String, modifier: Modifier = Modifier) {
+    Surface(
+        color = PrimaryColor.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier
+    ) {
+        Text(
+            text = skill,
+            fontSize = 12.sp,
+            color = PrimaryColor,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        )
     }
 }
 
@@ -367,14 +557,14 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                 text = "Enrolled Courses",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextPrimary
             )
             TextButton(
                 onClick = { /* Handle See All */ }
             ) {
                 Text(
                     "See All",
-                    color = MaterialTheme.colorScheme.primary,
+                    color = PrimaryColor,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -415,7 +605,6 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                     // Jika sukses tapi tidak ada kursus
                     Text(
                         text = "You haven't enrolled in any courses yet.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
@@ -424,7 +613,7 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                 // Jika error, tampilkan pesan error
                 Text(
                     text = coursesState.message,
-                    color = MaterialTheme.colorScheme.error,
+                    color = Color.Red,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
             }
@@ -447,7 +636,7 @@ fun CourseCard(
             .height(240.dp)
             .clickable(onClick = onCourseClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column {
@@ -472,14 +661,14 @@ fun CourseCard(
                     text = title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = TextPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = author,
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TextSecondary,
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
@@ -494,20 +683,20 @@ fun CourseCard(
                         Icon(
                             Icons.Default.Star,
                             contentDescription = "Rating",
-                            tint = Color(0xFFF59E0B), // Specific color for rating star, kept as is
+                            tint = Color(0xFFF59E0B),
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = rating.toString(),
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = TextSecondary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
                     Text(
                         text = "$progress%",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = PrimaryColor,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -517,8 +706,8 @@ fun CourseCard(
                 LinearProgressIndicator(
                     progress = progress / 100f,
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    color = PrimaryColor,
+                    trackColor = PrimaryColor.copy(alpha = 0.1f)
                 )
             }
         }
