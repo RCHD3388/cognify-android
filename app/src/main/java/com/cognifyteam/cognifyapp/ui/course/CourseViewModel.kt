@@ -73,10 +73,10 @@ class CourseViewModel(
     val createCourseState: StateFlow<CreateCourseState> = _createCourseState.asStateFlow()
 
 
-    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File) {
+    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File, course_owner_name: String) {
         viewModelScope.launch {
             _createCourseState.value = CreateCourseState.Loading
-            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile)
+            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile, course_owner_name)
             result.onSuccess { newCourse ->
                 _createCourseState.value = CreateCourseState.Success("Course '${newCourse.name}' berhasil dibuat!")
             }.onFailure { exception ->
@@ -94,7 +94,7 @@ class CourseViewModel(
             result.onSuccess { courses ->
                 _createdCoursesUiState.value = CreatedCoursesUiState.Success(courses)
             }.onFailure { exception ->
-                _createdCoursesUiState.value = CreatedCoursesUiState.Error(exception.message ?: "Failed to load courses")
+                _createdCoursesUiState.value = CreatedCoursesUiState.Error("kimak " +exception.message ?: "Failed to load courses")
             }
         }
     }

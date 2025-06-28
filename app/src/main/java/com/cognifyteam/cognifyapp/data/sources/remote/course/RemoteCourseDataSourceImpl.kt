@@ -22,7 +22,8 @@ interface RemoteCourseDataSource {
         course_description: RequestBody,
         course_owner: RequestBody,
         course_price: RequestBody,
-        category_id: RequestBody
+        category_id: RequestBody,
+        course_owner_name: RequestBody
     ): BaseResponse<CourseDataWrapper>
 
     suspend fun getUserCreatedCourses(firebaseId: String): BaseResponse<UserCoursesDataWrapper>
@@ -45,7 +46,8 @@ class RemoteCourseDataSourceImpl(
         courseDescription: RequestBody,
         courseOwner: RequestBody,
         coursePrice: RequestBody,
-        categoryId: RequestBody
+        categoryId: RequestBody,
+        course_owner_name: RequestBody
     ): BaseResponse<CourseDataWrapper> {
 
         return courseService.createCourse(
@@ -54,7 +56,8 @@ class RemoteCourseDataSourceImpl(
             course_description = courseDescription,
             course_owner = courseOwner,
             course_price = coursePrice,
-            category_id = categoryId
+            category_id = categoryId,
+            course_owner_name = course_owner_name
         )
     }
 

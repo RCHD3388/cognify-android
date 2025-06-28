@@ -142,7 +142,7 @@ fun CourseScreen(
                 CourseBanner(course = course)
                 CourseTabs() // Ini bisa tetap statis untuk sekarang
                 CourseDetails(course = course)
-                CourseInstructor(course = course)
+//                CourseInstructor(course = course)
                 DiscussionSection(
                     uiState = discussionUiState,
                     onAddDiscussion = { newDiscussionText ->
@@ -216,7 +216,7 @@ fun InstructorInfo(course: Course) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(Icons.Default.Person, "Instructor", tint = Color(0xFF4A90E2))
-        Text(course.course_owner, color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp)) // Data dinamis
+        Text(course.course_owner_name, color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp)) // Data dinamis
         Spacer(Modifier.width(16.dp))
         Icon(Icons.Outlined.CheckCircle, "Lessons", tint = Color(0xFF4A90E2))
         Text("32 Lessons", color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp)) // Masih statis
@@ -260,7 +260,7 @@ fun CourseInstructor(course: Course) {
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
-                Text(course.course_owner, style = MaterialTheme.typography.titleMedium) // Data dinamis
+                Text(course.course_owner_name, style = MaterialTheme.typography.titleMedium) // Data dinamis
                 Text("Design Tutor", color = Color(0xFF6B6B6B)) // Masih statis
             }
             // Hapus ikon bintang yang tidak perlu jika tidak ada aksi

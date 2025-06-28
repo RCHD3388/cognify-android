@@ -41,7 +41,10 @@ data class CourseJson(
 
     // Dibuat nullable karena URL-nya diatur oleh server setelah upload.
     @Json(name = "course_thumbnail")
-    val course_thumbnail: String?
+    val course_thumbnail: String?,
+
+    @Json(name = "course_owner_name")
+    val course_owner_name: String
 )
 
 //wrapper untuk course yang dibuat oleh user
@@ -63,7 +66,8 @@ data class CourseEntity(
     val rating: String,
     val thumbnail: String,
     val price: Int,
-    val course_owner: String
+    val course_owner: String,
+    val course_owner_name: String
 )
 
 @Parcelize
@@ -74,7 +78,8 @@ data class Course(
     val rating: String,
     val thumbnail: String,
     val price: String,
-    val course_owner: String = ""
+    val course_owner: String = "",
+    val course_owner_name: String
 ) : Parcelable {
     companion object {
         fun fromJson(json: CourseJson): Course {
@@ -92,7 +97,9 @@ data class Course(
                 description = json.course_description,
                 rating = json.course_rating ?: "0.0",
                 thumbnail = fullThumbnailUrl ?: "",
-                price = json.course_price
+                price = json.course_price,
+                course_owner = json.course_owner,
+                course_owner_name = json.course_owner_name
             )
         }
 
@@ -103,7 +110,9 @@ data class Course(
                 description = entity.description,
                 rating = entity.rating,
                 thumbnail = entity.thumbnail,
-                price = entity.price.toString()
+                price = entity.price.toString(),
+                course_owner = entity.course_owner,
+                course_owner_name = entity.course_owner_name
             )
         }
     }
@@ -116,7 +125,8 @@ data class Course(
             rating = this.rating,
             thumbnail = this.thumbnail,
             price = this.price.toInt(),
-            course_owner = this.course_owner
+            course_owner = this.course_owner,
+            course_owner_name = this.course_owner_name
         )
     }
 }

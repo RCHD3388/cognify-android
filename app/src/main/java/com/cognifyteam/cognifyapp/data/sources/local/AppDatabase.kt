@@ -24,10 +24,10 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.ProfileDao
 ], version = 11)
 abstract class AppDatabase : RoomDatabase() {
 
-     abstract fun authDao(): AuthDao
-     abstract fun profileDao(): ProfileDao
-     abstract fun courseDao(): CourseDao
-     abstract fun discussionDao(): DiscussionDao
+    abstract fun authDao(): AuthDao
+    abstract fun profileDao(): ProfileDao
+    abstract fun courseDao(): CourseDao
+    abstract fun discussionDao(): DiscussionDao
     abstract fun followDao(): FollowDao
 
     companion object {

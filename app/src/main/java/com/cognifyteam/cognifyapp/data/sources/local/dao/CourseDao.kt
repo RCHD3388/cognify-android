@@ -22,6 +22,4 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses WHERE course_owner = :firebaseId")
     suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity>
-
-
 }

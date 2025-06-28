@@ -20,7 +20,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.math.log
 
 interface CourseRepository {
-    suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File): Result<Course>
+    suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File, course_owner_name: String): Result<Course>
     suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>>
     suspend fun getEnrolledCourses(firebaseId: String, query: String? = null): Result<List<Course>>
     suspend fun getCourseById(courseId: String): Result<Course>
@@ -78,7 +78,8 @@ class CourseRepositoryImpl(
         course_owner: String,
         course_price: Int,
         category_id: String,
-        thumbnail: File
+        thumbnail: File,
+        course_owner_name: String
     ): Result<Course> {
 
         // 1. Buat MultipartBody.Part untuk file (ini sudah benar)
@@ -105,6 +106,7 @@ class CourseRepositoryImpl(
         val ownerBody = course_owner.toRequestBody("text/plain".toMediaTypeOrNull())
         val priceBody = course_price.toString().toRequestBody("text/plain".toMediaTypeOrNull())
         val categoryIdBody = category_id.toRequestBody("text/plain".toMediaTypeOrNull())
+        val course_owner_name = course_owner_name.toRequestBody("text/plain".toMediaTypeOrNull())
 
         // 3. Panggil DataSource dengan parameter yang sudah benar dan lengkap
         val response = remoteDataSource.createCourse(
@@ -113,7 +115,8 @@ class CourseRepositoryImpl(
             course_description = descriptionBody,
             course_owner = ownerBody,
             course_price = priceBody,
-            category_id = categoryIdBody
+            category_id = categoryIdBody,
+            course_owner_name = course_owner_name
         )
 
         response.data?.let {

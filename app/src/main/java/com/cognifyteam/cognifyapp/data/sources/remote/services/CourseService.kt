@@ -42,7 +42,8 @@ interface CourseService {
         @Part("course_description") course_description: RequestBody,
         @Part("course_owner") course_owner: RequestBody,
         @Part("course_price") course_price: RequestBody,
-        @Part("category_id") category_id: RequestBody
+        @Part("category_id") category_id: RequestBody,
+        @Part("course_owner_name") course_owner_name: RequestBody
     ): BaseResponse<CourseDataWrapper>
 
     @GET("course/courses/{firebaseId} ")

@@ -192,6 +192,7 @@ fun AddCourseScreen(
                     if (errors.isEmpty()) {
                         val thumbnailFile = formState.thumbnail_uri?.let { uriToFile(context, it) }
                         val currentUserId = loggedInUser?.firebaseId
+                        val course_owner_name = loggedInUser?.name ?: ""
 
                         if (currentUserId == null) {
                             Toast.makeText(context, "Error: User not logged in.", Toast.LENGTH_SHORT).show()
@@ -202,15 +203,13 @@ fun AddCourseScreen(
                             return@Button
                         }
 
-
-
                         val course_name = formState.course_name.trim()
                         val course_description = formState.course_description.trim()
                         val course_owner = currentUserId
                         val course_price = formState.price.toIntOrNull() ?: 0
                         val category_id = (categories.indexOf(formState.category) + 1).toString()
 
-                        viewModel.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile)
+                        viewModel.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile, course_owner_name)
 
                     } else {
                         formState = formState.copy(errors = errors)
