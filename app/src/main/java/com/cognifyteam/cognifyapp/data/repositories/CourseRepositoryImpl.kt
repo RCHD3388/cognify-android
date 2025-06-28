@@ -5,6 +5,7 @@ import android.webkit.MimeTypeMap
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
 import com.cognifyteam.cognifyapp.data.models.CourseJson
+import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSource
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
@@ -21,8 +22,9 @@ import kotlin.math.log
 
 interface CourseRepository {
     suspend fun getEnrolledCourses(firebaseId: String): Result<List<Course>>
-    suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File): Result<Course>
+    suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course>
     suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>>
+    suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course>
 }
 
 class CourseRepositoryImpl(
@@ -60,35 +62,29 @@ class CourseRepositoryImpl(
         course_owner: String,
         course_price: Int,
         category_id: String,
-        thumbnail: File
+        thumbnail: File,
+        createMultipleSectionsRequest: CreateMultipleSectionsRequest
     ): Result<Course> {
 
-        // 1. Buat MultipartBody.Part untuk file (ini sudah benar)
         val extension = MimeTypeMap.getFileExtensionFromUrl(thumbnail.path)
 
-        // 2. Dapatkan MIME type dari ekstensi tersebut
-        // Jika tidak terdeteksi, gunakan "image/*" sebagai default
+
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "image/*"
 
-        // 3. Gunakan MIME type yang dinamis saat membuat RequestBody
         val requestImageFile = thumbnail.asRequestBody(mimeType.toMediaTypeOrNull())
 
-        // 4. Lanjutkan membuat MultipartBody.Part (ini tidak berubah)
         val imageMultipart = MultipartBody.Part.createFormData(
             "thumbnail",
             thumbnail.name,
             requestImageFile
         )
 
-        // 2. Buat RequestBody untuk setiap field data.
-        // Hindari membuat object `CreateCourseRequest` di sini.
         val courseNameBody = course_name.toRequestBody("text/plain".toMediaTypeOrNull())
         val descriptionBody = course_description.toRequestBody("text/plain".toMediaTypeOrNull())
         val ownerBody = course_owner.toRequestBody("text/plain".toMediaTypeOrNull())
         val priceBody = course_price.toString().toRequestBody("text/plain".toMediaTypeOrNull())
         val categoryIdBody = category_id.toRequestBody("text/plain".toMediaTypeOrNull())
 
-        // 3. Panggil DataSource dengan parameter yang sudah benar dan lengkap
         val response = remoteDataSource.createCourse(
             thumbnail = imageMultipart,
             course_name = courseNameBody,
@@ -98,13 +94,35 @@ class CourseRepositoryImpl(
             category_id = categoryIdBody
         )
 
-        response.data?.let {
-            val newCourse = Course.fromJson(it.data)
+        if (response.data?.data != null) {
+            val newCourse = Course.fromJson(response.data.data)
             localDataSource.createCourse(newCourse.toEntity())
-            return Result.success(newCourse)
-        }
 
-        return Result.failure(Exception("Failed to create course or response was empty"))
+            // Jika tidak ada section untuk dibuat, langsung kembalikan sukses
+            if (createMultipleSectionsRequest.sections.isEmpty()) {
+                return Result.success(newCourse)
+            }
+
+            // 3. Panggil API untuk membuat section
+            val sectionResponse = remoteDataSource.createSection(
+                newCourse.courseId,
+                createMultipleSectionsRequest
+            )
+
+            // 4. PERIKSA apakah section JUGA BERHASIL dibuat
+            if (sectionResponse.status == "success") {
+                // Course & Section berhasil, ini adalah kondisi sukses sesungguhnya
+                return Result.success(newCourse)
+            } else {
+                // Course berhasil, tapi section gagal. Kembalikan failure.
+                // Idealnya, ada mekanisme 'rollback' untuk menghapus course yang sudah dibuat.
+                return Result.failure(Exception("Course was created, but failed to create sections."))
+            }
+
+        } else {
+            // Gagal sejak awal saat membuat course
+            return Result.failure(Exception("Failed to create course or response was empty"))
+        }
     }
 
     override suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>> {
@@ -125,6 +143,13 @@ class CourseRepositoryImpl(
             } catch (cacheError: Exception) { Result.failure(cacheError) }
 
         }
+    }
+
+    override suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course> {
+        val response = remoteDataSource.createSection(courseId, createMultipleSectionsRequest)
+
+
+        return Result.failure(Exception("Failed to create course or response was empty"))
     }
 
 

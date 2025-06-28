@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.ui.course
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +34,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
+import com.cognifyteam.cognifyapp.data.models.SectionRequestBody
+import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionState
 
 import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionsManager
 import java.io.File
@@ -199,14 +203,26 @@ fun AddCourseScreen(
                         val categoryId = (categories.indexOf(formState.category) + 1).toString()
 
                         // PANGGIL FUNGSI BARU DI VIEWMODEL UNTUK MENGIRIM SEMUA DATA
-                        viewModel.createCourseWithContents(
+
+
+                        val sectionList = sections.mapIndexed { index, sectionState ->
+                            SectionRequestBody(
+                                title = sectionState.title,
+                                position = index + 1,
+                            )
+                        }
+                        val createMultipleSectionsRequest = CreateMultipleSectionsRequest(sectionList)
+                        viewModel.createCourse(
                             course_name = courseName,
                             course_description = courseDescription,
                             course_owner = currentUserId,
                             course_price = coursePrice,
                             category_id = categoryId,
-                            thumbnailFile = thumbnailFile
+                            thumbnailFile = thumbnailFile,
+                            createMultipleSectionsRequest = createMultipleSectionsRequest
                         )
+
+
 
                     } else {
                         formState = formState.copy(errors = errors)

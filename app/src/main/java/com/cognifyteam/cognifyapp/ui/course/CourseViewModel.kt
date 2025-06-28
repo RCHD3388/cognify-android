@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cognifyteam.cognifyapp.data.models.Course
+import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,10 +48,10 @@ class CourseViewModel(
     private val _createCourseState = MutableStateFlow<CreateCourseState>(CreateCourseState.Idle)
     val createCourseState: StateFlow<CreateCourseState> = _createCourseState.asStateFlow()
 
-    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File) {
+    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest) {
         viewModelScope.launch {
             _createCourseState.value = CreateCourseState.Loading
-            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile)
+            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile, createMultipleSectionsRequest)
             result.onSuccess { newCourse ->
                 _createCourseState.value = CreateCourseState.Success("Course '${newCourse.name}' berhasil dibuat!")
             }.onFailure { exception ->
@@ -75,16 +76,16 @@ class CourseViewModel(
     fun resetCreateCourseState() {
         _createCourseState.value = CreateCourseState.Idle
     }
-    // --- AKHIR DARI LOGIKA YANG SUDAH ADA ---
 
-
-    // --- LOGIKA BARU UNTUK SECTIONS DAN MATERIALS ---
 
     private val _sections = MutableStateFlow<List<SectionState>>(emptyList())
     val sections: StateFlow<List<SectionState>> = _sections.asStateFlow()
 
     fun addSection(title: String) {
-        val newSection = SectionState(title = title)
+
+        val newSection = SectionState(
+            title = title,
+        )
         _sections.value = _sections.value + newSection
     }
 
@@ -107,6 +108,7 @@ class CourseViewModel(
             _sections.value = currentSections
         }
     }
+
 
     /**
      * Fungsi baru untuk membuat course beserta semua section dan materialnya.
@@ -140,24 +142,6 @@ class CourseViewModel(
             kotlinx.coroutines.delay(2000)
             _createCourseState.value = CreateCourseState.Success("Course with content created successfully! (Simulated)")
 
-            /*
-            // Contoh implementasi nyata dengan repository
-            val result = courseRepository.createCourseWithContents(
-                courseName = course_name,
-                courseDescription = course_description,
-                courseOwner = course_owner,
-                price = course_price,
-                categoryId = category_id,
-                thumbnail = thumbnailFile,
-                sections = _sections.value // Kirim data section
-            )
-
-            result.onSuccess {
-                _createCourseState.value = CreateCourseState.Success("Successfully created course and content!")
-            }.onFailure { exception ->
-                _createCourseState.value = CreateCourseState.Error(exception.message ?: "Failed to create course with content")
-            }
-            */
         }
     }
 

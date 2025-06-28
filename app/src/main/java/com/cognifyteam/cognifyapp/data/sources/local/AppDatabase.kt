@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
 import com.cognifyteam.cognifyapp.data.models.DiscussionEntity
 import com.cognifyteam.cognifyapp.data.models.FollowsCrossRef
+import com.cognifyteam.cognifyapp.data.models.SectionEntity
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.sources.local.dao.AuthDao
@@ -14,14 +15,16 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.CourseDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.DiscussionDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.FollowDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.ProfileDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
 
 @Database(entities = [
     UserEntity::class,
     CourseEntity::class,
     UserCourseCrossRef::class,
     DiscussionEntity::class,
-    FollowsCrossRef::class
-], version = 6)
+    FollowsCrossRef::class,
+    SectionEntity::class
+], version = 8)
 abstract class AppDatabase : RoomDatabase() {
 
      abstract fun authDao(): AuthDao
@@ -29,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
      abstract fun courseDao(): CourseDao
      abstract fun discussionDao(): DiscussionDao
     abstract fun followDao(): FollowDao
+    abstract fun sectionDao(): SectionDao
 
     companion object {
         @Volatile

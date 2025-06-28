@@ -20,7 +20,7 @@ data class SectionJson(
     @Json(name = "position")
     val position: Int,
     @Json(name = "course_id")
-    val courseId: String
+    val course_id: String? = "halo"
 )
 
 // Model untuk request body (POST)
@@ -38,7 +38,8 @@ data class CreateMultipleSectionsRequest(
     val sections: List<SectionRequestBody>
 )
 
-
+// Model untuk database (Room)
+@Entity(tableName = "sections")
 data class SectionEntity(
     @PrimaryKey
     val id: String,
@@ -53,7 +54,7 @@ data class Section(
     val id: String,
     val title: String,
     val position: Int,
-    val courseId: String
+    val course_id: String
 ) : Parcelable {
     companion object {
         // Mapper dari model JSON ke model Domain
@@ -62,7 +63,7 @@ data class Section(
                 id = json.id,
                 title = json.title,
                 position = json.position,
-                courseId = json.courseId
+                course_id = json.course_id ?: ""
             )
         }
 
@@ -72,7 +73,7 @@ data class Section(
                 id = entity.id,
                 title = entity.title,
                 position = entity.position,
-                courseId = entity.courseId
+                course_id = entity.courseId
             )
         }
     }
@@ -83,7 +84,7 @@ data class Section(
             id = this.id,
             title = this.title,
             position = this.position,
-            courseId = this.courseId
+            courseId = this.course_id
         )
     }
 }

@@ -15,15 +15,15 @@ interface SectionService {
      * Mengambil semua section untuk course tertentu.
      * Endpoint: GET /courses/{course_id}/sections
      */
-    @GET("courses/{course_id}/sections")
+    @GET("section/sections/{course_id}")
     suspend fun getSectionsByCourse(
         @Path("course_id") courseId: String
-    ): ApiResponse<ApiDataResponse<List<Section>>>
+    ): ApiResponse<List<Section>>
 
 
-    @POST("courses/{course_id}/sections")
+    @POST("section/sections/{course_id}")
     suspend fun createMultipleSections(
         @Path("course_id") courseId: String,
         @Body requestBody: CreateMultipleSectionsRequest
-    ): ApiResponse<ApiDataResponse<List<Section>>>
+    ): ApiResponse<List<Section>>
 }

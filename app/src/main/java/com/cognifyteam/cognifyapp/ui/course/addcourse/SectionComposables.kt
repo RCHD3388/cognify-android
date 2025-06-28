@@ -198,12 +198,6 @@ fun AddSectionDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                     label = { Text("Section Title") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Section Description") },
-                    modifier = Modifier.fillMaxWidth()
-                )
                 Spacer(modifier = Modifier.height(24.dp))
                 Row {
                     TextButton(onClick = onDismiss) { Text("Cancel") }
