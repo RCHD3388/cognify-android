@@ -23,6 +23,7 @@ interface CourseRepository {
     suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File): Result<Course>
     suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>>
     suspend fun getEnrolledCourses(firebaseId: String, query: String? = null): Result<List<Course>>
+    suspend fun getCourseById(courseId: String): Result<Course>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -32,6 +33,20 @@ class CourseRepositoryImpl(
     private val localDataSource: LocalCourseDataSource,
     private val remoteDataSource: RemoteCourseDataSource,
 ) : CourseRepository {
+    override suspend fun getCourseById(courseId: String): Result<Course> {
+        return try {
+            val response = remoteDataSource.getCourseById(courseId)
+            val courseDataWrapper = response.data
+            val courseJson = courseDataWrapper.data
+            val course = Course.fromJson(courseJson)
+
+            Result.success(course)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Error fetching course details by ID", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getEnrolledCourses(firebaseId: String, query: String?): Result<List<Course>> {
         try {
             val response = remoteDataSource.getEnrolledCourses(firebaseId, query)
@@ -117,8 +132,6 @@ class CourseRepositoryImpl(
             val courses = courseJsons.map { Course.fromJson(it) }
             Log.d("Courses", "ini Courses dari repo: $courses")
             return Result.success(courses)
-
-
         }catch (Exception: Exception){
             return try {
                 val userWithCourses = localDataSource.getUserWithCourses(firebaseId)

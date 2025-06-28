@@ -1,24 +1,20 @@
+// Berkas: data/sources/remote/course/RemoteCourseDataSource.kt
+
 package com.cognifyteam.cognifyapp.data.sources.remote.course
 
-import com.cognifyteam.cognifyapp.data.AppContainerImpl
-import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.CourseJson
-import com.cognifyteam.cognifyapp.data.models.DiscussionJson
 import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
-import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapperJsonAdapter
-
-import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
-import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
-import com.cognifyteam.cognifyapp.data.sources.remote.CreateReplyRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import retrofit2.Response
 
 interface RemoteCourseDataSource {
+    // --- FUNGSI BARU ---
+    suspend fun getCourseById(courseId: String): BaseResponse<CourseDataWrapper>
+
     suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData>
     suspend fun createCourse(
         thumbnail: MultipartBody.Part,
@@ -36,6 +32,10 @@ class RemoteCourseDataSourceImpl(
     private val courseService: CourseService
 ) : RemoteCourseDataSource {
 
+    override suspend fun getCourseById(courseId: String): BaseResponse<CourseDataWrapper> {
+        return courseService.getCourseById(courseId)
+    }
+
     override suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData> {
         return courseService.getEnrolledCourses(firebaseId, query)
     }
@@ -48,7 +48,7 @@ class RemoteCourseDataSourceImpl(
         categoryId: RequestBody
     ): BaseResponse<CourseDataWrapper> {
 
-         return courseService.createCourse(
+        return courseService.createCourse(
             thumbnail = thumbnail,
             course_name = courseName,
             course_description = courseDescription,

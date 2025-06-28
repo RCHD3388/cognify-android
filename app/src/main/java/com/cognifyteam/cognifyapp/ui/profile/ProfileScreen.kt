@@ -74,8 +74,8 @@ import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
-// --- BARU: Import ViewModel dan State yang dibutuhkan ---
-import com.cognifyteam.cognifyapp.ui.course.CourseUiState
+// --- DIUBAH: Impor nama state yang baru ---
+import com.cognifyteam.cognifyapp.ui.course.CreatedCoursesUiState
 import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
 
 // Theme colors consistent with other screens
@@ -96,7 +96,6 @@ fun ProfilePage(
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit,
-    // --- BARU: Tambahkan CourseViewModel sebagai parameter ---
     courseViewModel: CourseViewModel,
 ) {
     val isLoading by profileViewModel.isLoading.observeAsState(initial = false)
@@ -104,8 +103,9 @@ fun ProfilePage(
     val error by profileViewModel.error.observeAsState()
 
     val enrolledCoursesState by userCoursesViewModel.uiState.collectAsState()
-    // --- BARU: Ambil state untuk course yang dibuat ---
-    val createdCoursesState by courseViewModel.uiState.collectAsState()
+
+    // --- FIX: Gunakan nama state yang baru: `createdCoursesUiState` ---
+    val createdCoursesState by courseViewModel.createdCoursesUiState.collectAsState()
 
     val authState by authViewModel.uiState.observeAsState()
     val context = LocalContext.current
@@ -150,8 +150,6 @@ fun ProfilePage(
         ))
     }
 
-    // --- FIX: REMOVED the Scaffold from here. The main Scaffold in AppMainScreen will handle the layout. ---
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -163,7 +161,6 @@ fun ProfilePage(
         } else if (error != null) {
             Text(text = error!!, color = Color.Red)
         } else if (userProfile != null) {
-            // --- BARU: Teruskan state baru ke ProfileContent ---
             ProfileContent(
                 user = userProfile!!,
                 enrolledCoursesState = enrolledCoursesState,
@@ -178,8 +175,8 @@ fun ProfilePage(
 fun ProfileContent(
     user: User,
     enrolledCoursesState: UserCoursesUiState,
-    // --- BARU: Tambahkan parameter untuk state course yang dibuat ---
-    createdCoursesState: CourseUiState,
+    // --- FIX: Gunakan tipe state yang baru: `CreatedCoursesUiState` ---
+    createdCoursesState: CreatedCoursesUiState,
     navController: NavController
 ) {
     Column(
@@ -187,7 +184,6 @@ fun ProfileContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Berikan objek User ke ProfileHeader
         ProfileHeader(user = user)
         AboutMeSection()
         MySkillsSection()
@@ -195,22 +191,24 @@ fun ProfileContent(
             coursesState = enrolledCoursesState,
             navController = navController
         )
-        // --- BARU: Panggil section baru di sini ---
         MyCreatedCoursesSection(
             coursesState = createdCoursesState,
             navController = navController
         )
-        Spacer(modifier = Modifier.height(24.dp)) // Tambah spasi di bawah
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
-
 // =======================================================================
-// --- BARU: SECTION DAN CARD UNTUK "MY CREATED COURSES" ---
+// --- "MY CREATED COURSES" SECTION ---
 // =======================================================================
 
 @Composable
-fun MyCreatedCoursesSection(coursesState: CourseUiState, navController: NavController) {
+fun MyCreatedCoursesSection(
+    // --- FIX: Gunakan tipe state yang baru: `CreatedCoursesUiState` ---
+    coursesState: CreatedCoursesUiState,
+    navController: NavController
+) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -235,17 +233,19 @@ fun MyCreatedCoursesSection(coursesState: CourseUiState, navController: NavContr
             }
         }
 
-//        // Gunakan when untuk menangani semua state dari CourseUiState
+        // --- FIX: Gunakan tipe state yang baru di dalam `when` ---
         when (coursesState) {
-            is CourseUiState.Loading -> {
+            is CreatedCoursesUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
             }
-            is CourseUiState.Success -> {
+            is CreatedCoursesUiState.Success -> {
 
                 if (coursesState.courses.isNotEmpty()) {
                     LazyRow(
@@ -253,15 +253,13 @@ fun MyCreatedCoursesSection(coursesState: CourseUiState, navController: NavContr
                         modifier = Modifier.padding(top = 12.dp)
                     ) {
                         items(coursesState.courses) { course ->
-                            // Gunakan Card yang didesain untuk menampilkan course yang dibuat
                             CreatedCourseCard(
                                 title = course.name,
                                 description = course.description,
-                                imageUrl =  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=300&h=200&fit=crop", // Ganti dengan URL gambar dari course
+                                imageUrl =  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=300&h=200&fit=crop",
                                 rating = course.rating,
                                 onCourseClick = {
-                                    // Arahkan ke halaman detail atau edit course
-                                    // navController.navigate("edit_course/${course.courseId}")
+                                    navController.navigate("course_details/${course.courseId}")
                                 }
                             )
                         }
@@ -274,7 +272,7 @@ fun MyCreatedCoursesSection(coursesState: CourseUiState, navController: NavContr
                     )
                 }
             }
-            is CourseUiState.Error -> {
+            is CreatedCoursesUiState.Error -> {
                 Text(
                     text = coursesState.message,
                     color = Color.Red,
@@ -296,7 +294,7 @@ fun CreatedCourseCard(
     Card(
         modifier = Modifier
             .width(200.dp)
-            .height(240.dp) // Sedikit lebih pendek karena tidak ada progress bar
+            .height(240.dp)
             .clickable(onClick = onCourseClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -318,8 +316,8 @@ fun CreatedCourseCard(
             Column(
                 modifier = Modifier
                     .padding(12.dp)
-                    .fillMaxSize(), // Gunakan sisa ruang
-                verticalArrangement = Arrangement.SpaceBetween // Dorong deskripsi ke bawah
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = title,
@@ -330,16 +328,16 @@ fun CreatedCourseCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Row(
-                    verticalAlignment = Alignment.CenterVertically // Agar ikon dan teks sejajar
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Rating",
-                        modifier = Modifier.size(16.dp), // Sesuaikan ukuran ikon
-                        tint = Color(0xFFF59E0B) // Warna kuning keemasan untuk bintang
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFFF59E0B)
                     )
 
-                    Spacer(modifier = Modifier.width(4.dp)) // Beri sedikit jarak
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
                         text = rating,

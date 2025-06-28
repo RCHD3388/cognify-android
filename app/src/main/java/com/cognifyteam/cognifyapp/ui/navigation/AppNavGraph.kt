@@ -154,8 +154,12 @@ fun AppNavGraph(
             if (courseId != null) {
                 // Panggil CourseScreen hanya dengan parameter yang dibutuhkan
                 CourseScreen(
-                    courseId = courseId.toString(),
-                    appContainer = appContainer
+                    navController = navController,
+                    courseId = courseId,
+                    appContainer = appContainer,
+                    onFabStateChange = onFabStateChange,
+                    onTopBarStateChange = onTopBarStateChange,
+                    onShowSnackbar = onShowSnackbar
                 )
             }
         }

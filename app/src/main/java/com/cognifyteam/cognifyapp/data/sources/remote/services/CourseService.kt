@@ -29,6 +29,11 @@ interface CourseService {
         @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
     ): BaseResponse<EnrolledCoursesData>
 
+    @GET("course/{courseId}") // Sesuaikan dengan path route di backend Anda
+    suspend fun getCourseById(
+        @Path("courseId") courseId: String
+    ): BaseResponse<CourseDataWrapper>
+
     @Multipart
     @POST("course/createCourse")
     suspend fun createCourse(
