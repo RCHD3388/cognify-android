@@ -47,11 +47,11 @@ class LearningPathDetailViewModel : ViewModel() {
             level = "Pemula", tags = listOf("HTML", "CSS", "JavaScript", "React", "Vue.js"),
             likes = 234, liked_by_you = false,
             steps = listOf(
-                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu", 1),
-                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu", 1),
-                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu", 1),
-                LearningPathStep(4, "Advanced State Management", "...", "2 minggu", 1),
-                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu", 1)
+                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu", 1, 1),
+                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu", 1, 2),
+                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu", 1, 3),
+                LearningPathStep(4, "Advanced State Management", "...", "2 minggu", 1, 4),
+                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu", 1, 5)
             ),
             comments = 123,
             comment_contents = listOf(

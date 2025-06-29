@@ -10,8 +10,8 @@ import com.cognifyteam.cognifyapp.data.sources.local.AppDatabase
 interface LocalSmartDataSource {
     suspend fun insertNewLearningPath(smart: LearningPath): LearningPath
     suspend fun getAll(): List<LearningPath>
-    suspend fun likeSmart(smartId: Int, userId: String): Int
-    suspend fun unlikeSmart(smartId: Int, userId: String): Int
+    suspend fun likeSmart(smartId: Int, userId: String, id: Int): Int
+    suspend fun unlikeSmart(smartId: Int, userId: String, id: Int): Int
 }
 
 class LocalSmartDataSourceImpl(
@@ -37,13 +37,13 @@ class LocalSmartDataSourceImpl(
         }
     }
 
-    override suspend fun unlikeSmart(smartId: Int, userId: String): Int {
-        val learningPaths = db.smartLikeDao().delete(smartId = smartId, userId = userId)
+    override suspend fun unlikeSmart(smartId: Int, userId: String, id: Int): Int {
+        val learningPaths = db.smartLikeDao().delete(SmartLike(smartId = smartId, userId = userId, id = id))
         return learningPaths
     }
 
-    override suspend fun likeSmart(smartId: Int, userId: String): Int {
-        db.smartLikeDao().insertOrReplace(listOf(SmartLike(smartId = smartId, userId = userId)))
+    override suspend fun likeSmart(smartId: Int, userId: String, id: Int): Int {
+        db.smartLikeDao().insertOrReplace(listOf(SmartLike(smartId = smartId, userId = userId, id = id)))
         return 1
     }
 }
