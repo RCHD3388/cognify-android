@@ -73,18 +73,6 @@ import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 
 @Composable
-fun getActivity(): Activity {
-    val context = LocalContext.current
-    return remember {
-        generateSequence(context) {
-            when (it) {
-                is android.content.ContextWrapper -> it.baseContext
-                else -> null
-            }
-        }.filterIsInstance<Activity>().first()
-    }
-}
-@Composable
 fun CourseScreen(
     navController: NavController,
     appContainer: AppContainer,

@@ -27,6 +27,7 @@ import com.cognifyteam.cognifyapp.ui.learningpath.screen.AddNewLearningPathScree
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPathDetailScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 import com.cognifyteam.cognifyapp.ui.profile.ProfileViewModel
+import com.cognifyteam.cognifyapp.ui.profile.TransactionHistoryScreen
 import com.cognifyteam.cognifyapp.ui.profile.UserCoursesViewModel
 
 object AppNavRoutes {
@@ -44,6 +45,7 @@ object AppNavRoutes {
     const val ALLCOURSE = "allcourse"
     // Rute BARU untuk melihat profil pengguna lain
     const val USER_PROFILE = "user_profile/{firebaseId}"
+    const val TRANSACTION_HISTORY = "transaction_history"
 }
 
 @Composable
@@ -191,6 +193,16 @@ fun AppNavGraph(
                     onShowSnackbar = onShowSnackbar
                 )
             }
+        }
+
+        composable(AppNavRoutes.TRANSACTION_HISTORY) {
+            TransactionHistoryScreen(
+                navController = navController,
+                onFabStateChange = onFabStateChange,
+                onTopBarStateChange = onTopBarStateChange,
+                appContainer = appContainer,
+                userViewModel = userViewModel
+            )
         }
     }
 }
