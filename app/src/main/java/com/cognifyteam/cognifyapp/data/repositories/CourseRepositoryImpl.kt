@@ -203,7 +203,9 @@ class CourseRepositoryImpl(
             return Result.success(courses)
         }catch (Exception: Exception){
             return try {
+                Log.d("asd", "berhasil masuk")
                 val userWithCourses = localDataSource.getUserWithCourses(firebaseId)
+                Log.d("asd", "${userWithCourses}")
                 val cachedCourses = userWithCourses?.courses?.map { Course.fromEntity(it) }
                 if (!cachedCourses.isNullOrEmpty()) Result.success(cachedCourses)
                 else Result.failure(Exception("No courses found"))

@@ -42,7 +42,7 @@ class ProfileRepositoryImpl(
             val request = UpdateProfileRequest(name = name, description = description)
             // Berikan firebaseId ke remote data source
             val response = remoteDataSource.updateProfile(firebaseId, request)
-            val updatedUser = User.fromJson(response.data)
+            val updatedUser = User.fromJson(response.body()!!.data.data)
 
             localDataSource.upsertUser(updatedUser.toEntity())
             Result.success(updatedUser)

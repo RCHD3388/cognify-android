@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.data.repositories
 
+import android.util.Log
 import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalDiscussionDataSource
 import com.cognifyteam.cognifyapp.data.sources.remote.CreatePostRequest
@@ -74,11 +75,13 @@ class DiscussionRepositoryImpl(
     override suspend fun createPost(firebaseId: String, courseId: String, content: String): Result<Discussion> {
         return try {
             val request = CreatePostRequest(content = content, courseId = courseId)
+
             val response = remoteDataSource.createPost(firebaseId, request)
-            val newPost = Discussion.fromJson(response.data)
+
+            val newPost = Discussion.fromJson(response.body()!!.data.data)
 
             // Simpan ke cache lokal untuk konsistensi
-            localDataSource.upsertDiscussions(newPost.toEntity(courseId))
+            localDataSource.upsertDiscussions(newPost.toEntity(courseId, firebaseId))
             Result.success(newPost)
         } catch (e: Exception) {
             Result.failure(e)
@@ -92,7 +95,7 @@ class DiscussionRepositoryImpl(
             val response = remoteDataSource.createReply(parentId, firebaseId, request)
 
             // 2. Mapping hasil dari API menjadi Domain Model
-            val newReply = Discussion.fromJson(response.data)
+            val newReply = Discussion.fromJson(response.body()!!.data.data)
 
             // 3. Simpan balasan baru ke database lokal dengan aman
             // Dapatkan courseId dari post induk di cache.
@@ -103,7 +106,8 @@ class DiscussionRepositoryImpl(
                 // Gunakan mapper toReplyEntity yang baru dan lebih aman.
                 val replyEntity = newReply.toReplyEntity(
                     courseId = parentPostEntity.courseId,
-                    parentId = parentId
+                    parentId = parentId,
+                    firebaseId
                 )
 
                 // upsertDiscussions menerima list, jadi kita bungkus dalam listOf()

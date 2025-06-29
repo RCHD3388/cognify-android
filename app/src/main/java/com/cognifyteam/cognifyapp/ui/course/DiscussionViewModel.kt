@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.course
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -80,11 +82,13 @@ class DiscussionViewModel(
                 val currentState = _uiState.value
                 if (currentState is DiscussionUiState.Success) {
                     // Tambahkan post baru ke awal daftar
+                    Log.d("asdasd", "${newPost}")
                     _uiState.value = currentState.copy(
                         discussions = listOf(newPost) + currentState.discussions
                     )
                 }
             }.onFailure { exception ->
+                Log.d("addDiscussError", "${exception}")
             }
         }
     }

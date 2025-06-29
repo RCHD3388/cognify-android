@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.data.sources.local.datasources
 
+import android.util.Log
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
 import com.cognifyteam.cognifyapp.data.models.MaterialEntity
 import com.cognifyteam.cognifyapp.data.models.SectionEntity
