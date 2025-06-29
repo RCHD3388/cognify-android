@@ -240,6 +240,7 @@ fun ProfileHeader(user: User, isMyProfile: Boolean) {
             modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
+            StatItem(number = "0", label = "Learning Path")
             StatItem(number = user.followersCount.toString(), label = "Followers")
             StatItem(number = user.followingCount.toString(), label = "Following")
         }

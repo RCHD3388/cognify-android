@@ -33,7 +33,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartStepDao
     LearningPathStepEntity::class,
     SmartLike::class,
     SmartComment::class,
-], version = 5)
+], version = 15)
 abstract class AppDatabase : RoomDatabase() {
 
      abstract fun authDao(): AuthDao
