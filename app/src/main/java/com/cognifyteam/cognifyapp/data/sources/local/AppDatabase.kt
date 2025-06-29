@@ -36,7 +36,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
     SmartLike::class,
     SmartComment::class,
     SectionEntity::class
-], version = 15)
+], version = 16)
 
 abstract class AppDatabase : RoomDatabase() {
 
