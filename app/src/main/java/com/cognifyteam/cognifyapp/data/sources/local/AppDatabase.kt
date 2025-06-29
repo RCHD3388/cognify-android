@@ -44,9 +44,8 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.TransactionDao
     SmartComment::class,
     SectionEntity::class,
     MaterialEntity::class,
-    SectionEntity::class,
     TransactionEntity::class,
-            RatingEntity::class
+    RatingEntity::class
 ], version = 18)
 
 
