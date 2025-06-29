@@ -34,6 +34,7 @@ import com.cognifyteam.cognifyapp.R
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.Discussion
+import com.cognifyteam.cognifyapp.data.models.Rating
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
@@ -45,18 +46,6 @@ enum class CourseTab {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun getActivity(): Activity {
-    val context = LocalContext.current
-    return remember {
-        generateSequence(context) {
-            when (it) {
-                is android.content.ContextWrapper -> it.baseContext
-                else -> null
-            }
-        }.filterIsInstance<Activity>().first()
-    }
-}
-@Composable
 fun CourseScreen(
     navController: NavController,
     appContainer: AppContainer,
@@ -67,20 +56,32 @@ fun CourseScreen(
     // --- Inisialisasi ViewModel ---
     val courseViewModel: CourseViewModel = viewModel(factory = CourseViewModel.provideFactory(appContainer.courseRepository))
     val discussionViewModel: DiscussionViewModel = viewModel(factory = DiscussionViewModel.provideFactory(appContainer.discussionRepository))
+    val ratingViewModel: RatingViewModel = viewModel(factory = RatingViewModel.provideFactory(appContainer.ratingRepository))
     val userViewModel: UserViewModel = viewModel(factory = UserViewModel.provideFactory(appContainer.authRepository))
+
+    val loggedInUser by userViewModel.userState.collectAsState()
 
     // --- Amati State ---
     val discussionUiState by discussionViewModel.uiState.collectAsState()
     val courseDetailState by courseViewModel.courseDetailState.collectAsState()
     val materialsStateMap by courseViewModel.materialsStateMap.collectAsState() // <-- TAMBAHKAN INI
+    val ratingsListState by ratingViewModel.ratingsListState.collectAsState()
     val currentUser by userViewModel.userState.collectAsState()
     val context = LocalContext.current
+
+    var showPaymentWebView by remember { mutableStateOf(false) }
+    var paymentSnapToken by remember { mutableStateOf<String?>(null) }
 
     val sectionUiState by courseViewModel.sectionUiState.collectAsState()
     // --- Efek Samping ---
     LaunchedEffect(key1 = courseId) {
-        discussionViewModel.loadDiscussions(courseId)
+        // Load semua data yang dibutuhkan
         courseViewModel.loadCourseDetails(courseId)
+        discussionViewModel.loadDiscussions(courseId)
+        ratingViewModel.loadRatings(courseId)
+        courseViewModel.loadSections(courseId)
+
+        // Atur TopBar dan FAB
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(
             TopBarState(isVisible = true, title = "Course Details",
@@ -91,58 +92,104 @@ fun CourseScreen(
                 }
             )
         )
-        courseViewModel.loadSections(courseId)
     }
 
-    // --- Tampilan Utama ---
-    when (val state = courseDetailState) {
-        is CourseDetailUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        }
-        is CourseDetailUiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = state.message, color = MaterialTheme.colorScheme.error) }
-        }
-        is CourseDetailUiState.Success -> {
-            val course = state.course
-            var selectedTab by remember { mutableStateOf(CourseTab.Overview) }
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = courseDetailState) {
+            is CourseDetailUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+            }
 
-            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                CourseBanner(course = course)
-                CourseTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+            is CourseDetailUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { Text(text = state.message, color = MaterialTheme.colorScheme.error) }
+            }
 
-                Box(modifier = Modifier.animateContentSize()) {
-                    when (selectedTab) {
-                        CourseTab.Overview -> {
-                            CourseOverviewContent(course = course)
-                        }
-                        CourseTab.Discussion -> {
-                            DiscussionSection(
-                                uiState = discussionUiState,
-                                onAddDiscussion = { newDiscussionText ->
-                                    currentUser?.firebaseId?.let { id ->
-                                        discussionViewModel.addDiscussion(courseId, id, newDiscussionText)
+            is CourseDetailUiState.Success -> {
+                val course = state.course
+                var selectedTab by remember { mutableStateOf(CourseTab.Overview) }
+
+                Column(modifier = Modifier.fillMaxSize()) {
+                    CourseBanner(course = course)
+                    CourseTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+
+                    Box(modifier = Modifier
+                        .weight(1f) // Ambil sisa ruang
+                        .verticalScroll(rememberScrollState())
+                        .animateContentSize()
+                    ) {
+                        when (selectedTab) {
+                            CourseTab.Overview -> {
+                                CourseOverviewContent(
+                                    course = course,
+                                    viewModel = courseViewModel,
+                                    onEnrollClick = { token ->
+                                        paymentSnapToken = token
+                                        showPaymentWebView = true
+                                    },
+                                    firebaseId = loggedInUser!!.firebaseId
+                                )
+                            }
+
+                            CourseTab.Discussion -> {
+                                DiscussionSection(
+                                    uiState = discussionUiState,
+                                    onAddDiscussion = { newDiscussionText ->
+                                        currentUser?.firebaseId?.let { id ->
+                                            discussionViewModel.addDiscussion(
+                                                courseId,
+                                                id,
+                                                newDiscussionText
+                                            )
+                                        }
+                                    },
+                                    onAddReply = { discussionId, replyText ->
+                                        currentUser?.firebaseId?.let { id ->
+                                            discussionViewModel.addReply(discussionId, id, replyText)
+                                        }
                                     }
-                                },
-                                onAddReply = { discussionId, replyText ->
-                                    currentUser?.firebaseId?.let { id ->
-                                        discussionViewModel.addReply(discussionId, id, replyText)
+                                )
+                            }
+
+                            CourseTab.Lessons -> {
+                                LessonsContent(
+                                    sectionUiState = sectionUiState,
+                                    materialUiStateMap = materialsStateMap,
+                                    onSectionClick = { sectionId ->
+                                        courseViewModel.loadMaterialsForSection(sectionId)
+                                    },
+                                    navController = navController // <-- KIRIM NAVCONTROLLER DI SINI
+                                )
+                            }
+
+                            CourseTab.Reviews -> {
+                                RatingSection(
+                                    uiState = ratingsListState,
+                                    onSubmitRating = { rating, comment ->
+                                        currentUser?.firebaseId?.let { id ->
+                                            ratingViewModel.submitRating(courseId, id, rating, comment)
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
-                        CourseTab.Lessons -> {
-                            LessonsContent(
-                                sectionUiState = sectionUiState,
-                                materialUiStateMap = materialsStateMap,
-                                onSectionClick = { sectionId ->
-                                    courseViewModel.loadMaterialsForSection(sectionId)
-                                },
-                                navController = navController // <-- KIRIM NAVCONTROLLER DI SINI
-                            )
-                        }
-                        CourseTab.Reviews -> ComingSoonSection(tabName = "Reviews")
                     }
                 }
+            }
+        }
+        if (showPaymentWebView && paymentSnapToken != null) {
+            PaymentWebView (snapToken = paymentSnapToken!!) {
+                // Callback saat pembayaran selesai
+                showPaymentWebView = false
+                paymentSnapToken = null
+                Toast.makeText(context, "Payment process finished.", Toast.LENGTH_LONG).show()
+                // Navigasi kembali atau refresh data
+                navController.popBackStack()
             }
         }
     }
@@ -150,11 +197,22 @@ fun CourseScreen(
 
 // Composable baru untuk konten tab Overview
 @Composable
-fun CourseOverviewContent(course: Course) {
+fun CourseOverviewContent(
+    course: Course,
+    viewModel: CourseViewModel,
+    onEnrollClick: (String) -> Unit,
+    firebaseId: String
+) {
+
     Column {
         CourseDetails(course = course)
         CourseInstructor(course = course)
-        CourseActions(course = course)
+        CourseActions(
+            course = course,
+            viewModel = viewModel,
+            firebaseId = firebaseId,
+            onEnrollClick = onEnrollClick
+        )
     }
 }
 
@@ -166,6 +224,124 @@ fun ComingSoonSection(tabName: String) {
         contentAlignment = Alignment.Center
     ) {
         Text("$tabName content is coming soon!", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun RatingSection(
+    uiState: RatingsListUiState, // Menerima state daftar semua rating
+    onSubmitRating: (rating: Int, comment: String) -> Unit
+) {
+    var selectedRating by remember { mutableIntStateOf(0) }
+    var comment by remember { mutableStateOf("") }
+    // `isSubmitting` bisa kita infer dari state yang lain nanti jika perlu
+
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp)
+    ) {
+        // Form untuk memberi/mengupdate rating
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Write Your Review", /*...*/)
+                // Star Rating
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    // --- GUNAKAN `repeat()` INI ---
+                    repeat(5) { index ->
+                        val i = index + 1 // `index` dimulai dari 0, jadi kita tambahkan 1
+                        Icon(
+                            imageVector = if (i <= selectedRating) Icons.Filled.Star else Icons.Outlined.Star,
+                            contentDescription = "Star $i",
+                            tint = if (i <= selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { selectedRating = if (selectedRating == i) i - 1 else i } // Logika toggle yang lebih baik
+                                .padding(horizontal = 4.dp)
+                        )
+                    }
+                    // --- AKHIR PERBAIKAN ---
+                }
+                // Comment TextField
+                OutlinedTextField(value = comment, onValueChange = { comment = it }, /*...*/)
+                // Submit Button
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
+                    Button(
+                        onClick = {
+                            if (selectedRating > 0) {
+                                onSubmitRating(selectedRating, comment)
+                                // Reset form setelah submit
+                                selectedRating = 0
+                                comment = ""
+                            } else {
+                                Toast.makeText(context, "Please select a star rating", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = selectedRating > 0
+                    ) {
+                        Text("Submit Review")
+                    }
+                }
+            }
+        }
+
+        // Judul untuk daftar semua review
+        Text(
+            text = "All Reviews",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Tampilkan daftar review berdasarkan state
+        when (uiState) {
+            is RatingsListUiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+            is RatingsListUiState.Error -> {
+                Text(uiState.message, color = MaterialTheme.colorScheme.error)
+            }
+            is RatingsListUiState.Success -> {
+                if (uiState.ratings.isEmpty()) {
+                    Text("No reviews yet. Be the first!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        uiState.ratings.forEach { rating ->
+                            RatingItem(rating = rating)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RatingItem(rating: Rating) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(rating.authorName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                // Tampilkan bintang rating yang sudah ada
+                Row {
+                    Text("${rating.rating} ⭐", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (!rating.comment.isNullOrBlank()) {
+                Text(rating.comment, modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
 }
 
@@ -281,7 +457,12 @@ fun CourseInstructor(course: Course) {
 }
 
 @Composable
-fun CourseActions(course: Course) {
+fun CourseActions(
+    course: Course,
+    viewModel: CourseViewModel,
+    firebaseId: String,
+    onEnrollClick: (snapToken: String) -> Unit // Menggunakan callback
+) {
     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column {
             Text(text = "Rp${course.price}", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
@@ -289,7 +470,11 @@ fun CourseActions(course: Course) {
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
-            onClick = {},
+            onClick = {
+                viewModel.createPayment(course.courseId, firebaseId = firebaseId) { token ->
+                    onEnrollClick(token)
+                }
+            },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("GET ENROLL", color = MaterialTheme.colorScheme.onPrimary)

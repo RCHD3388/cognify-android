@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.data.sources.remote.services
 
+import com.cognifyteam.cognifyapp.data.models.Material
 import com.cognifyteam.cognifyapp.data.models.MaterialJson
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import okhttp3.MultipartBody
@@ -25,8 +26,8 @@ interface MaterialService {
         @Path("sectionId") sectionId: String,
         @Part("materials") materialsJson: RequestBody,
         @Part files: List<MultipartBody.Part>
-    ): ApiResponse<List<MaterialJson>>
+    ): ApiResponse<List<Material>>
 
     @GET("material/materials/{sectionId}")
-    suspend fun getMaterialsBySectionId(@Path("sectionId") sectionId: String): ApiResponse<List<MaterialJson>>
+    suspend fun getMaterialsBySectionId(@Path("sectionId") sectionId: String): ApiResponse<List<Material>>
 }

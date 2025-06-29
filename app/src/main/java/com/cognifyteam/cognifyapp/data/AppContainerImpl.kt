@@ -80,11 +80,9 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
 
     override val courseRepository: CourseRepository by lazy {
         CourseRepositoryImpl(
-            LocalCourseDataSourceImpl(AppDatabase.getInstance(applicationContext).courseDao()),
+            LocalCourseDataSourceImpl(AppDatabase.getInstance(applicationContext).courseDao(),AppDatabase.getInstance(applicationContext).sectionDao(),AppDatabase.getInstance(applicationContext).MaterialDao()),
             RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java),retrofit.create(SectionService::class.java),retrofit.create(MaterialService::class.java),moshi),
             applicationContext
-
-
         )
     }
 
