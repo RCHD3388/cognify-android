@@ -200,16 +200,11 @@ fun ProfileHeader(user: User, isMyProfile: Boolean) {
         modifier = Modifier.fillMaxWidth().padding(24.dp)
     ) {
         Box {
-            AsyncImage(
-                model = "https://cultivatedculture.com/wp-content/uploads/2019/12/LinkedIn-Profile-Picture-Example-Rachel-Montan%CC%83ez.jpeg",
-                contentDescription = "Profile Picture",
+            InitialAvatar(
+                name = user.name,
                 modifier = Modifier
                     .size(120.dp)
-                    .clip(CircleShape)
-                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.robot),
-                error = painterResource(id = R.drawable.robot)
+                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
             )
             if (isMyProfile) {
                 Box(
