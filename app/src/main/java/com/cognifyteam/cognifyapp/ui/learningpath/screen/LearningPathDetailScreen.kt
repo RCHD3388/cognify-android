@@ -58,6 +58,12 @@ fun LearningPathDetailScreen(
     )
     val currentUser by userViewModel.userState.collectAsState()
 
+    LaunchedEffect(uiState.resultState) {
+        if (uiState.resultState == "Deleted") {
+            navController.navigateUp()
+        }
+    }
+
     LaunchedEffect(learningPathId) {
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(TopBarState(isVisible = true,
@@ -86,7 +92,13 @@ fun LearningPathDetailScreen(
             item { Spacer(modifier = Modifier.height(8.dp)) }
             item { PathDetailHeader(path) }
             item { PathDescription(path) }
-            item { ActionButtons(userViewModel, path, onLikeClicked = { viewModel.toggleLike(currentUser!!.firebaseId) }) }
+            item { ActionButtons(
+                viewModel,
+                userViewModel,
+                path,
+                onLikeClicked = { viewModel.toggleLike(currentUser!!.firebaseId) },
+                canDelete = currentUser!!.firebaseId == path.author_id
+            )}
             item {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                 StepsHeader()
@@ -305,8 +317,14 @@ fun PathDescription(path: com.cognifyteam.cognifyapp.data.models.LearningPath) {
 }
 
 @Composable
-fun ActionButtons(viewModel: UserViewModel, path: LearningPath, onLikeClicked: () -> Unit) {
-    val currentUser = viewModel.userState.collectAsState().value
+fun ActionButtons(
+    viewModel: LearningPathDetailViewModel,
+    userViewModel: UserViewModel,
+    path: LearningPath,
+    onLikeClicked: () -> Unit,
+    canDelete: Boolean = false
+) {
+    val currentUser = userViewModel.userState.collectAsState().value
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -323,15 +341,17 @@ fun ActionButtons(viewModel: UserViewModel, path: LearningPath, onLikeClicked: (
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = path.likes.size.toString())
         }
-        Button(
-            onClick = { /* Navigasi ke halaman belajar */ },
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(50),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-        ) {
-            Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-            Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-            Text("Mulai Belajar", fontWeight = FontWeight.Bold)
+        if(canDelete){
+            Button(
+                onClick = { viewModel.deletePath(currentUser!!.firebaseId) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                Text("Delete Path", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

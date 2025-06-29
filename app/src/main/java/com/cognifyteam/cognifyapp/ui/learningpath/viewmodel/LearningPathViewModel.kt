@@ -14,24 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// --- MODEL DATA (KEMBALI KE IMMUTABLE DENGAN `val`) ---
-// Ini adalah praktik terbaik. Objek data seharusnya tidak bisa diubah dari luar.
-data class LearningPath(
-    val id: Int,
-    val title: String,
-    val description: String,
-    val authorName: String,
-    val authorInitials: String,
-    val timeAgo: String,
-    val level: String,
-    val tags: List<String>,
-    val likes: Int, // Kembali ke `val`
-    val comments: Int,
-    val comment_contents: List<Comment> = listOf(),
-    val liked_by_you: Boolean,
-    val steps: List<LearningPathStep>
-)
-
 private val filterCategories = listOf("Semua", "Programming", "Frontend", "Backend", "Design", "Data Science", "Marketing")
 
 // --- UI STATE (Tidak ada perubahan) ---
@@ -39,7 +21,8 @@ data class LearningPathUiState(
     val searchQuery: String = "",
     val selectedCategory: String = "Semua",
     val learningPaths: List<com.cognifyteam.cognifyapp.data.models.LearningPath> = emptyList(),
-    val allCategories: List<String> = emptyList()
+    val allCategories: List<String> = emptyList(),
+    val ownerFilter: Boolean = false
 )
 
 // --- VIEWMODEL (DENGAN LOGIKA YANG DIPERBAIKI) ---
@@ -67,6 +50,11 @@ class LearningPathViewModel(
                 )
             }
         }
+    }
+
+    fun toggleOwnerFilter(userId: String) {
+        _uiState.update { it.copy(ownerFilter = !it.ownerFilter) }
+        filterLearningPaths(userId)
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -109,11 +97,12 @@ class LearningPathViewModel(
         }
     }
 
-    private fun filterLearningPaths() {
+    private fun filterLearningPaths(userId: String? = "") {
         // Tidak perlu launch coroutine lagi di sini karena sudah dihandle di pemanggilnya
         val currentState = _uiState.value
         val query = currentState.searchQuery
         val category = currentState.selectedCategory
+        val ownerState = currentState.ownerFilter
 
         val filteredList = _allLearningPaths.filter { path ->
             val matchesSearchQuery = if (query.isBlank()) {
@@ -122,13 +111,19 @@ class LearningPathViewModel(
                 path.title.contains(query, ignoreCase = true)
             }
 
+            val matchesOwnerFilterState = if(ownerState){
+                path.author_id == userId
+            }else{
+                true
+            }
+
             val matchesCategory = if (category == "Semua") {
                 true
             } else {
                 path.tags.any { tag -> tag.equals(category, ignoreCase = true) }
             }
 
-            matchesSearchQuery && matchesCategory
+            matchesSearchQuery && matchesCategory && matchesOwnerFilterState
         }
 
         // Karena kita selalu membuat objek baru, Compose pasti akan mendeteksi perubahan.

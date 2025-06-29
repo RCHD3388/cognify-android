@@ -15,6 +15,7 @@ interface LocalSmartDataSource {
     suspend fun unlikeSmart(smartId: Int, userId: String, id: Int): Int
     suspend fun getOne(id: Int): LearningPath?
     suspend fun addComment(comment: SmartComment): SmartComment
+    suspend fun deletePath(smartId: Int): Int
 }
 
 class LocalSmartDataSourceImpl(
@@ -67,5 +68,13 @@ class LocalSmartDataSourceImpl(
     override suspend fun addComment(comment: SmartComment): SmartComment {
         db.smartCommentDao().insert(comment)
         return comment
+    }
+
+    override suspend fun deletePath(smartId: Int): Int {
+        db.smartLikeDao().deleteAllById(smartId)
+        db.smartCommentDao().deleteAllById(smartId)
+        db.smartStepDao().deleteAllById(smartId)
+        db.smartDao().deleteById(smartId)
+        return smartId
     }
 }

@@ -13,6 +13,7 @@ import com.cognifyteam.cognifyapp.data.models.UserJson
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -29,4 +30,6 @@ interface SmartService {
     suspend fun likeSmart( @Path("smartId") smartId: Int, @Body body: LikedBody): Response<ApiResponse<LikedRes>>
     @POST("smart/comment/{smartId}")
     suspend fun addComment( @Path("smartId") smartId: Int, @Body body: CommentBody): Response<ApiResponse<SmartComment>>
+    @DELETE("smart/{smartId}")
+    suspend fun deletePath( @Path("smartId") smartId: Int): Response<ApiResponse<Int>>
 }
