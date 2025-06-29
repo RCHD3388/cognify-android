@@ -1,8 +1,8 @@
 package com.cognifyteam.cognifyapp.ui.course
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,7 +22,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -33,12 +32,10 @@ import coil.compose.AsyncImage
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.models.SectionRequestBody
-import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionState
-
+import com.cognifyteam.cognifyapp.ui.MainActivity
 import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionsManager
 import java.io.File
 import java.io.FileOutputStream
-
 
 data class CourseFormState(
     val course_name: String = "",
@@ -71,7 +68,6 @@ fun AddCourseScreen(
         }
     }
 
-    // Mengambil state sections dari ViewModel
     val sections by viewModel.sections.collectAsState()
 
     LaunchedEffect(key1 = createCourseState) {
@@ -95,7 +91,7 @@ fun AddCourseScreen(
     )
     val isLoading = createCourseState is CourseViewModel.CreateCourseState.Loading
 
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FA))) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TopAppBar(
             title = { Text("Create Course", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium) },
             navigationIcon = {
@@ -103,7 +99,7 @@ fun AddCourseScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
         )
 
         Column(
@@ -113,7 +109,6 @@ fun AddCourseScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- UI UNTUK DETAIL COURSE ---
             CourseThumbnailSection(
                 selectedImageUri = formState.thumbnail_uri,
                 isError = formState.errors.containsKey("thumbnail_uri"),
@@ -168,7 +163,6 @@ fun AddCourseScreen(
                 supportingText = { formState.errors["price"]?.let { Text(it, color = MaterialTheme.colorScheme.error) } ?: Text("Set to 0 for free course") }
             )
 
-            // --- UI BARU UNTUK MENGELOLA SECTIONS ---
             Divider(modifier = Modifier.padding(vertical = 16.dp))
             SectionsManager(
                 sections = sections,
@@ -181,7 +175,6 @@ fun AddCourseScreen(
                     Log.d("FileViewer", "File URI to view: $uri")
                 }
             )
-            // --- AKHIR DARI UI BARU ---
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -202,9 +195,6 @@ fun AddCourseScreen(
                         val courseDescription = formState.course_description.trim()
                         val coursePrice = formState.price.toIntOrNull() ?: 0
                         val categoryId = (categories.indexOf(formState.category) + 1).toString()
-
-                        // PANGGIL FUNGSI BARU DI VIEWMODEL UNTUK MENGIRIM SEMUA DATA
-
 
                         val sectionList = sections.mapIndexed { index, sectionState ->
                             SectionRequestBody(
@@ -229,13 +219,13 @@ fun AddCourseScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2)),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
-                    Text("Create Course & Content", style = MaterialTheme.typography.titleMedium)
+                    Text("Create Course & Content", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -262,10 +252,10 @@ fun CourseThumbnailSection(
                 .clip(RoundedCornerShape(12.dp))
                 .border(
                     width = 2.dp,
-                    color = if (isError) MaterialTheme.colorScheme.error else if (selectedImageUri != null) Color(0xFF4A90E2) else Color(0xFFE0E0E0),
+                    color = if (isError) MaterialTheme.colorScheme.error else if (selectedImageUri != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                     shape = RoundedCornerShape(12.dp)
                 )
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .clickable { onThumbnailClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -282,13 +272,13 @@ fun CourseThumbnailSection(
                         Icons.Default.Add,
                         contentDescription = "Add thumbnail",
                         modifier = Modifier.size(48.dp),
-                        tint = if (isError) MaterialTheme.colorScheme.error else Color(0xFF9E9E9E)
+                        tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Add Course Thumbnail",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (isError) MaterialTheme.colorScheme.error else Color(0xFF6B6B6B),
+                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -324,9 +314,15 @@ fun DropdownSection(
                 isError = isError
             )
 
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { onExpandedChange(false) }
+            ) {
                 options.forEach { option ->
-                    DropdownMenuItem(text = { Text(option) }, onClick = { onOptionSelected(option) })
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = { onOptionSelected(option) }
+                    )
                 }
             }
         }
@@ -364,7 +360,3 @@ fun validateForm(formState: CourseFormState): Map<String, String> {
 
     return errors
 }
-
-
-
-

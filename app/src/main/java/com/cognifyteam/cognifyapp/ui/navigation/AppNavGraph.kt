@@ -23,14 +23,20 @@ import com.cognifyteam.cognifyapp.ui.course.SeeAllCoursesScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
 import com.cognifyteam.cognifyapp.ui.home.UserSearchScreen
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
+import com.cognifyteam.cognifyapp.ui.learningpath.screen.AddNewLearningPathScreen
+import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPathDetailScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 import com.cognifyteam.cognifyapp.ui.profile.ProfileViewModel
 import com.cognifyteam.cognifyapp.ui.profile.UserCoursesViewModel
 
 object AppNavRoutes {
     const val HOME = "home"
+
     const val SMART = "smart"
     // Rute untuk profil pengguna yang sedang login
+    const val ADDLP = "add_learning_path"
+    const val LP_DETAIL = "learning_path_details/{lpId}"
+
     const val PROFILE = "profile"
     const val COURSE_DETAILS = "course_details/{courseId}"
     const val SEARCH = "search"
@@ -74,11 +80,41 @@ fun AppNavGraph(
         }
         composable(AppNavRoutes.SMART) {
             MainLearningPathScreen(
+                // --- Meneruskan callbacks ke MainLearningPathScreen ---
+                appContainer = appContainer,
+                navController = navController,
                 onFabStateChange = onFabStateChange,
                 onTopBarStateChange = onTopBarStateChange,
                 onShowSnackbar = onShowSnackbar
             )
         }
+        composable(AppNavRoutes.ADDLP){
+            AddNewLearningPathScreen(
+                appContainer= appContainer,
+                navController = navController,
+                onFabStateChange = onFabStateChange,
+                onTopBarStateChange = onTopBarStateChange,
+                onShowSnackbar = onShowSnackbar // Meneruskan
+            )
+        }
+        composable(
+            route = AppNavRoutes.LP_DETAIL,
+            arguments = listOf(navArgument("lpId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val learningpathId = backStackEntry.arguments?.getString("lpId")
+            Log.d("CourseDetails", "Navigating to CourseScreen with courseId: $learningpathId")
+            if (learningpathId != null) {
+                // Panggil CourseScreen hanya dengan parameter yang dibutuhkan
+                LearningPathDetailScreen(
+                    navController = navController,
+                    onFabStateChange = onFabStateChange,
+                    onTopBarStateChange = onTopBarStateChange,
+                    onShowSnackbar = onShowSnackbar,
+                    learningPathId = learningpathId.toInt()
+                )
+            }
+        }
+
         composable(AppNavRoutes.SEARCH) {
             UserSearchScreen(
                 appContainer,

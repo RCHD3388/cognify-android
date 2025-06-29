@@ -1,6 +1,8 @@
 package com.cognifyteam.cognifyapp.ui.learningpath.screen
 
 import android.widget.Toast
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -30,6 +32,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -57,87 +60,59 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.LearningPathStep
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
+import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
-
-// --- MODEL DATA & DATA SAMPEL (Tidak ada perubahan) ---
-data class LearningPath(
-    val id: Int,
-    val title: String,
-    val description: String,
-    val authorName: String,
-    val authorInitials: String,
-    val timeAgo: String,
-    val level: String,
-    val tags: List<String>,
-    val likes: Int,
-    val comments: Int,
-    val enrolled: Double
-)
-
-val sampleLearningPaths = listOf(
-    LearningPath(
-        id = 1,
-        title = "Frontend Development Mastery",
-        description = "Sudahkah kamu menguasai fundamental frontend? Jika sudah, saatnya kamu melangkah lebih jauh untuk menjadi seorang Frontend Master! Di learning path ini, kamu akan mempelajari berbagai library dan framework yang akan membantumu dalam membuat website yang lebih interaktif dan dinamis.",
-        authorName = "Ahmad Sultoni",
-        authorInitials = "AS",
-        timeAgo = "2 jam yang lalu",
-        level = "Pemula",
-        tags = listOf("HTML", "CSS", "JavaScript", "React"),
-        likes = 234,
-        comments = 45,
-        enrolled = 1.2
-    ),
-    LearningPath(
-        id = 2,
-        title = "UI/UX Design Fundamentals",
-        description = "Kuasai prinsip-prinsip desain UI/UX dari konsep dasar hingga implementasi. Pelajari design thinking, user research, wireframing, prototyping, dan tools seperti Figma dan Adobe XD.",
-        authorName = "Maria Rosanti",
-        authorInitials = "MR",
-        timeAgo = "4 jam yang lalu",
-        level = "Menengah",
-        tags = listOf("UI Design", "UX Research", "Figma", "Prototyping"),
-        likes = 189,
-        comments = 32,
-        enrolled = 0.856
-    )
-)
-
-val filterCategories = listOf("Semua", "Programming", "Design", "Data Science", "Marketing")
 
 // --- SCREEN UTAMA (DENGAN PERUBAHAN) ---
 @Composable
 fun MainLearningPathScreen(
+    appContainer: AppContainer? = null,
+    navController: NavController? = null,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
-    onShowSnackbar: (String) -> Unit
+    onShowSnackbar: (String) -> Unit,
 ) {
+    val viewModel: LearningPathViewModel = viewModel(
+        factory = LearningPathViewModel.provideFactory(
+            smartRepository = appContainer!!.smartRepository
+        )
+    )
+    val uiState by viewModel.uiState.collectAsState()
+
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModel.provideFactory(
+            authRepository = appContainer.authRepository
+        )
+    )
+    val currentUser by userViewModel.userState.collectAsState()
+
     LaunchedEffect(Unit) {
-        // --- Konfigurasi FAB untuk UserSearchScreen ---
+        viewModel.loadInitialData()
         onFabStateChange(FabState(
-            isVisible = true, // Set FAB terlihat
-            icon = Icons.Filled.Add, // Ikon spesifik untuk layar ini
-            description = "Manage Paths", // Deskripsi aksesibilitas
+            isVisible = true,
+            icon = Icons.Filled.Add,
+            description = "Manage Paths",
             onClick = {
-                onShowSnackbar("Fab Clicked")
+                navController?.navigate("add_learning_path")
             }
         ))
-        onTopBarStateChange(TopBarState(
-            isVisible = false
-        ))
+        onTopBarStateChange(TopBarState(isVisible = false))
     }
 
-    var selectedCategory by remember { mutableStateOf("Semua") }
-    // --- BARU: State untuk menampung query pencarian ---
-    var searchQuery by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 
     LazyColumn(
@@ -145,51 +120,42 @@ fun MainLearningPathScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // --- Bagian Header (Banner) ---
-        item {
-            HeaderSection()
-        }
+        item { HeaderSection() }
 
-        // --- Tombol "My Path" ---
         item {
             MyPathButtonSection(
-                onMyPathClicked = { /* TODO: Navigasi ke layar My Path */ },
+                onMyPathClicked = { /* TODO */ },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
             )
         }
 
-        // --- Bagian Search Bar (DIUPDATE) ---
         item {
             SearchBarSection(
-                searchQuery = searchQuery,
-                onQueryChanged = { searchQuery = it },
-                onSearch = {
-                    focusManager.clearFocus() // Sembunyikan keyboard saat search
-                    // TODO: Tambahkan logika pencarian di sini
-                },
+                searchQuery = uiState.searchQuery,
+                onQueryChanged = viewModel::onSearchQueryChanged, // Bisa juga ditulis seperti ini
+                onSearch = { focusManager.clearFocus() },
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
             )
         }
 
-        // --- Bagian Filter Chips ---
         item {
             FilterChipSection(
-                categories = filterCategories,
-                selectedCategory = selectedCategory,
-                onCategorySelected = { selectedCategory = it }
+                categories = uiState.allCategories,
+                selectedCategory = uiState.selectedCategory,
+                onCategorySelected = viewModel::onCategorySelected // Referensi fungsi
             )
         }
 
-        // --- Bagian Judul "Learning Paths Terbaru" ---
-        item {
-            SectionTitle(title = "Learning Paths Terbaru", onSeeAllClicked = { /*TODO*/ })
-        }
+        item { SectionTitle(title = "Learning Paths Terbaru", onSeeAllClicked = { /*TODO*/ }) }
 
-        // --- Bagian Daftar Learning Path ---
-        items(sampleLearningPaths, key = { it.id }) { path ->
+        items(uiState.learningPaths, key = { it.id }) { path ->
             LearningPathCard(
                 path = path,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                // Tambahkan lambda untuk event klik like
+                onLikeClicked = { viewModel.onLikeClicked(path.id, currentUser!!.firebaseId) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                onClicked = { navController?.navigate("learning_path_details/${path.id}") },
+                userViewModel = userViewModel
             )
         }
     }
@@ -321,29 +287,38 @@ fun SearchBarSection(
 
 
 @Composable
-fun LearningPathCard(path: LearningPath, modifier: Modifier = Modifier) {
+fun LearningPathCard(
+    path: com.cognifyteam.cognifyapp.data.models.LearningPath,
+    onLikeClicked: () -> Unit, // Tambahkan parameter untuk event klik
+    onClicked: () -> Unit, // Tambahkan parameter untuk event klik
+    modifier: Modifier = Modifier,
+    userViewModel: UserViewModel
+) {
+    val currentUser by userViewModel.userState.collectAsState()
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClicked
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // ... Row Avatar, Title, Description, Tags tidak berubah ...
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Avatar(initials = path.authorInitials)
+                Avatar(initials = path.getAuthorInitial())
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = path.authorName,
+                        text = path.author_name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = path.timeAgo,
+                        text = path.createdAt,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -377,19 +352,30 @@ fun LearningPathCard(path: LearningPath, modifier: Modifier = Modifier) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
+            // --- Row Statistik (DIPERBARUI) ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                StatItem(icon = Icons.Default.Favorite, count = path.likes.toString(), color = Color(0xFFE91E63))
-                Spacer(modifier = Modifier.width(16.dp))
-                StatItem(icon = Icons.Default.Send, count = path.comments.toString())
-                Spacer(modifier = Modifier.weight(1f))
+                // Gunakan StatItem yang sudah diperbarui
                 StatItem(
-                    icon = Icons.Default.Send,
-                    count = if (path.enrolled >= 1) "${path.enrolled}k enrolled" else "${(path.enrolled * 1000).toInt()} enrolled"
+                    iconFilled = Icons.Filled.Favorite,
+                    iconOutlined = Icons.Outlined.Favorite, // Ikon baru
+                    count = path.likes.size.toString(),
+                    isFilled = path.likes.any { it.userId == currentUser!!.firebaseId }, // Status dari data
+                    // Gunakan warna `error` dari tema untuk like
+                    color = MaterialTheme.colorScheme.error,
+                    onClick = onLikeClicked // Teruskan event klik
                 )
+                Spacer(modifier = Modifier.width(16.dp))
+                // Item komentar tidak interaktif (tidak ada onClick)
+                StatItem(
+                    iconFilled = Icons.Default.Send, // Tetap gunakan satu ikon
+                    count = path.comments.size.toString()
+                )
+                Spacer(modifier = Modifier.weight(1f))
+
+                // --- StatItem untuk "enrolled" DIHAPUS ---
             }
         }
     }
@@ -512,14 +498,14 @@ fun LevelTag(text: String) {
 
 
 @Composable
-fun SkillTag(text: String) {
+fun SkillTag(text: String, textStyle: TextStyle = MaterialTheme.typography.bodySmall) {
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodySmall,
+            style = textStyle,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -528,20 +514,42 @@ fun SkillTag(text: String) {
 }
 
 @Composable
-fun StatItem(icon: ImageVector, count: String, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+fun StatItem(
+    iconFilled: ImageVector,
+    iconOutlined: ImageVector? = null, // Ikon outline opsional
+    count: String,
+    isFilled: Boolean = true, // Default terisi (untuk item non-interaktif)
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    onClick: (() -> Unit)? = null // Event klik opsional
+) {
+    // Pilih ikon berdasarkan state `isFilled`
+    val icon = if (isFilled) iconFilled else (iconOutlined ?: iconFilled)
+
+    // Buat Row bisa diklik jika ada fungsi onClick
+    val rowModifier = if (onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
+
+    Row(
+        modifier = rowModifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = null, // Akan lebih baik jika ada deskripsi yang tepat
             modifier = Modifier.size(18.dp),
-            tint = color
+            // Warna ikon sekarang mengikuti `color` jika terisi, atau default jika outline
+            tint = if (isFilled) color else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = count,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // Warna teks juga mengikuti warna ikon agar konsisten
+            color = if (isFilled) color else MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp
         )
     }
@@ -552,6 +560,8 @@ fun StatItem(icon: ImageVector, count: String, color: Color = MaterialTheme.colo
 fun MainLearningPathScreenPreview() {
     CognifyApplicationTheme {
         MainLearningPathScreen(
+            appContainer = null,
+            navController = rememberNavController(),
             onFabStateChange = { /* Do nothing in preview */ },
             onTopBarStateChange = { /* Do nothing in preview */ },
             onShowSnackbar = { /* Do nothing in preview */ }
@@ -564,6 +574,8 @@ fun MainLearningPathScreenPreview() {
 fun MainLearningPathScreenDarkPreview() {
     CognifyApplicationTheme(darkTheme = true) {
         MainLearningPathScreen(
+            appContainer = null,
+            navController = rememberNavController(),
             onFabStateChange = { /* Do nothing in preview */ },
             onTopBarStateChange = { /* Do nothing in preview */ },
             onShowSnackbar = { /* Do nothing in preview */ }
