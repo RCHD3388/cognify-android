@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.data.repositories
 
+import android.util.Log
 import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalDiscussionDataSource
 import com.cognifyteam.cognifyapp.data.sources.remote.CreatePostRequest
@@ -64,8 +65,10 @@ class DiscussionRepositoryImpl(
                         }
                     )
                 }
+                Log.d("DiscussionRepo", "Returning cached discussions.")
                 Result.success(discussionsWithReplies)
             } catch (cacheError: Exception) {
+                Log.e("DiscussionRepo", "Error parsing network response. Falling back to cache.", e)
                 Result.failure(cacheError)
             }
         }

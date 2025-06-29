@@ -73,6 +73,7 @@ import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.course.CourseListUiState
 import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
 import com.cognifyteam.cognifyapp.ui.course.CreatedCoursesUiState
 
@@ -167,7 +168,7 @@ fun ProfilePage(
 fun ProfileContent(
     user: User,
     isMyProfile: Boolean,
-    enrolledCoursesState: UserCoursesUiState,
+    enrolledCoursesState: CourseListUiState,
     createdCoursesState: CreatedCoursesUiState,
     navController: NavController,
     profileViewModel: ProfileViewModel
@@ -335,7 +336,7 @@ fun AboutMeSection(user: User, viewModel: ProfileViewModel, isMyProfile: Boolean
 }
 
 @Composable
-fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavController) {
+fun EnrolledCoursesSection(coursesState: CourseListUiState, navController: NavController) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(text = "Enrolled Courses", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -344,10 +345,10 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
             }
         }
         when (coursesState) {
-            is UserCoursesUiState.Loading -> {
+            is CourseListUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
-            is UserCoursesUiState.Success -> {
+            is CourseListUiState.Success -> {
                 if (coursesState.courses.isNotEmpty()) {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 12.dp, bottom = 24.dp)) {
                         items(coursesState.courses) { course ->
@@ -365,7 +366,7 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                     Text("This user hasn't enrolled in any courses yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
                 }
             }
-            is UserCoursesUiState.Error -> {
+            is CourseListUiState.Error -> {
                 Text(text = coursesState.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 16.dp))
             }
         }

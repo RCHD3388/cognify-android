@@ -26,6 +26,8 @@ interface CourseRepository {
     suspend fun getCourseById(courseId: String): Result<Course>
     suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest, course_owner_name: String): Result<Course>
     suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course>
+    suspend fun getCourses(sortBy: String): Result<List<Course>>
+    suspend fun getAllCourses(query: String? = null): Result<List<Course>>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -169,5 +171,59 @@ class CourseRepositoryImpl(
 
 
         return Result.failure(Exception("Failed to create course or response was empty"))
+    }
+
+    override suspend fun getCourses(sortBy: String): Result<List<Course>> {
+        return try {
+            // response sekarang bertipe BaseResponse<CourseListData>
+            val response = remoteDataSource.getCourses(sortBy)
+
+            // "Buka" lapisan: response.data.courses
+            // Ini akan mengambil array dari JSON Anda
+            val courseJsons = response.data.courses
+
+            // Mapping ke Domain Model tidak berubah
+            val courses = courseJsons.map { Course.fromJson(it) }
+            Result.success(courses)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAllCourses(query: String?): Result<List<Course>> {
+        try {
+            // 1. Panggil remote data source dengan query
+            val response = remoteDataSource.getAllCourses(query)
+
+            // Backend Anda untuk '/all' tidak memiliki nesting data di dalam data
+            val courseJsons = response.data.courses
+
+            // 2. Mapping ke Domain Model
+            val courses = courseJsons.map { Course.fromJson(it) }
+
+            // 3. HANYA update cache jika kita TIDAK sedang mencari.
+            // Ini mencegah hasil pencarian yang tidak lengkap menimpa cache utama.
+            if (query.isNullOrBlank()) {
+                localDataSource.upsertCourses(courses.map { it.toEntity() })
+            }
+
+            return Result.success(courses)
+
+        } catch (e: Exception) {
+            // 4. JIKA network gagal, fallback ke cache.
+            // Pencarian di cache dilakukan secara manual.
+            return Result.runCatching {
+                var cachedEntities = localDataSource.getAllCourses()
+
+                // Jika ada query, filter hasil dari cache
+                if (!query.isNullOrBlank()) {
+                    cachedEntities = cachedEntities.filter {
+                        it.name.contains(query, ignoreCase = true)
+                    }
+                }
+
+                cachedEntities.map { Course.fromEntity(it) }
+            }
+        }
     }
 }

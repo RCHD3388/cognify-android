@@ -51,5 +51,13 @@ interface CourseService {
         @Path("firebaseId") userId: String
     ): BaseResponse<UserCoursesDataWrapper>
 
+    @GET("course/search")
+    suspend fun getCourses(
+        @Query("sortBy") sortBy: String
+    ): BaseResponse<EnrolledCoursesData>
 
+    @GET("course/getAllCourse")
+    suspend fun getAllCourses(
+        @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
+    ): BaseResponse<EnrolledCoursesData>
 }

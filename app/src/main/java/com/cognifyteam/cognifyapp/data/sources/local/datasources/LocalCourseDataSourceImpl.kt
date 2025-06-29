@@ -26,6 +26,8 @@ interface LocalCourseDataSource {
 
     //get user created courses
     suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity>
+
+    suspend fun getAllCourses(): List<CourseEntity>
 }
 
 class LocalCourseDataSourceImpl(
@@ -52,5 +54,7 @@ class LocalCourseDataSourceImpl(
         return courseDao.getUserCreatedCourses(firebaseId)
     }
 
-
+    override suspend fun getAllCourses(): List<CourseEntity> {
+        return courseDao.getAllCourses()
+    }
 }

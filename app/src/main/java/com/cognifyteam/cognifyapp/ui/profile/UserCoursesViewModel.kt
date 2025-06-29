@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
+import com.cognifyteam.cognifyapp.ui.course.CourseListUiState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,8 +55,8 @@ class UserCoursesViewModel(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     // StateFlow utama untuk UI, sekarang didasarkan pada perubahan searchQuery
-    private val _uiState = MutableStateFlow<UserCoursesUiState>(UserCoursesUiState.Loading)
-    val uiState: StateFlow<UserCoursesUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<CourseListUiState>(CourseListUiState.Loading)
+    val uiState: StateFlow<CourseListUiState> = _uiState.asStateFlow()
 
     // ID user yang datanya sedang ditampilkan
     private var currentFirebaseId: String? = null
@@ -63,7 +64,7 @@ class UserCoursesViewModel(
     fun loadEnrolledCourses(firebaseId: String) {
         viewModelScope.launch {
             // Set state menjadi Loading setiap kali fungsi ini dipanggil
-            _uiState.value = UserCoursesUiState.Loading
+            _uiState.value = CourseListUiState.Loading
 
             // Panggil repository untuk mendapatkan hasilnya
             val result = courseRepository.getEnrolledCourses(firebaseId)
@@ -71,11 +72,11 @@ class UserCoursesViewModel(
             // "Buka" hasil dari repository
             result.onSuccess { courses ->
                 // Jika sukses, perbarui state dengan daftar kursus
-                _uiState.value = UserCoursesUiState.Success(courses)
+                _uiState.value = CourseListUiState.Success(courses)
             }.onFailure { exception ->
                 // Jika gagal, perbarui state dengan pesan error
                 Log.e("error euy", exception.message.toString())
-                _uiState.value = UserCoursesUiState.Error(exception.message ?: "Failed to load courses")
+                _uiState.value = CourseListUiState.Error(exception.message ?: "Failed to load courses")
             }
         }
     }
@@ -100,11 +101,11 @@ class UserCoursesViewModel(
                             query = query.ifBlank { null }
                         )
                         result.onSuccess { courses ->
-                            emit(UserCoursesUiState.Success(courses))
+                            emit(CourseListUiState.Success(courses))
                         }.onFailure { exception ->
-                            emit(UserCoursesUiState.Error(exception.message ?: "Error"))
+                            emit(CourseListUiState.Error(exception.message ?: "Error"))
                         }
-                    }.onStart { emit(UserCoursesUiState.Loading) } // Tampilkan loading setiap kali pencarian baru dimulai
+                    }.onStart { emit(CourseListUiState.Loading) } // Tampilkan loading setiap kali pencarian baru dimulai
                 }
                 .collect { state ->
                     _uiState.value = state

@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.ui.course
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,18 +28,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.cognifyteam.cognifyapp.data.AppContainer
-import com.cognifyteam.cognifyapp.data.models.Course
-import com.cognifyteam.cognifyapp.ui.common.UserViewModel
-import com.cognifyteam.cognifyapp.ui.profile.UserCoursesUiState
-import com.cognifyteam.cognifyapp.ui.profile.UserCoursesViewModel
-import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.cognifyteam.cognifyapp.R
+import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 
@@ -49,45 +46,40 @@ fun SeeAllCoursesScreen(
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit,
     appContainer: AppContainer,
-    onBackClick: () -> Unit = {},
-    onCourseClick: (Course) -> Unit = {}
+    onBackClick: () -> Unit,
+    onCourseClick: (String) -> Unit
 ) {
     // --- Inisialisasi ViewModel ---
-    val viewModel: UserCoursesViewModel = viewModel(
-        factory = UserCoursesViewModel.provideFactory(
+    val viewModel: CourseViewModel = viewModel(
+        factory = CourseViewModel.provideFactory(
             courseRepository = appContainer.courseRepository
         )
     )
-    // Untuk mendapatkan ID user yang login
-    val userViewModel: UserViewModel = viewModel(
-        factory = UserViewModel.provideFactory(
-            authRepository = appContainer.authRepository
-        )
-    )
 
-    // --- Amati State ---
-    val uiState by viewModel.uiState.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val loggedInUser by userViewModel.userState.collectAsState()
+    // --- State Management ---
+    val uiState by viewModel.allCoursesUiState.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState() // Gunakan state dari ViewModel
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     // --- Efek Samping ---
-    // Panggil initialize sekali saja saat loggedInUser tersedia
-    LaunchedEffect(loggedInUser) {
+    LaunchedEffect(key1 = Unit) {
+        // Konfigurasi UI Utama (TopBar & FAB)
         onFabStateChange(FabState(isVisible = false))
-        onTopBarStateChange(TopBarState(isVisible = true,
+        onTopBarStateChange(TopBarState(
+            isVisible = true,
             title = "All Courses",
             navigationIcon = {
-                IconButton(onClick = onBackClick) {
+                IconButton(onClick = { onBackClick() }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface
+                        contentDescription = "Back"
                     )
                 }
-            }))
-        loggedInUser?.firebaseId?.let {
-            viewModel.initialize(it)
-        }
+            }
+        ))
+
+        // Muat data awal - tampilkan semua kursus
+        viewModel.loadInitialAllCourses()
     }
 
     Column(
@@ -95,45 +87,101 @@ fun SeeAllCoursesScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Search Bar (sekarang terhubung ke ViewModel)
+        // Search Bar yang terhubung ke CourseViewModel
         SearchBar(
             query = searchQuery,
-            onQueryChange = { viewModel.onSearchQueryChanged(it) },
-            onSearch = { /* keyboardController?.hide() */ },
+            onQueryChange = { query ->
+                viewModel.onSearchQueryChanged(query)
+            },
+            onSearch = {
+                keyboardController?.hide()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        // Course List (sekarang menampilkan berdasarkan state)
+        // Course List yang menampilkan hasil dari allCoursesUiState
         when (val state = uiState) {
-            is UserCoursesUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            is CourseListUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Loading courses...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-            is UserCoursesUiState.Error -> {
-                Text(
-                    text = state.message,
-                    color = Color.Red,
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+            is CourseListUiState.Error -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Error loading courses",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = state.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.loadInitialAllCourses() }
+                    ) {
+                        Text("Retry")
+                    }
+                }
             }
-            is UserCoursesUiState.Success -> {
+            is CourseListUiState.Success -> {
                 if (state.courses.isEmpty()) {
                     EmptySearchResult(searchQuery = searchQuery)
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Header dengan jumlah course
+                        item {
+                            Text(
+                                text = if (searchQuery.isNotEmpty()) {
+                                    "${state.courses.size} courses found for \"$searchQuery\""
+                                } else {
+                                    "${state.courses.size} courses available"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+
                         items(state.courses, key = { it.courseId }) { course ->
                             CourseCard(
                                 course = course,
-                                onClick = { onCourseClick(course) }
+                                onClick = { onCourseClick(course.courseId) }
                             )
+                        }
+
+                        // Bottom spacing
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
@@ -155,13 +203,13 @@ fun SearchBar(
         modifier = modifier,
         placeholder = {
             Text(
-                text = "Search courses...",
+                "Search courses...",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         leadingIcon = {
             Icon(
-                imageVector = Icons.Default.Search,
+                Icons.Default.Search,
                 contentDescription = "Search",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -170,19 +218,15 @@ fun SearchBar(
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
-                        imageVector = Icons.Default.Clear,
+                        Icons.Default.Clear,
                         contentDescription = "Clear search",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         },
-        keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Search
-        ),
-        keyboardActions = KeyboardActions(
-            onSearch = { onSearch() }
-        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
         singleLine = true,
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
@@ -201,32 +245,32 @@ fun EmptySearchResult(
 ) {
     Column(
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.Search,
+            Icons.Default.Search,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
         Text(
-            text = "No courses found",
+            text = "No Courses Found",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Text(
-            text = "Try searching with different keywords or check your spelling",
+            text = if (searchQuery.isNotEmpty()) {
+                "No results for \"$searchQuery\". Try searching with different keywords."
+            } else {
+                "There are no courses available at the moment."
+            },
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             ),
@@ -244,49 +288,47 @@ fun CourseCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(240.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
+        Row(
+            modifier = Modifier.height(120.dp)
         ) {
-            // --- BAGIAN YANG DIUBAH ---
-            // Menggunakan Image biasa dengan gambar dari drawable
-            Image(
-                // Menggunakan gambar placeholder statis untuk semua kartu
-                painter = painterResource(id = R.drawable.robot), // Ganti dengan nama drawable Anda
+            // Course Thumbnail
+            AsyncImage(
+                model = "http://10.0.2.2:3000${course.thumbnail}",
                 contentDescription = course.name,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                contentScale = ContentScale.Crop // Pastikan gambar memenuhi area
+                    .fillMaxHeight()
+                    .width(120.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.robot),
+                error = painterResource(id = R.drawable.robot)
             )
-            // --- AKHIR BAGIAN YANG DIUBAH ---
 
-            // Course Details (tidak ada perubahan di sini)
+            // Course Details
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(12.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
+                // Top Section - Title and Author
                 Column {
                     Text(
                         text = course.name,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontWeight = FontWeight.Bold
                         ),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = course.description,
+                        text = "by ${course.course_owner_name}",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
@@ -296,48 +338,30 @@ fun CourseCard(
                     )
                 }
 
-                // Bottom Row: Rating and Progress
-                Column {
+                // Bottom Section - Rating and Price
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Rating",
-                                tint = Color(0xFFFFC107),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = course.rating,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(16.dp)
+                        )
                         Text(
-                            text = "${(50 * 100).toInt()}%",
+                            text = course.rating,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    )
                 }
             }
         }

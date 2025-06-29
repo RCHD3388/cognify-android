@@ -22,4 +22,7 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses WHERE course_owner = :firebaseId")
     suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity>
+
+    @Query("SELECT * FROM courses ORDER BY name ASC") // Urutkan berdasarkan nama
+    suspend fun getAllCourses(): List<CourseEntity>
 }

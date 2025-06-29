@@ -16,7 +16,14 @@ import kotlinx.coroutines.launch
 import java.io.File
 import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionState
 import com.cognifyteam.cognifyapp.ui.course.addcourse.MaterialState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
+sealed interface CourseListUiState {
+    data class Success(val courses: List<Course>) : CourseListUiState
+    data class Error(val message: String) : CourseListUiState
+    object Loading : CourseListUiState
+}
 // DIUBAH: Ganti nama agar lebih spesifik
 sealed interface CreatedCoursesUiState {
     data class Success(val courses: List<Course>) : CreatedCoursesUiState
@@ -42,6 +49,15 @@ class CourseViewModel(
     private val courseRepository: CourseRepository
 ) : ViewModel() {
 
+    private val _recentCoursesState = MutableStateFlow<CourseListUiState>(CourseListUiState.Loading)
+    val recentCoursesState: StateFlow<CourseListUiState> = _recentCoursesState.asStateFlow()
+
+    private val _allCoursesState = MutableStateFlow<CourseListUiState>(CourseListUiState.Loading)
+    val allsellerCoursesState: StateFlow<CourseListUiState> = _allCoursesState.asStateFlow()
+
+    private val _highestRatedCoursesState = MutableStateFlow<CourseListUiState>(CourseListUiState.Loading)
+    val highestRatedCoursesState: StateFlow<CourseListUiState> = _highestRatedCoursesState.asStateFlow()
+
     // DIUBAH: State untuk daftar course yang DIBUAT
     private val _createdCoursesUiState = MutableStateFlow<CreatedCoursesUiState>(CreatedCoursesUiState.Loading)
     val createdCoursesUiState: StateFlow<CreatedCoursesUiState> = _createdCoursesUiState
@@ -50,8 +66,22 @@ class CourseViewModel(
     private val _courseDetailState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
     val courseDetailState: StateFlow<CourseDetailUiState> = _courseDetailState.asStateFlow()
 
+    private val _allCoursesList = MutableStateFlow<List<Course>>(emptyList())
     private val _event = MutableSharedFlow<String>()
     val event: SharedFlow<String> = _event
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _allCoursesUiState = MutableStateFlow<CourseListUiState>(CourseListUiState.Loading)
+    val allCoursesUiState: StateFlow<CourseListUiState> = _allCoursesUiState.asStateFlow()
+
+    private var searchJob: Job? = null
+
+    init {
+        // Panggil pencarian awal saat ViewModel pertama kali dibuat
+        searchAllCourses("")
+    }
 
     // --- FUNGSI BARU UNTUK MEMUAT DETAIL ---
     fun loadCourseDetails(courseId: String) {
@@ -64,6 +94,32 @@ class CourseViewModel(
                 _courseDetailState.value = CourseDetailUiState.Error(exception.message ?: "Failed to load course details")
             }
         }
+    }
+
+    fun searchAllCourses(query: String) {
+        _searchQuery.value = query
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300) // Debounce
+            _allCoursesUiState.value = CourseListUiState.Loading
+            val result = courseRepository.getAllCourses(query.ifBlank { null })
+            result.onSuccess { courses ->
+                _allCoursesUiState.value = CourseListUiState.Success(courses)
+            }.onFailure { e ->
+                _allCoursesUiState.value = CourseListUiState.Error(e.message ?: "Failed to load courses")
+            }
+        }
+    }
+
+    fun loadInitialAllCourses() {
+        // Panggil pencarian dengan query kosong
+        searchAllCourses("")
+    }
+
+    fun loadAllHomeCourses() {
+        loadCoursesByType("recent", _recentCoursesState)
+        loadCoursesByType("bestseller", _allCoursesState)
+        loadCoursesByType("highest_rating", _highestRatedCoursesState)
     }
 
     // --- State untuk Membuat Course Baru ---
@@ -87,6 +143,12 @@ class CourseViewModel(
                 _createCourseState.value = CreateCourseState.Error(exception.message ?: "Gagal membuat course")
             }
         }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        // Fungsi ini sekarang menjadi satu-satunya cara untuk memicu pencarian
+        _searchQuery.value = query
+        searchAllCourses(query)
     }
 
     // DIUBAH: Fungsi ini sekarang memperbarui state yang benar
@@ -147,6 +209,15 @@ class CourseViewModel(
                 materials[materialIndex] = updatedMaterial
                 _sections.value = currentSections
             }
+        }
+    }
+
+    private fun loadCoursesByType(type: String, stateFlow: MutableStateFlow<CourseListUiState>) {
+        viewModelScope.launch {
+            stateFlow.value = CourseListUiState.Loading
+            courseRepository.getCourses(type)
+                .onSuccess { courses -> stateFlow.value = CourseListUiState.Success(courses) }
+                .onFailure { e -> stateFlow.value = CourseListUiState.Error(e.message ?: "Error") }
         }
     }
 
