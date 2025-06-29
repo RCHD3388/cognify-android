@@ -9,6 +9,7 @@ import com.cognifyteam.cognifyapp.data.models.GeneratedLearningPath
 import com.cognifyteam.cognifyapp.data.models.LearningPath
 import com.cognifyteam.cognifyapp.data.models.LikedRes
 import com.cognifyteam.cognifyapp.data.models.SaveLearningPathPayload
+import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserJson
@@ -29,6 +30,8 @@ interface SmartRepository {
     suspend fun saveNewLP(userId: String, title: String, learningPaths: GeneratedLearningPath): Result<String>
     suspend fun getAllLearningPaths(): Result<List<LearningPath>>
     suspend fun likePath(smartId: Int, userId: String): Result<String>
+    suspend fun getOneLearningPath(id: Int): Result<LearningPath>
+    suspend fun addNewPost(userId: String, smartId: Int, content: String): Result<SmartComment>
 }
 
 class SmartRepositoryImpl(
@@ -106,6 +109,42 @@ class SmartRepositoryImpl(
                     }
                 },
                 onFailure = {
+                    Log.d("asdasd", "${it.message}")
+                    Result.failure(Exception(it.message))
+                }
+            )
+        } catch (e: Exception){
+            Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
+        }
+    }
+
+    override suspend fun getOneLearningPath(id: Int): Result<LearningPath> {
+        return try {
+            val result = localSmartDataSource.getOne(id);
+            if(result != null){
+                return Result.success(result)
+            }else{
+                Result.failure(Exception("Learning Path not found"))
+            }
+        } catch (e: Exception){
+            Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
+        }
+    }
+
+    override suspend fun addNewPost(
+        userId: String,
+        smartId: Int,
+        content: String
+    ): Result<SmartComment> {
+        return try {
+            val result = remoteSmartDataSourceImpl.addComment(userId, smartId, content)
+            result.fold(
+                onSuccess = {
+                    localSmartDataSource.addComment(it)
+                    Result.success(it)
+                },
+                onFailure = {
+                    Log.d("asdasd", "${it.message}")
                     Result.failure(Exception(it.message))
                 }
             )

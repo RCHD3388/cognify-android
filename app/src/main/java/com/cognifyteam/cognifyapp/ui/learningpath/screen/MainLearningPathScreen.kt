@@ -123,13 +123,6 @@ fun MainLearningPathScreen(
         item { HeaderSection() }
 
         item {
-            MyPathButtonSection(
-                onMyPathClicked = { /* TODO */ },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-            )
-        }
-
-        item {
             SearchBarSection(
                 searchQuery = uiState.searchQuery,
                 onQueryChanged = viewModel::onSearchQueryChanged, // Bisa juga ditulis seperti ini
@@ -194,34 +187,6 @@ fun HeaderSection() {
                 text = "Temukan jalur pembelajaran yang dipersonalisasi untuk kebutuhan Anda",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-            )
-        }
-    }
-}
-
-@Composable
-fun MyPathButtonSection(onMyPathClicked: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButton(
-        onClick = onMyPathClicked,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
-        contentPadding = PaddingValues(vertical = 14.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.Build,
-                contentDescription = "My Path Icon",
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "My Path",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
             )
         }
     }

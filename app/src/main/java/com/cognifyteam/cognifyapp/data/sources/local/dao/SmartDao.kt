@@ -18,6 +18,9 @@ interface SmartDao {
     @Query("SELECT * FROM smarts")
     suspend fun getAllSmarts(): List<LearningPathEntity>
 
+    @Query("SELECT * FROM smarts WHERE id = :id")
+    suspend fun getSmartById(id: Int): LearningPathEntity?
+
     @Query("DELETE FROM smarts")
     suspend fun clearAll()
 }

@@ -106,6 +106,7 @@ fun AppNavGraph(
             if (learningpathId != null) {
                 // Panggil CourseScreen hanya dengan parameter yang dibutuhkan
                 LearningPathDetailScreen(
+                    appContainer = appContainer,
                     navController = navController,
                     onFabStateChange = onFabStateChange,
                     onTopBarStateChange = onTopBarStateChange,
