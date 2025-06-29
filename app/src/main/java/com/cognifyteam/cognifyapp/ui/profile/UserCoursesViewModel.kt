@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -73,6 +74,7 @@ class UserCoursesViewModel(
                 _uiState.value = UserCoursesUiState.Success(courses)
             }.onFailure { exception ->
                 // Jika gagal, perbarui state dengan pesan error
+                Log.e("error euy", exception.message.toString())
                 _uiState.value = UserCoursesUiState.Error(exception.message ?: "Failed to load courses")
             }
         }

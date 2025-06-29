@@ -52,12 +52,12 @@ class CourseRepositoryImpl(
             val response = remoteDataSource.getEnrolledCourses(firebaseId, query)
             val courseJsons = response.data.courses
             val courses = courseJsons.map { Course.fromJson(it) }
-
-            if (courses.isNotEmpty()) {
-                localDataSource.upsertCourses(courses.map { it.toEntity() })
-                val crossRefs = courses.map { UserCourseCrossRef(firebaseId, it.courseId) }
-                localDataSource.insertUserCourseCrossRefs(crossRefs)
-            }
+            Log.e("isi",courses.toString())
+//            if (courses.isNotEmpty()) {
+//                localDataSource.upsertCourses(courses.map { it.toEntity() })
+//                val crossRefs = courses.map { UserCourseCrossRef(firebaseId, it.courseId) }
+//                localDataSource.insertUserCourseCrossRefs(crossRefs)
+//            }
             return Result.success(courses)
         } catch (e: Exception) {
             return try {
@@ -145,6 +145,4 @@ class CourseRepositoryImpl(
 
         }
     }
-
-
 }

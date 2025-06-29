@@ -449,7 +449,7 @@ fun EnrolledCoursesSection(coursesState: UserCoursesUiState, navController: NavC
                         items(coursesState.courses) { course ->
                             CourseCard(
                                 title = course.name,
-                                author = course.ownerName,
+                                author = course.course_owner_name,
                                 rating = course.rating.toFloatOrNull() ?: 0f,
                                 progress = (30..85).random(),
                                 imageUrl = "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop",

@@ -1,19 +1,17 @@
 package com.cognifyteam.cognifyapp.ui.navigation
 
 import android.util.Log
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.cognifyteam.cognifyapp.data.AppContainer
-import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
@@ -24,19 +22,21 @@ import com.cognifyteam.cognifyapp.ui.course.CourseViewModel
 import com.cognifyteam.cognifyapp.ui.course.SeeAllCoursesScreen
 import com.cognifyteam.cognifyapp.ui.home.HomeScreen
 import com.cognifyteam.cognifyapp.ui.home.UserSearchScreen
+import com.cognifyteam.cognifyapp.ui.learningpath.screen.MainLearningPathScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 import com.cognifyteam.cognifyapp.ui.profile.ProfileViewModel
 import com.cognifyteam.cognifyapp.ui.profile.UserCoursesViewModel
-import kotlin.math.log
 
 object AppNavRoutes {
     const val HOME = "home"
     const val SMART = "smart"
+    // Rute untuk profil pengguna yang sedang login
     const val PROFILE = "profile"
     const val COURSE_DETAILS = "course_details/{courseId}"
     const val SEARCH = "search"
     const val COURSE = "course"
     const val ALLCOURSE = "allcourse"
+    // Rute BARU untuk melihat profil pengguna lain
     const val USER_PROFILE = "user_profile/{firebaseId}"
 }
 
@@ -64,21 +64,19 @@ fun AppNavGraph(
 
     NavHost(
         navController = navController,
-        // DIUBAH: startDestination sekarang bisa jadi rute profil atau home
         startDestination = AppBottomNavItem.Home.route
     ) {
-
+        // ... (composable lain seperti HOME, SMART, SEARCH, COURSE, ALLCOURSE tetap sama)
         composable(AppNavRoutes.HOME) {
             HomeScreen(navController, appContainer,onFabStateChange = onFabStateChange,
                 onTopBarStateChange = onTopBarStateChange,
-                onShowSnackbar = onShowSnackbar) // Meneruskan
+                onShowSnackbar = onShowSnackbar)
         }
         composable(AppNavRoutes.SMART) {
             MainLearningPathScreen(
-                // --- Meneruskan callbacks ke MainLearningPathScreen ---
                 onFabStateChange = onFabStateChange,
                 onTopBarStateChange = onTopBarStateChange,
-                onShowSnackbar = onShowSnackbar // Meneruskan
+                onShowSnackbar = onShowSnackbar
             )
         }
         composable(AppNavRoutes.SEARCH) {
@@ -87,99 +85,58 @@ fun AppNavGraph(
                 navController,
                 onFabStateChange = onFabStateChange,
                 onTopBarStateChange = onTopBarStateChange,
-                onShowSnackbar = onShowSnackbar // Meneruskan
+                onShowSnackbar = onShowSnackbar
             )
         }
         composable(AppNavRoutes.COURSE) {
             AddCourseScreen(navController, appContainer)
         }
-
-        composable(
-            route = AppNavRoutes.USER_PROFILE,
-            arguments = listOf(navArgument("firebaseId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            // Ambil firebaseId dari argumen navigasi
-            val firebaseId = backStackEntry.arguments?.getString("firebaseId")
-
-            if (firebaseId != null) {
-                // Gunakan kembali Composable ProfilePage, tetapi dengan ID yang berbeda
-                val profileViewModel: ProfileViewModel = viewModel(
-                    factory = ProfileViewModel.provideFactory(
-                        postsRepository = appContainer.profileRepository
-                    )
-                )
-
-                val userCoursesViewModel: UserCoursesViewModel = viewModel(
-                    factory = UserCoursesViewModel.provideFactory(
-                        courseRepository = appContainer.courseRepository
-                    )
-                )
-
-                ProfilePage(
-                    navController = navController,
-                    authViewModel = authViewModel,
-                    profileViewModel = profileViewModel,
-                    userCoursesViewModel = userCoursesViewModel,
-                    userViewModel = userViewModel,
-                    firebaseId = firebaseId,
-                    onFabStateChange = onFabStateChange,
-                    onTopBarStateChange = onTopBarStateChange,
-                    onShowSnackbar = onShowSnackbar // Meneruskan
-                )
-            }
-        }
-
-        composable(AppNavRoutes.PROFILE) {
-
-            // Dapatkan ID user dari state otentikasi
-            val firebaseId = currentUser?.firebaseId
-
-            // Hanya tampilkan halaman profil jika user sudah terotentikasi dan kita punya ID-nya
-            if (firebaseId != null) {
-
-                // Buat ProfileViewModel menggunakan factory
-                val profileViewModel: ProfileViewModel = viewModel(
-                    factory = ProfileViewModel.provideFactory(
-                        postsRepository = appContainer.profileRepository
-                    )
-                )
-
-                val userCoursesViewModel: UserCoursesViewModel = viewModel(
-                    factory = UserCoursesViewModel.provideFactory(
-                        courseRepository = appContainer.courseRepository
-                    )
-                )
-                val coursesViewModel: CourseViewModel = viewModel(
-                    factory = CourseViewModel.provideFactory(
-                        courseRepository = appContainer.courseRepository
-                    )
-                )
-
-                // Panggil ProfilePage dengan semua parameter yang dibutuhkan
-//                Log.d("ProfileViewModel", "ProfileViewModel created with firebaseId: $firebaseId")
-                ProfilePage(
-                    navController = navController,
-                    authViewModel = authViewModel, // Untuk aksi logout
-                    profileViewModel = profileViewModel, // Untuk data profil
-                    userCoursesViewModel = userCoursesViewModel,
-                    userViewModel = userViewModel,
-                    firebaseId = firebaseId, // Berikan ID user
-                    onFabStateChange = onFabStateChange,
-                    onTopBarStateChange = onTopBarStateChange,
-                    onShowSnackbar = onShowSnackbar, // Meneruskan
-                    courseViewModel = coursesViewModel
-                )
-
-            } else {
-//                Log.d("ProfileViewModel", "User not authenticated or firebaseId is null")
-//                authViewModel.logout()
-            }
-        }
-
         composable(AppNavRoutes.ALLCOURSE) {
             SeeAllCoursesScreen(onFabStateChange = onFabStateChange,
                 onTopBarStateChange = onTopBarStateChange,
                 onShowSnackbar = onShowSnackbar, appContainer, onBackClick = { navController.popBackStack() }, onCourseClick = { courseId -> navController.navigate("course_details/$courseId") })
+        }
+
+
+        // --- LOGIKA GABUNGAN UNTUK SEMUA HALAMAN PROFIL ---
+
+        // Rute untuk profil milik sendiri (tanpa argumen)
+        composable(AppNavRoutes.PROFILE) {
+            val firebaseId = currentUser?.firebaseId
+            if (firebaseId != null) {
+                // Panggil ProfilePage dengan ID user yang sedang login
+                ProfilePageComposable(
+                    navController = navController,
+                    authViewModel = authViewModel,
+                    userViewModel = userViewModel,
+                    appContainer = appContainer,
+                    firebaseId = firebaseId,
+                    onFabStateChange = onFabStateChange,
+                    onTopBarStateChange = onTopBarStateChange,
+                    onShowSnackbar = onShowSnackbar
+                )
+            }
+        }
+
+        // Rute untuk profil user lain (dengan argumen firebaseId)
+        composable(
+            route = AppNavRoutes.USER_PROFILE,
+            arguments = listOf(navArgument("firebaseId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val firebaseId = backStackEntry.arguments?.getString("firebaseId")
+            if (firebaseId != null) {
+                // Panggil ProfilePage yang sama, tetapi dengan ID dari argumen
+                ProfilePageComposable(
+                    navController = navController,
+                    authViewModel = authViewModel,
+                    userViewModel = userViewModel,
+                    appContainer = appContainer,
+                    firebaseId = firebaseId,
+                    onFabStateChange = onFabStateChange,
+                    onTopBarStateChange = onTopBarStateChange,
+                    onShowSnackbar = onShowSnackbar
+                )
+            }
         }
 
         composable(
@@ -187,9 +144,7 @@ fun AppNavGraph(
             arguments = listOf(navArgument("courseId") { type = NavType.StringType })
         ) { backStackEntry ->
             val courseId = backStackEntry.arguments?.getString("courseId")
-            Log.d("CourseDetails", "Navigating to CourseScreen with courseId: $courseId")
             if (courseId != null) {
-                // Panggil CourseScreen hanya dengan parameter yang dibutuhkan
                 CourseScreen(
                     navController = navController,
                     courseId = courseId,
@@ -201,4 +156,52 @@ fun AppNavGraph(
             }
         }
     }
+}
+
+/**
+ * Composable helper untuk menghindari duplikasi kode saat membuat instance
+ * ViewModel untuk ProfilePage.
+ */
+@Composable
+private fun ProfilePageComposable(
+    navController: NavHostController,
+    authViewModel: AuthViewModel,
+    userViewModel: UserViewModel,
+    appContainer: AppContainer,
+    firebaseId: String,
+    onFabStateChange: (FabState) -> Unit,
+    onTopBarStateChange: (TopBarState) -> Unit,
+    onShowSnackbar: (String) -> Unit
+) {
+    // Buat semua ViewModel yang dibutuhkan oleh ProfilePage di sini
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.provideFactory(
+            postsRepository = appContainer.profileRepository
+        )
+    )
+    val userCoursesViewModel: UserCoursesViewModel = viewModel(
+        key = "enrolled_$firebaseId", // Key unik untuk enrolled courses
+        factory = UserCoursesViewModel.provideFactory(
+            courseRepository = appContainer.courseRepository
+        )
+    )
+    val courseViewModel: CourseViewModel = viewModel(
+        key = "created_$firebaseId", // Key unik untuk created courses
+        factory = CourseViewModel.provideFactory(
+            courseRepository = appContainer.courseRepository
+        )
+    )
+
+    ProfilePage(
+        navController = navController,
+        authViewModel = authViewModel,
+        profileViewModel = profileViewModel,
+        userCoursesViewModel = userCoursesViewModel,
+        userViewModel = userViewModel,
+        courseViewModel = courseViewModel,
+        firebaseId = firebaseId,
+        onFabStateChange = onFabStateChange,
+        onTopBarStateChange = onTopBarStateChange,
+        onShowSnackbar = onShowSnackbar
+    )
 }
