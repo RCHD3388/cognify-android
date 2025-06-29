@@ -3,12 +3,14 @@ package com.cognifyteam.cognifyapp.data.sources.remote.smart
 import android.util.Log
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.AppContainerImpl
+import com.cognifyteam.cognifyapp.data.models.CommentBody
 import com.cognifyteam.cognifyapp.data.models.GenerateLearningPathPayloadJson
 import com.cognifyteam.cognifyapp.data.models.GeneratedLearningPath
 import com.cognifyteam.cognifyapp.data.models.LearningPath
 import com.cognifyteam.cognifyapp.data.models.LikedBody
 import com.cognifyteam.cognifyapp.data.models.LikedRes
 import com.cognifyteam.cognifyapp.data.models.SaveLearningPathPayload
+import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.models.UserJson
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
@@ -20,6 +22,7 @@ interface RemoteSmartDataSource {
     suspend fun save(payloadJson: SaveLearningPathPayload): Result<LearningPath>
     suspend fun getAll(): Result<List<LearningPath>>
     suspend fun likeSmart(smartId: Int, userId: String): Result<LikedRes>
+    suspend fun addComment(userId: String, smartId: Int, content: String): Result<SmartComment>
 }
 
 class RemoteSmartDataSourceImpl(
@@ -84,6 +87,29 @@ class RemoteSmartDataSourceImpl(
     override suspend fun likeSmart(smartId: Int, userId: String): Result<LikedRes> {
         try {
             val response = smartService.likeSmart(smartId, LikedBody(userId))
+            if(response.isSuccessful){
+                val body = response.body()
+                if (body != null){
+                    return Result.success(body.data.data);
+                }else{
+                    return Result.failure(Exception("Empty response"))
+                }
+            } else {
+                val error = AppContainerImpl.parseErrorMessage(response.errorBody()?.string())
+                return Result.failure(Exception("Failed to like. Please check your internet connection."))
+            }
+        } catch (e: Exception){
+            return Result.failure(Exception("Failed to like. Please check your internet connection."))
+        }
+    }
+
+    override suspend fun addComment(
+        userId: String,
+        smartId: Int,
+        content: String
+    ): Result<SmartComment> {
+        try {
+            val response = smartService.addComment(smartId, CommentBody(userId, content))
             if(response.isSuccessful){
                 val body = response.body()
                 if (body != null){

@@ -16,9 +16,11 @@ import com.cognifyteam.cognifyapp.data.models.Section
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
+import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.MaterialService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.PaymentTokenResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.services.SectionService
 import com.cognifyteam.cognifyapp.ui.course.addcourse.MaterialState
 import com.squareup.moshi.Moshi
@@ -56,6 +58,8 @@ interface RemoteCourseDataSource {
         materials: List<MaterialState>,
         context: Context
     ): ApiResponse<List<MaterialJson>>
+
+    suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse>
 }
 
 class RemoteCourseDataSourceImpl(
@@ -178,5 +182,7 @@ class RemoteCourseDataSourceImpl(
             ) ?: "application/octet-stream"
     }
 
-
+    override suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse> {
+        return courseService.createPayment(courseId, createPaymentRequest)
+    }
 }

@@ -21,7 +21,8 @@ data class LearningPathStepJson(
     val title: String,
     val description: String,
     val estimatedTime: String,
-    val smartId: Int
+    val smartId: Int,
+    val id : Int,
 )
 
 @Entity(tableName = "smart_steps")
@@ -32,8 +33,8 @@ data class LearningPathStepEntity (
     val estimatedTime: String,
     val smartId: Int,
 
-    @PrimaryKey(autoGenerate = true)
-    val id : Long = 0,
+    @PrimaryKey(autoGenerate = false)
+    val id : Int,
 )
 
 @Parcelize
@@ -43,6 +44,7 @@ data class LearningPathStep (
     val description: String,
     val estimatedTime: String,
     val smartId: Int,
+    val id : Int,
 ): Parcelable{
     companion object {
         fun fromEntity(entity: LearningPathStepEntity): LearningPathStep {
@@ -51,7 +53,8 @@ data class LearningPathStep (
                 title = entity.title,
                 description = entity.description,
                 estimatedTime = entity.estimatedTime,
-                smartId = entity.smartId
+                smartId = entity.smartId,
+                id = entity.id
             )
         }
         fun fromJson(json: LearningPathStepJson): LearningPathStep {
@@ -60,7 +63,8 @@ data class LearningPathStep (
                 title = json.title,
                 description = json.description,
                 estimatedTime = json.estimatedTime,
-                smartId = json.smartId
+                smartId = json.smartId,
+                id = json.id
             )
         }
     }
@@ -70,7 +74,8 @@ data class LearningPathStep (
             title = title,
             description = description,
             estimatedTime = estimatedTime,
-            smartId = smartId
+            smartId = smartId,
+            id = id
         )
     }
     fun toEntity(): LearningPathStepEntity {
@@ -79,7 +84,8 @@ data class LearningPathStep (
             title = title,
             description = description,
             estimatedTime = estimatedTime,
-            smartId = smartId
+            smartId = smartId,
+            id = id
         )
     }
 }
@@ -235,6 +241,7 @@ data class LearningPath(
             SmartLike(
                 userId = like.userId,
                 smartId = like.smartId,
+                id = like.id
             )
         }
     }
@@ -243,8 +250,11 @@ data class LearningPath(
             SmartComment(
                 userId = comment.userId,
                 smartId = comment.smartId,
+                author_name = comment.author_name,
+                author_email = comment.author_email,
                 content = comment.content,
-                createdAt = comment.createdAt
+                createdAt = comment.createdAt,
+                id = comment.id
             )
         }
     }
@@ -255,7 +265,8 @@ data class LearningPath(
                 title = step.title,
                 description = step.description,
                 estimatedTime = step.estimatedTime,
-                smartId = step.smartId
+                smartId = step.smartId,
+                id = step.id
             )
         }
     }
@@ -284,8 +295,8 @@ data class SmartLike(
     val userId: String,
     val smartId: Int,
 
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0
+    @PrimaryKey(autoGenerate = false)
+    val id: Int
 ): Parcelable
 
 @JsonClass(generateAdapter = true)
@@ -294,16 +305,35 @@ data class SmartLike(
 data class SmartComment(
     val userId: String,
     val smartId: Int,
+    val author_name: String,
+    val author_email: String,
     val content: String,
     val createdAt: String,
 
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0
-): Parcelable
+    @PrimaryKey(autoGenerate = false)
+    val id: Int
+): Parcelable {
+    fun getAuthorInitial(): String{
+        val words = this.author_name.trim().split(' ').filter { it.isNotBlank() }
+        return when {
+            words.isEmpty() -> ""
+            words.size == 1 -> {
+                words[0].first().toString().uppercase()
+            }
+
+            else -> {
+                val firstInitial = words[0].first()
+                val secondInitial = words[1].first()
+                "$firstInitial$secondInitial".uppercase()
+            }
+        }
+    }
+}
 
 @JsonClass(generateAdapter = true)
 @Parcelize()
 data class LikedRes(
+    val likeId: Int,
     val liked: Boolean,
     val message: String
 ): Parcelable
@@ -312,6 +342,13 @@ data class LikedRes(
 @Parcelize()
 data class LikedBody(
     val userId: String
+): Parcelable
+
+@JsonClass(generateAdapter = true)
+@Parcelize()
+data class CommentBody(
+    val userId: String,
+    val content: String,
 ): Parcelable
 
 

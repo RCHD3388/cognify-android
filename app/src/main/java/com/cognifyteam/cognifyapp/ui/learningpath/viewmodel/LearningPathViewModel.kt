@@ -84,27 +84,28 @@ class LearningPathViewModel(
     // =======================================================================
     fun onLikeClicked(pathId: Int, currentUserId: String) {
         viewModelScope.launch {
-            smartRepository.likePath(smartId = pathId, userId = currentUserId)
-            // Buat daftar baru dengan memetakan daftar lama
-            val updatedPaths = _allLearningPaths.map { path ->
-                if (path.id == pathId) {
-                    if(path.likes.any { it.userId == currentUserId && it.smartId == path.id }){
-                        path.copy(
-                            likes = path.likes.filter { it.userId != currentUserId && it.smartId != path.id }
-                        )
-                    }else{
-                        path.copy(
-                            likes = path.likes + SmartLike(currentUserId, path.id)
-                        )
+            val repoResult = smartRepository.likePath(smartId = pathId, userId = currentUserId)
+            repoResult.onSuccess{
+                // Buat daftar baru dengan memetakan daftar lama
+                val updatedPaths = _allLearningPaths.map { path ->
+                    if (path.id == pathId) {
+                        if(path.likes.any { it.userId == currentUserId && it.smartId == path.id }){
+                            path.copy(
+                                likes = path.likes.filter { it.userId != currentUserId && it.smartId != path.id }
+                            )
+                        }else{
+                            path.copy(
+                                likes = path.likes + SmartLike(currentUserId, path.id, it.toInt())
+                            )
+                        }
+                    } else {
+                        path
                     }
-                } else {
-                    path
                 }
-            }
-            Log.d("asdasd", "${updatedPaths}")
 
-            _allLearningPaths = updatedPaths
-            filterLearningPaths()
+                _allLearningPaths = updatedPaths
+                filterLearningPaths()
+            }
         }
     }
 

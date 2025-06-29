@@ -9,6 +9,7 @@ import com.cognifyteam.cognifyapp.data.models.GeneratedLearningPath
 import com.cognifyteam.cognifyapp.data.models.LearningPath
 import com.cognifyteam.cognifyapp.data.models.LikedRes
 import com.cognifyteam.cognifyapp.data.models.SaveLearningPathPayload
+import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserJson
@@ -29,6 +30,8 @@ interface SmartRepository {
     suspend fun saveNewLP(userId: String, title: String, learningPaths: GeneratedLearningPath): Result<String>
     suspend fun getAllLearningPaths(): Result<List<LearningPath>>
     suspend fun likePath(smartId: Int, userId: String): Result<String>
+    suspend fun getOneLearningPath(id: Int): Result<LearningPath>
+    suspend fun addNewPost(userId: String, smartId: Int, content: String): Result<SmartComment>
 }
 
 class SmartRepositoryImpl(
@@ -74,23 +77,19 @@ class SmartRepositoryImpl(
 
             // 1. Ambil data mentah (DTO) dari remote/API
             val remoteData = remoteSmartDataSourceImpl.getAll() // Misal: mengembalikan List<LearningPathJson>
-            remoteData.fold(
-                onSuccess = {
-                    it.forEach {
-                        localSmartDataSource.insertNewLearningPath(it)
-                    }
-                    Result.success(it)
-                },
-                onFailure = {
-                    try {
-                        val localData = localSmartDataSource.getAll()
-                        Result.success(localData)
-                    } catch (dbException: Exception) {
-                        // Jika terjadi error saat mengakses DB, kembalikan exception dari DB
-                        Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
-                    }
+            remoteData.onSuccess{
+                it.forEach {
+                    localSmartDataSource.insertNewLearningPath(it)
                 }
-            )
+                Result.success(it)
+            }
+            try {
+                val localData = localSmartDataSource.getAll()
+                Result.success(localData)
+            } catch (dbException: Exception) {
+                // Jika terjadi error saat mengakses DB, kembalikan exception dari DB
+                Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
+            }
         } catch (e: Exception) {
             Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
         }
@@ -102,14 +101,50 @@ class SmartRepositoryImpl(
             likedRes.fold(
                 onSuccess = {
                     if(it.liked){
-                        localSmartDataSource.likeSmart(smartId, userId)
-                        Result.success("Successfully liked learning paths")
+                        localSmartDataSource.likeSmart(smartId, userId, it.likeId)
+                        Result.success(it.likeId.toString())
                     }else{
-                        localSmartDataSource.unlikeSmart(smartId, userId)
+                        localSmartDataSource.unlikeSmart(smartId, userId, it.likeId)
                         Result.success("Successfully unliked learning paths")
                     }
                 },
                 onFailure = {
+                    Log.d("asdasd", "${it.message}")
+                    Result.failure(Exception(it.message))
+                }
+            )
+        } catch (e: Exception){
+            Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
+        }
+    }
+
+    override suspend fun getOneLearningPath(id: Int): Result<LearningPath> {
+        return try {
+            val result = localSmartDataSource.getOne(id);
+            if(result != null){
+                return Result.success(result)
+            }else{
+                Result.failure(Exception("Learning Path not found"))
+            }
+        } catch (e: Exception){
+            Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
+        }
+    }
+
+    override suspend fun addNewPost(
+        userId: String,
+        smartId: Int,
+        content: String
+    ): Result<SmartComment> {
+        return try {
+            val result = remoteSmartDataSourceImpl.addComment(userId, smartId, content)
+            result.fold(
+                onSuccess = {
+                    localSmartDataSource.addComment(it)
+                    Result.success(it)
+                },
+                onFailure = {
+                    Log.d("asdasd", "${it.message}")
                     Result.failure(Exception(it.message))
                 }
             )

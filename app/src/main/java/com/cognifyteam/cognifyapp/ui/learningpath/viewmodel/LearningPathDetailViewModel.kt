@@ -1,8 +1,14 @@
 package com.cognifyteam.cognifyapp.ui.learningpath.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cognifyteam.cognifyapp.data.models.LearningPathStep
+import com.cognifyteam.cognifyapp.data.models.SmartComment
+import com.cognifyteam.cognifyapp.data.models.SmartLike
+import com.cognifyteam.cognifyapp.data.repositories.smart.SmartRepository
+import com.cognifyteam.cognifyapp.ui.learningpath.screen.AddNewLearningPathViewModel
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPath
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,14 +31,16 @@ data class Comment(
 // --- UI STATE (Diperbarui dengan state untuk komentar) ---
 
 data class LearningPathDetailUiState(
-    val learningPath: LearningPath? = null,
+    val learningPath: com.cognifyteam.cognifyapp.data.models.LearningPath? = null,
     val isLoading: Boolean = true,
     val commentInput: String = "" // State untuk field input komentar
 )
 
 // --- VIEWMODEL (Diperbarui dengan logika komentar) ---
 
-class LearningPathDetailViewModel : ViewModel() {
+class LearningPathDetailViewModel(
+    private val smartRepository: SmartRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LearningPathDetailUiState())
     val uiState: StateFlow<LearningPathDetailUiState> = _uiState.asStateFlow()
@@ -47,11 +55,11 @@ class LearningPathDetailViewModel : ViewModel() {
             level = "Pemula", tags = listOf("HTML", "CSS", "JavaScript", "React", "Vue.js"),
             likes = 234, liked_by_you = false,
             steps = listOf(
-                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu", 1),
-                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu", 1),
-                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu", 1),
-                LearningPathStep(4, "Advanced State Management", "...", "2 minggu", 1),
-                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu", 1)
+                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu", 1, 1),
+                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu", 1, 2),
+                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu", 1, 3),
+                LearningPathStep(4, "Advanced State Management", "...", "2 minggu", 1, 4),
+                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu", 1, 5)
             ),
             comments = 123,
             comment_contents = listOf(
@@ -67,20 +75,45 @@ class LearningPathDetailViewModel : ViewModel() {
     fun loadLearningPath(id: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            delay(500) // Simulasi network delay
-            val path = allLearningPaths.find { it.id == id }
-            _uiState.update { it.copy(learningPath = path, isLoading = false) }
+
+            val fetchedLearningPath = smartRepository.getOneLearningPath(id)
+            val path = fetchedLearningPath
+            path.onSuccess { newpath ->
+                _uiState.update { it.copy(learningPath = newpath, isLoading = false) }
+            }
         }
     }
 
-    fun toggleLike() {
-        _uiState.update { currentState ->
-            currentState.learningPath?.let { path ->
-                val newLikedStatus = !path.liked_by_you
-                val newLikesCount = if (newLikedStatus) path.likes + 1 else path.likes - 1
-                val updatedPath = path.copy(liked_by_you = newLikedStatus, likes = newLikesCount)
-                currentState.copy(learningPath = updatedPath)
-            } ?: currentState
+    fun toggleLike(currentUserId: String) {
+        viewModelScope.launch {
+            if(_uiState.value.learningPath != null) {
+                val repoResult = smartRepository.likePath(
+                    smartId = _uiState.value.learningPath!!.id,
+                    userId = currentUserId
+                )
+                repoResult.onSuccess {
+                    _uiState.update { currentState ->
+                        currentState.learningPath?.let { path ->
+                            var updatedPath: com.cognifyteam.cognifyapp.data.models.LearningPath? =
+                                null;
+                            if (path.likes.any { it.userId == currentUserId && it.smartId == path.id }) {
+                                updatedPath = path.copy(
+                                    likes = path.likes.filter { it.userId != currentUserId && it.smartId != path.id }
+                                )
+                            } else {
+                                updatedPath = path.copy(
+                                    likes = path.likes + SmartLike(
+                                        currentUserId,
+                                        path.id,
+                                        it.toInt()
+                                    )
+                                )
+                            }
+                            currentState.copy(learningPath = updatedPath)
+                        } ?: currentState
+                    }
+                }
+            }
         }
     }
 
@@ -99,26 +132,38 @@ class LearningPathDetailViewModel : ViewModel() {
     /**
      * Dipanggil saat tombol "Kirim" ditekan.
      */
-    fun postComment() {
+    fun postComment(currentUserId: String) {
         val commentText = _uiState.value.commentInput.trim()
         if (commentText.isBlank()) return // Jangan post jika kosong
 
-        _uiState.update { currentState ->
-            currentState.learningPath?.let { path ->
-                val newComment = Comment(
-                    authorName = "Anda", // Nama pengguna yang sedang login
-                    authorInitials = "A",
-                    timestamp = "Baru saja",
-                    content = commentText
-                )
-                // Menambahkan komentar baru ke awal daftar
-                val updatedComments = listOf(newComment) + path.comment_contents
-                val updatedPath = path.copy(comment_contents = updatedComments)
+        viewModelScope.launch {
+            if(_uiState.value.learningPath != null){
+                val resResult = smartRepository.addNewPost(currentUserId, _uiState.value.learningPath!!.id, commentText)
+                resResult.onSuccess {
+                    _uiState.update { currentState ->
+                        currentState.learningPath?.let { path ->
+                            val newComment = it
+                            // Menambahkan komentar baru ke awal daftar
+                            val updatedComments = listOf(newComment) + path.comments
+                            val updatedPath = path.copy(comments = updatedComments)
 
-                // Mengembalikan state baru dengan komentar terkirim dan input field dikosongkan
-                currentState.copy(learningPath = updatedPath, commentInput = "")
+                            // Mengembalikan state baru dengan komentar terkirim dan input field dikosongkan
+                            currentState.copy(learningPath = updatedPath, commentInput = "")
+                        } ?: currentState
+                    }
+                }
+            }
+        }
+    }
 
-            } ?: currentState
+    companion object {
+        fun provideFactory(
+            smartRepository: SmartRepository
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return LearningPathDetailViewModel(smartRepository) as T
+            }
         }
     }
 }

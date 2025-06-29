@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
+import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -52,6 +53,12 @@ class CourseViewModel(
 
     private val _event = MutableSharedFlow<String>()
     val event: SharedFlow<String> = _event
+
+    private val _paymentToken = MutableSharedFlow<String>()
+    val paymentToken: SharedFlow<String> = _paymentToken
+
+    private val _paymentError = MutableSharedFlow<String>()
+    val paymentError: SharedFlow<String> = _paymentError
 
     // --- FUNGSI BARU UNTUK MEMUAT DETAIL ---
     fun loadCourseDetails(courseId: String) {
@@ -166,6 +173,21 @@ class CourseViewModel(
             if (materialIndex >= 0 && materialIndex < materials.size) {
                 materials[materialIndex] = updatedMaterial
                 _sections.value = currentSections
+            }
+        }
+    }
+
+    fun createPayment(courseId: String, firebaseId: String, onResult: (snapToken: String) -> Unit) {
+        viewModelScope.launch {
+            val result = courseRepository.createPayment(courseId, CreatePaymentRequest(firebaseId))
+            result.onSuccess { token ->
+                // Jika sukses, panggil callback yang diterima dari UI dengan token yang didapat
+                Log.d("CourseViewModel", "Payment token received: $token. Calling onResult.")
+                onResult(token) // GANTI DARI _paymentToken.emit(token)
+            }.onFailure { error ->
+                // Jika gagal, kirim pesan error
+                Log.e("CourseViewModel", "Payment creation failed: ${error.message}")
+                _paymentError.emit(error.message ?: "Failed to create payment transaction")
             }
         }
     }

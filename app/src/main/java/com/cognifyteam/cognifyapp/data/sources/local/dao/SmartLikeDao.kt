@@ -26,6 +26,6 @@ interface SmartLikeDao {
     @Query("DELETE FROM smart_likes")
     suspend fun clearAll()
 
-    @Query("DELETE FROM smart_likes WHERE smartId = :smartId AND userId = :userId")
-    suspend fun delete(smartId: Int, userId: String): Int
+    @Delete
+    suspend fun delete(smartLike: SmartLike): Int
 }
