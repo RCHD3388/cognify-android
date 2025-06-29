@@ -23,6 +23,7 @@ interface RemoteSmartDataSource {
     suspend fun getAll(): Result<List<LearningPath>>
     suspend fun likeSmart(smartId: Int, userId: String): Result<LikedRes>
     suspend fun addComment(userId: String, smartId: Int, content: String): Result<SmartComment>
+    suspend fun deletePath(smartId: Int): Result<Int>
 }
 
 class RemoteSmartDataSourceImpl(
@@ -110,6 +111,25 @@ class RemoteSmartDataSourceImpl(
     ): Result<SmartComment> {
         try {
             val response = smartService.addComment(smartId, CommentBody(userId, content))
+            if(response.isSuccessful){
+                val body = response.body()
+                if (body != null){
+                    return Result.success(body.data.data);
+                }else{
+                    return Result.failure(Exception("Empty response"))
+                }
+            } else {
+                val error = AppContainerImpl.parseErrorMessage(response.errorBody()?.string())
+                return Result.failure(Exception("Failed to like. Please check your internet connection."))
+            }
+        } catch (e: Exception){
+            return Result.failure(Exception("Failed to like. Please check your internet connection."))
+        }
+    }
+
+    override suspend fun deletePath(smartId: Int): Result<Int> {
+        try {
+            val response = smartService.deletePath(smartId)
             if(response.isSuccessful){
                 val body = response.body()
                 if (body != null){
