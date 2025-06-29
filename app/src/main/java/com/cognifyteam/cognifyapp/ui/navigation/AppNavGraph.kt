@@ -193,8 +193,7 @@ fun AppNavGraph(
                     courseId = courseId,
                     appContainer = appContainer,
                     onFabStateChange = onFabStateChange,
-                    onTopBarStateChange = onTopBarStateChange,
-
+                    onTopBarStateChange = onTopBarStateChange
                 )
             }
         }
@@ -208,7 +207,7 @@ fun AppNavGraph(
                 userViewModel = userViewModel
             )
         }
-        
+
         composable(
             route = AppNavRoutes.MATERIAL_SCREEN,
             arguments = listOf(navArgument("materialJson") { type = NavType.StringType })

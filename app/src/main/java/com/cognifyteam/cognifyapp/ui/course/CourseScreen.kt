@@ -34,6 +34,7 @@ import com.cognifyteam.cognifyapp.R
 import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.Discussion
+import com.cognifyteam.cognifyapp.data.models.Rating
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
@@ -55,12 +56,14 @@ fun CourseScreen(
     // --- Inisialisasi ViewModel ---
     val courseViewModel: CourseViewModel = viewModel(factory = CourseViewModel.provideFactory(appContainer.courseRepository))
     val discussionViewModel: DiscussionViewModel = viewModel(factory = DiscussionViewModel.provideFactory(appContainer.discussionRepository))
+    val ratingViewModel: RatingViewModel = viewModel(factory = RatingViewModel.provideFactory(appContainer.ratingRepository))
     val userViewModel: UserViewModel = viewModel(factory = UserViewModel.provideFactory(appContainer.authRepository))
 
     // --- Amati State ---
     val discussionUiState by discussionViewModel.uiState.collectAsState()
     val courseDetailState by courseViewModel.courseDetailState.collectAsState()
     val materialsStateMap by courseViewModel.materialsStateMap.collectAsState() // <-- TAMBAHKAN INI
+    val ratingsListState by ratingViewModel.ratingsListState.collectAsState()
     val currentUser by userViewModel.userState.collectAsState()
     val context = LocalContext.current
 
@@ -69,6 +72,7 @@ fun CourseScreen(
     LaunchedEffect(key1 = courseId) {
         discussionViewModel.loadDiscussions(courseId)
         courseViewModel.loadCourseDetails(courseId)
+        ratingViewModel.loadRatings(courseId)
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(
             TopBarState(isVisible = true, title = "Course Details",
@@ -128,7 +132,16 @@ fun CourseScreen(
                                 navController = navController // <-- KIRIM NAVCONTROLLER DI SINI
                             )
                         }
-                        CourseTab.Reviews -> ComingSoonSection(tabName = "Reviews")
+                        CourseTab.Reviews -> {
+                            RatingSection(
+                                uiState = ratingsListState,
+                                onSubmitRating = { rating, comment ->
+                                    currentUser?.firebaseId?.let { id ->
+                                        ratingViewModel.submitRating(courseId, id, rating, comment)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -154,6 +167,124 @@ fun ComingSoonSection(tabName: String) {
         contentAlignment = Alignment.Center
     ) {
         Text("$tabName content is coming soon!", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun RatingSection(
+    uiState: RatingsListUiState, // Menerima state daftar semua rating
+    onSubmitRating: (rating: Int, comment: String) -> Unit
+) {
+    var selectedRating by remember { mutableIntStateOf(0) }
+    var comment by remember { mutableStateOf("") }
+    // `isSubmitting` bisa kita infer dari state yang lain nanti jika perlu
+
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp)
+    ) {
+        // Form untuk memberi/mengupdate rating
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Write Your Review", /*...*/)
+                // Star Rating
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    // --- GUNAKAN `repeat()` INI ---
+                    repeat(5) { index ->
+                        val i = index + 1 // `index` dimulai dari 0, jadi kita tambahkan 1
+                        Icon(
+                            imageVector = if (i <= selectedRating) Icons.Filled.Star else Icons.Outlined.Star,
+                            contentDescription = "Star $i",
+                            tint = if (i <= selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { selectedRating = if (selectedRating == i) i - 1 else i } // Logika toggle yang lebih baik
+                                .padding(horizontal = 4.dp)
+                        )
+                    }
+                    // --- AKHIR PERBAIKAN ---
+                }
+                // Comment TextField
+                OutlinedTextField(value = comment, onValueChange = { comment = it }, /*...*/)
+                // Submit Button
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
+                    Button(
+                        onClick = {
+                            if (selectedRating > 0) {
+                                onSubmitRating(selectedRating, comment)
+                                // Reset form setelah submit
+                                selectedRating = 0
+                                comment = ""
+                            } else {
+                                Toast.makeText(context, "Please select a star rating", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = selectedRating > 0
+                    ) {
+                        Text("Submit Review")
+                    }
+                }
+            }
+        }
+
+        // Judul untuk daftar semua review
+        Text(
+            text = "All Reviews",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Tampilkan daftar review berdasarkan state
+        when (uiState) {
+            is RatingsListUiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+            is RatingsListUiState.Error -> {
+                Text(uiState.message, color = MaterialTheme.colorScheme.error)
+            }
+            is RatingsListUiState.Success -> {
+                if (uiState.ratings.isEmpty()) {
+                    Text("No reviews yet. Be the first!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        uiState.ratings.forEach { rating ->
+                            RatingItem(rating = rating)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RatingItem(rating: Rating) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(rating.authorName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                // Tampilkan bintang rating yang sudah ada
+                Row {
+                    Text("${rating.rating} ⭐", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (!rating.comment.isNullOrBlank()) {
+                Text(rating.comment, modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
 }
 
