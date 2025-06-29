@@ -17,8 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +27,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -179,7 +176,10 @@ fun AddCourseScreen(
                 onRemoveSection = viewModel::removeSection,
                 onAddMaterial = viewModel::addMaterialToSection,
                 onRemoveMaterial = viewModel::removeMaterialFromSection,
-                onUpdateMaterial = viewModel::updateMaterialInSection
+                onUpdateMaterial = viewModel::updateMaterialInSection,
+                onMaterialViewFileClick = { uri ->
+                    Log.d("FileViewer", "File URI to view: $uri")
+                }
             )
             // --- AKHIR DARI UI BARU ---
 
