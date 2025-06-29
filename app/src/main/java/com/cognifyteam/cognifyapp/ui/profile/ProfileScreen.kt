@@ -262,9 +262,13 @@ fun StatItem(number: String, label: String) {
 @Composable
 fun AboutMeSection(user: User, viewModel: ProfileViewModel, isMyProfile: Boolean) {
     var isEditing by rememberSaveable { mutableStateOf(false) }
-    var descriptionText by remember(user.description) { mutableStateOf(user.description ?: "") }
+    var descriptionText by rememberSaveable { mutableStateOf(user.description ?: "") }
     val isLoadingUpdate by viewModel.isLoading.observeAsState(false)
     val updateResult by viewModel.updateResult.observeAsState()
+
+    LaunchedEffect(user.description) {
+        descriptionText = user.description ?: ""
+    }
 
     LaunchedEffect(updateResult) {
         updateResult?.onSuccess {

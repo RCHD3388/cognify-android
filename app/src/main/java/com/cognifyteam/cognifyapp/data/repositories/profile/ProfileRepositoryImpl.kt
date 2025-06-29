@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.data.repositories.profile
 
+import android.util.Log
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalProfileDataSource
 import com.cognifyteam.cognifyapp.data.sources.remote.UpdateProfileRequest

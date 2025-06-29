@@ -186,8 +186,7 @@ fun AppNavGraph(
                     courseId = courseId,
                     appContainer = appContainer,
                     onFabStateChange = onFabStateChange,
-                    onTopBarStateChange = onTopBarStateChange,
-                    onShowSnackbar = onShowSnackbar
+                    onTopBarStateChange = onTopBarStateChange
                 )
             }
         }

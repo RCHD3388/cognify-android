@@ -2,6 +2,7 @@ package com.cognifyteam.cognifyapp.data.sources.remote
 
 import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.DiscussionJson
+import com.cognifyteam.cognifyapp.data.models.RatingJson
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.models.UserJson
 import com.squareup.moshi.Json
@@ -118,4 +119,29 @@ data class UserSearchData(
 
     @Json(name = "data")
     val users: List<UserJson>
+)
+
+/**
+ * DTO untuk request body saat user mengirim rating baru.
+ */
+@JsonClass(generateAdapter = true)
+data class PostRatingRequest(
+    @Json(name = "rating")
+    val rating: Int,
+
+    @Json(name = "comment")
+    val comment: String?, // Dibuat nullable karena opsional
+
+    @Json(name = "firebaseId")
+    val firebaseId: String
+)
+
+/**
+ * DTO untuk data yang ada di dalam `BaseResponse` saat mengambil daftar rating.
+ */
+@JsonClass(generateAdapter = true)
+data class RatingListData(
+    // Backend tidak mengirim 'message' di sini, hanya 'data' array
+    @Json(name = "data")
+    val ratings: List<RatingJson>
 )

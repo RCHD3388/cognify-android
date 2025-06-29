@@ -9,6 +9,7 @@ import com.cognifyteam.cognifyapp.data.models.DiscussionEntity
 import com.cognifyteam.cognifyapp.data.models.FollowsCrossRef
 import com.cognifyteam.cognifyapp.data.models.LearningPathEntity
 import com.cognifyteam.cognifyapp.data.models.LearningPathStepEntity
+import com.cognifyteam.cognifyapp.data.models.RatingEntity
 import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.SmartLike
 import com.cognifyteam.cognifyapp.data.models.SectionEntity
@@ -19,6 +20,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.CourseDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.DiscussionDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.FollowDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.ProfileDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.RatingDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartCommentDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartLikeDao
@@ -35,8 +37,9 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
     LearningPathStepEntity::class,
     SmartLike::class,
     SmartComment::class,
-    SectionEntity::class
-], version = 16)
+    SectionEntity::class,
+    RatingEntity::class
+], version = 17)
 
 abstract class AppDatabase : RoomDatabase() {
 
@@ -50,6 +53,7 @@ abstract class AppDatabase : RoomDatabase() {
      abstract fun discussionDao(): DiscussionDao
     abstract fun followDao(): FollowDao
     abstract fun sectionDao(): SectionDao
+    abstract fun ratingDao(): RatingDao
 
     companion object {
         @Volatile
