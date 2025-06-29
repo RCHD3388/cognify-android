@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -121,6 +122,14 @@ fun ProfilePage(
             },
             actions = {
                 if (isMyProfile) {
+                    IconButton(onClick = {
+                        navController.navigate("transaction_history")
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart, // Ikon baru
+                            contentDescription = "Transaction History"
+                        )
+                    }
                     IconButton(onClick = {
                         authViewModel.logout()
                     }) {
@@ -262,9 +271,13 @@ fun StatItem(number: String, label: String) {
 @Composable
 fun AboutMeSection(user: User, viewModel: ProfileViewModel, isMyProfile: Boolean) {
     var isEditing by rememberSaveable { mutableStateOf(false) }
-    var descriptionText by remember(user.description) { mutableStateOf(user.description ?: "") }
+    var descriptionText by rememberSaveable { mutableStateOf(user.description ?: "") }
     val isLoadingUpdate by viewModel.isLoading.observeAsState(false)
     val updateResult by viewModel.updateResult.observeAsState()
+
+    LaunchedEffect(user.description) {
+        descriptionText = user.description ?: ""
+    }
 
     LaunchedEffect(updateResult) {
         updateResult?.onSuccess {

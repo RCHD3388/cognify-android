@@ -32,6 +32,7 @@ interface SmartRepository {
     suspend fun likePath(smartId: Int, userId: String): Result<String>
     suspend fun getOneLearningPath(id: Int): Result<LearningPath>
     suspend fun addNewPost(userId: String, smartId: Int, content: String): Result<SmartComment>
+    suspend fun deletePath(smartId: Int): Result<Int>
 }
 
 class SmartRepositoryImpl(
@@ -141,6 +142,24 @@ class SmartRepositoryImpl(
             result.fold(
                 onSuccess = {
                     localSmartDataSource.addComment(it)
+                    Result.success(it)
+                },
+                onFailure = {
+                    Log.d("asdasd", "${it.message}")
+                    Result.failure(Exception(it.message))
+                }
+            )
+        } catch (e: Exception){
+            Result.failure(Exception("Terjadi kesalahan, coba lagi nanti"))
+        }
+    }
+
+    override suspend fun deletePath(smartId: Int): Result<Int> {
+        return try {
+            val result = remoteSmartDataSourceImpl.deletePath(smartId)
+            result.fold(
+                onSuccess = {
+                    localSmartDataSource.deletePath(it)
                     Result.success(it)
                 },
                 onFailure = {

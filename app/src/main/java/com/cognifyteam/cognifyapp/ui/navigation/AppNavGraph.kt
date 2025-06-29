@@ -28,6 +28,7 @@ import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPathDetailScree
 import com.cognifyteam.cognifyapp.ui.material.MaterialScreen
 import com.cognifyteam.cognifyapp.ui.profile.ProfilePage
 import com.cognifyteam.cognifyapp.ui.profile.ProfileViewModel
+import com.cognifyteam.cognifyapp.ui.profile.TransactionHistoryScreen
 import com.cognifyteam.cognifyapp.ui.profile.UserCoursesViewModel
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -47,6 +48,7 @@ object AppNavRoutes {
     const val ALLCOURSE = "allcourse"
     // Rute BARU untuk melihat profil pengguna lain
     const val USER_PROFILE = "user_profile/{firebaseId}"
+    const val TRANSACTION_HISTORY = "transaction_history"
     const val MATERIAL_SCREEN = "material_screen/{materialJson}"
 }
 
@@ -191,11 +193,21 @@ fun AppNavGraph(
                     courseId = courseId,
                     appContainer = appContainer,
                     onFabStateChange = onFabStateChange,
-                    onTopBarStateChange = onTopBarStateChange,
-
+                    onTopBarStateChange = onTopBarStateChange
                 )
             }
         }
+
+        composable(AppNavRoutes.TRANSACTION_HISTORY) {
+            TransactionHistoryScreen(
+                navController = navController,
+                onFabStateChange = onFabStateChange,
+                onTopBarStateChange = onTopBarStateChange,
+                appContainer = appContainer,
+                userViewModel = userViewModel
+            )
+        }
+
         composable(
             route = AppNavRoutes.MATERIAL_SCREEN,
             arguments = listOf(navArgument("materialJson") { type = NavType.StringType })

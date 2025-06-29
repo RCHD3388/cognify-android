@@ -127,7 +127,7 @@ fun MainLearningPathScreen(
                 searchQuery = uiState.searchQuery,
                 onQueryChanged = viewModel::onSearchQueryChanged, // Bisa juga ditulis seperti ini
                 onSearch = { focusManager.clearFocus() },
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)
             )
         }
 
@@ -139,7 +139,11 @@ fun MainLearningPathScreen(
             )
         }
 
-        item { SectionTitle(title = "Learning Paths Terbaru", onSeeAllClicked = { /*TODO*/ }) }
+        item { SectionTitle(
+            title = "Learning Paths Terbaru",
+            seeAllText = if (uiState.ownerFilter) "See All Path" else "See Your  Path",
+            onSeeAllClicked = { viewModel.toggleOwnerFilter(currentUser!!.firebaseId) })
+        }
 
         items(uiState.learningPaths, key = { it.id }) { path ->
             LearningPathCard(
@@ -393,7 +397,7 @@ fun FilterChip(
 }
 
 @Composable
-fun SectionTitle(title: String, onSeeAllClicked: () -> Unit) {
+fun SectionTitle(title: String, seeAllText: String, onSeeAllClicked: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -409,7 +413,7 @@ fun SectionTitle(title: String, onSeeAllClicked: () -> Unit) {
         )
         TextButton(onClick = onSeeAllClicked) {
             Text(
-                text = "Lihat Semua",
+                text = seeAllText,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
             )

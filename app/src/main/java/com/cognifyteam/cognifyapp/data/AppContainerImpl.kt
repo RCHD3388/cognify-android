@@ -8,6 +8,10 @@ import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepository
 import com.cognifyteam.cognifyapp.data.repositories.DiscussionRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.FollowRepository
 import com.cognifyteam.cognifyapp.data.repositories.FollowRepositoryImpl
+import com.cognifyteam.cognifyapp.data.repositories.TransactionRepository
+import com.cognifyteam.cognifyapp.data.repositories.TransactionRepositoryImpl
+import com.cognifyteam.cognifyapp.data.repositories.RatingRepository
+import com.cognifyteam.cognifyapp.data.repositories.RatingRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.profile.ProfileRepository
@@ -21,11 +25,14 @@ import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseData
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalDiscussionDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalFollowDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalProfileDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalRatingDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalSmartDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalTransactionDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.ErrorResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.auth.RemoteAuthDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteCourseDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteDiscussionDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteRatingDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.profile.RemoteProfileDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.services.AuthService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
@@ -33,9 +40,12 @@ import com.cognifyteam.cognifyapp.data.sources.remote.services.DiscussionService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.FollowService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.MaterialService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.RatingService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.SmartService
 import com.cognifyteam.cognifyapp.data.sources.remote.smart.RemoteSmartDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.services.SectionService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.TransactionService
+import com.cognifyteam.cognifyapp.data.sources.remote.transaction.RemoteTransactionDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.users.RemoteFollowDataSourceImpl
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -49,6 +59,8 @@ interface AppContainer{
     val courseRepository: CourseRepository
     val discussionRepository: DiscussionRepository
     val followRepository: FollowRepository
+    val transactionRepository: TransactionRepository
+    val ratingRepository: RatingRepository
 }
 
 class AppContainerImpl(private val applicationContext: Context) : AppContainer {
@@ -95,12 +107,28 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
         )
     }
 
+    override val ratingRepository: RatingRepository by lazy {
+        RatingRepositoryImpl(
+            LocalRatingDataSourceImpl(AppDatabase.getInstance(applicationContext)),
+            RemoteRatingDataSourceImpl(retrofit.create(RatingService::class.java))
+        )
+    }
+
     override val followRepository: FollowRepository by lazy {
         FollowRepositoryImpl(
             LocalFollowDataSourceImpl(
                 AppDatabase.getInstance(applicationContext).followDao()
             ),
             RemoteFollowDataSourceImpl(retrofit.create(FollowService::class.java))
+        )
+    }
+
+    override val transactionRepository: TransactionRepository by lazy {
+        TransactionRepositoryImpl(
+            LocalTransactionDataSourceImpl(
+                AppDatabase.getInstance(applicationContext).transactionDao()
+            ),
+            RemoteTransactionDataSourceImpl(retrofit.create(TransactionService::class.java))
         )
     }
 

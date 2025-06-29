@@ -9,7 +9,6 @@ import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.SmartLike
 import com.cognifyteam.cognifyapp.data.repositories.smart.SmartRepository
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.AddNewLearningPathViewModel
-import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPath
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +32,8 @@ data class Comment(
 data class LearningPathDetailUiState(
     val learningPath: com.cognifyteam.cognifyapp.data.models.LearningPath? = null,
     val isLoading: Boolean = true,
-    val commentInput: String = "" // State untuk field input komentar
+    val commentInput: String = "", // State untuk field input komentar
+    val resultState: String = ""
 )
 
 // --- VIEWMODEL (Diperbarui dengan logika komentar) ---
@@ -44,33 +44,6 @@ class LearningPathDetailViewModel(
 
     private val _uiState = MutableStateFlow(LearningPathDetailUiState())
     val uiState: StateFlow<LearningPathDetailUiState> = _uiState.asStateFlow()
-
-    // Daftar dummy data diperbarui dengan data komentar
-    private val allLearningPaths: List<LearningPath> = listOf(
-        LearningPath(
-            id = 1,
-            title = "Frontend Development Mastery",
-            description = "Pelajari pengembangan frontend dari dasar hingga mahir...",
-            authorName = "Ahmad Sultoni", authorInitials = "AS", timeAgo = "2 hari yang lalu",
-            level = "Pemula", tags = listOf("HTML", "CSS", "JavaScript", "React", "Vue.js"),
-            likes = 234, liked_by_you = false,
-            steps = listOf(
-                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu", 1, 1),
-                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu", 1, 2),
-                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu", 1, 3),
-                LearningPathStep(4, "Advanced State Management", "...", "2 minggu", 1, 4),
-                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu", 1, 5)
-            ),
-            comments = 123,
-            comment_contents = listOf(
-                Comment(authorName = "Maria Rosanti", authorInitials = "MR", timestamp = "3 jam yang lalu", content = "Learning path ini sangat terstruktur! Saya sudah selesai sampai step 2 dan merasa sangat terbantu. Penjelasan JavaScript-nya detail banget dan proyeknya real-world. Recommended untuk pemula! 👍"),
-                Comment(authorName = "Dika Kurniawan", authorInitials = "DK", timestamp = "5 jam yang lalu", content = "Apakah learning path ini cocok untuk yang sudah punya background programming tapi baru di frontend? Saya dari backend Java, pengen switch ke frontend."),
-                Comment(authorName = "Sari Puspita", authorInitials = "SP", timestamp = "1 hari yang lalu", content = "Terima kasih Ahmad! Final project e-commerce-nya challenging tapi sangat worth it. Sekarang saya sudah diterima sebagai frontend developer junior. Learning path ini benar-benar game changer! 🚀"),
-                Comment(authorName = "Rudi Hermawan", authorInitials = "RH", timestamp = "2 hari yang lalu", content = "Step-by-step nya jelas dan timeline-nya realistic. Saya suka ada proyek di setiap step, jadi bisa langsung practice. Untuk step 3 React, ada rencana buat video tutorial juga?"),
-            )
-        ),
-        // ... Learning path lain bisa ditambahkan di sini
-    )
 
     fun loadLearningPath(id: Int) {
         viewModelScope.launch {
@@ -150,6 +123,19 @@ class LearningPathDetailViewModel(
                             // Mengembalikan state baru dengan komentar terkirim dan input field dikosongkan
                             currentState.copy(learningPath = updatedPath, commentInput = "")
                         } ?: currentState
+                    }
+                }
+            }
+        }
+    }
+
+    fun deletePath(currentUserId: String){
+        viewModelScope.launch {
+            val result = smartRepository.deletePath(_uiState.value.learningPath!!.id)
+            result.onSuccess {
+                _uiState.update { currentState ->
+                    currentState.resultState.let { state ->
+                        currentState.copy(resultState = "Deleted")
                     }
                 }
             }
