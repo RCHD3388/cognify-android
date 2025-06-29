@@ -199,6 +199,8 @@ class RemoteCourseDataSourceImpl(
 
     override suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<Material>> {
         return materialService.getMaterialsBySectionId(sectionId)
+    }
+
     override suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData> {
         return courseService.getCourses(sortBy)
     }

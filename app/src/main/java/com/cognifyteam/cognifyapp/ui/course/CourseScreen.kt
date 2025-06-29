@@ -275,7 +275,10 @@ fun RatingSection(
                     // --- AKHIR PERBAIKAN ---
                 }
                 // Comment TextField
-                OutlinedTextField(value = comment, onValueChange = { comment = it }, /*...*/)
+                OutlinedTextField(value = comment, onValueChange = { comment = it }, modifier = Modifier
+                    .fillMaxWidth() // 1. Buat ukurannya penuh dulu
+                    .padding(horizontal = 8.dp)
+                )
                 // Submit Button
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
                     Button(

@@ -290,6 +290,9 @@ class CourseRepositoryImpl(
                 Result.failure(Exception("Materials not found."))
             } catch (cacheError: Exception) {
                 Result.failure(cacheError)
+            }
+        }
+    }
     override suspend fun getCourses(sortBy: String): Result<List<Course>> {
         return try {
             // response sekarang bertipe BaseResponse<CourseListData>

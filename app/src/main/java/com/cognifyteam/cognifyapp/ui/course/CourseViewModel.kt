@@ -300,8 +300,11 @@ class CourseViewModel(
             result.onSuccess { sections ->
                 _sectionUiState.value = SectionUiState.Success(sections)
             }.onFailure {
-                _sectionUiState.value = SectionUiState.Error(it.message ?: "Failed to load sections")
+                _sectionUiState.value =
+                    SectionUiState.Error(it.message ?: "Failed to load sections")
             }
+        }
+    }
     private fun loadCoursesByType(type: String, stateFlow: MutableStateFlow<CourseListUiState>) {
         viewModelScope.launch {
             stateFlow.value = CourseListUiState.Loading
