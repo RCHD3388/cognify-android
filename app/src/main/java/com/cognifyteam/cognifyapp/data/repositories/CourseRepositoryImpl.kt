@@ -9,6 +9,7 @@ import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSource
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
+import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteCourseDataSource
 import java.io.File
 import com.squareup.moshi.Moshi
@@ -26,6 +27,7 @@ interface CourseRepository {
     suspend fun getCourseById(courseId: String): Result<Course>
     suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest, course_owner_name: String): Result<Course>
     suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course>
+    suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): Result<String>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -167,7 +169,17 @@ class CourseRepositoryImpl(
     override suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course> {
         val response = remoteDataSource.createSection(courseId, createMultipleSectionsRequest)
 
-
         return Result.failure(Exception("Failed to create course or response was empty"))
+    }
+
+    override suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): Result<String> {
+        return try {
+            val response = remoteDataSource.createPayment(courseId, createPaymentRequest)
+            // Ambil token dari respons yang berhasil
+            Result.success(response.data.token)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Failed to create payment token", e)
+            Result.failure(e)
+        }
     }
 }

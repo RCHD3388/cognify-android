@@ -1,60 +1,66 @@
-// Berkas: ui/course/CourseScreen.kt
-
 package com.cognifyteam.cognifyapp.ui.course
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.foundation.Image
+import android.app.Activity
+import android.util.Log
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -65,7 +71,20 @@ import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.midtrans.sdk.corekit.core.MidtransSDK
 
+@Composable
+fun getActivity(): Activity {
+    val context = LocalContext.current
+    return remember {
+        generateSequence(context) {
+            when (it) {
+                is android.content.ContextWrapper -> it.baseContext
+                else -> null
+            }
+        }.filterIsInstance<Activity>().first()
+    }
+}
 @Composable
 fun CourseScreen(
     navController: NavController,
@@ -73,9 +92,8 @@ fun CourseScreen(
     courseId: String,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
-    onShowSnackbar: (String) -> Unit
+    onShowSnackbar: (String) -> Unit,
 ) {
-    // --- DIUBAH: Gunakan CourseViewModel untuk detail course ---
     val courseViewModel: CourseViewModel = viewModel(
         factory = CourseViewModel.provideFactory(
             courseRepository = appContainer.courseRepository
@@ -92,13 +110,18 @@ fun CourseScreen(
         )
     )
 
+    val loggedInUser by userViewModel.userState.collectAsState()
     val discussionUiState by discussionViewModel.uiState.collectAsState()
-    val courseDetailState by courseViewModel.courseDetailState.collectAsState() // Ambil state detail
+    val courseDetailState by courseViewModel.courseDetailState.collectAsState()
     val currentUser by userViewModel.userState.collectAsState()
+    var showPaymentWebView by remember { mutableStateOf(false) }
+    var paymentSnapToken by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
+    // --- LaunchedEffect yang sudah ada ---
     LaunchedEffect(key1 = courseId) {
         discussionViewModel.loadDiscussions(courseId)
-        courseViewModel.loadCourseDetails(courseId) // Panggil fungsi untuk memuat detail
+        courseViewModel.loadCourseDetails(courseId)
 
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(
@@ -119,51 +142,74 @@ fun CourseScreen(
         )
     }
 
-    // Gunakan `when` untuk menampilkan UI berdasarkan state detail course
-    when (val state = courseDetailState) {
-        is CourseDetailUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    // --- UI UTAMA (TIDAK BERUBAH BANYAK) ---
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = courseDetailState) {
+            is CourseDetailUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is CourseDetailUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = state.message, color = Color.Red)
+                }
+            }
+
+            is CourseDetailUiState.Success -> {
+                val course = state.course
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    CourseBanner(course = course)
+                    CourseTabs()
+                    CourseDetails(course = course)
+                    // CourseInstructor(course = course) // Dikomentari sesuai kode Anda
+                    DiscussionSection(
+                        uiState = discussionUiState,
+                        onAddDiscussion = { newDiscussionText ->
+                            currentUser?.firebaseId?.let { id ->
+                                discussionViewModel.addDiscussion(courseId, id, newDiscussionText)
+                            }
+                        },
+                        onAddReply = { discussionId, replyText ->
+                            currentUser?.firebaseId?.let { id ->
+                                discussionViewModel.addReply(discussionId, id, replyText)
+                            }
+                        }
+                    )
+                    // --- Teruskan ViewModel ke CourseActions ---
+                    CourseActions(
+                        course = course,
+                        viewModel = courseViewModel,
+                        firebaseId = loggedInUser!!.firebaseId,
+                        onEnrollClick = { token ->
+                            // Callback ini akan dipanggil dari CourseActions
+                            paymentSnapToken = token
+                            showPaymentWebView = true
+                        }
+                    )
+                }
             }
         }
-        is CourseDetailUiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = state.message, color = Color.Red)
-            }
-        }
-        is CourseDetailUiState.Success -> {
-            // Jika sukses, tampilkan konten dengan data course yang didapat
-            val course = state.course
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                CourseBanner(course = course)
-                CourseTabs() // Ini bisa tetap statis untuk sekarang
-                CourseDetails(course = course)
-//                CourseInstructor(course = course)
-                DiscussionSection(
-                    uiState = discussionUiState,
-                    onAddDiscussion = { newDiscussionText ->
-                        currentUser?.firebaseId?.let { id ->
-                            discussionViewModel.addDiscussion(courseId, id, newDiscussionText)
-                        }
-                    },
-                    onAddReply = { discussionId, replyText ->
-                        currentUser?.firebaseId?.let { id ->
-                            discussionViewModel.addReply(discussionId, id, replyText)
-                        }
-                    }
-                )
-                CourseActions(course = course)
-            }
+    }
+    if (showPaymentWebView && paymentSnapToken != null) {
+        PaymentWebView(snapToken = paymentSnapToken!!) {
+            // Callback saat pembayaran selesai
+            showPaymentWebView = false
+            paymentSnapToken = null
+            Toast.makeText(context, "Pembayaran selesai atau ditutup.", Toast.LENGTH_LONG).show()
+            // Mungkin refresh halaman atau navigasi ke halaman "My Courses"
+            navController.popBackStack()
         }
     }
 }
 
 
-// --- SEMUA KOMPONEN UI DI BAWAH INI DIUBAH UNTUK MENERIMA OBJEK `Course` ---
+// --- SEMUA KOMPONEN UI DI BAWAH INI (TIDAK BERUBAH, KECUALI CourseActions) ---
 
 @Composable
 fun CourseBanner(course: Course) {
@@ -173,12 +219,12 @@ fun CourseBanner(course: Course) {
             .height(200.dp)
     ) {
         AsyncImage(
-            model = course.thumbnail, // Data dinamis
+            model = course.thumbnail,
             contentDescription = course.name,
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop,
-            placeholder = painterResource(id = R.drawable.logo_google), // Fallback
-            error = painterResource(id = R.drawable.logo_google) // Fallback
+            placeholder = painterResource(id = R.drawable.logo_google),
+            error = painterResource(id = R.drawable.logo_google)
         )
     }
 }
@@ -199,11 +245,11 @@ fun CourseTitleAndRating(course: Course) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = course.name, // Data dinamis
+            text = course.name,
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.weight(1f))
-        RatingWithCount(rating = course.rating.toFloatOrNull() ?: 0.0f, count = 375) // count masih statis
+        RatingWithCount(rating = course.rating.toFloatOrNull() ?: 0.0f, count = 375)
     }
 }
 
@@ -216,22 +262,21 @@ fun InstructorInfo(course: Course) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(Icons.Default.Person, "Instructor", tint = Color(0xFF4A90E2))
-        Text(course.course_owner_name, color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp)) // Data dinamis
+        Text(course.course_owner_name, color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp))
         Spacer(Modifier.width(16.dp))
         Icon(Icons.Outlined.CheckCircle, "Lessons", tint = Color(0xFF4A90E2))
-        Text("32 Lessons", color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp)) // Masih statis
+        Text("32 Lessons", color = Color(0xFF4A90E2), modifier = Modifier.padding(start = 4.dp))
     }
 }
 
 @Composable
 fun DescriptionSection(course: Course) {
     Text(
-        course.description, // Data dinamis
+        course.description,
         color = Color(0xFF6B6B6B),
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(top = 16.dp)
     )
-
     Text(
         "Read More",
         color = Color(0xFF4A90E2),
@@ -241,35 +286,14 @@ fun DescriptionSection(course: Course) {
     )
 }
 
-@Composable
-fun CourseInstructor(course: Course) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = R.drawable.istockphoto_1682296067_612x612), // Gambar statis
-                contentDescription = "Instructor",
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(start = 16.dp)) {
-                Text(course.course_owner_name, style = MaterialTheme.typography.titleMedium) // Data dinamis
-                Text("Design Tutor", color = Color(0xFF6B6B6B)) // Masih statis
-            }
-            // Hapus ikon bintang yang tidak perlu jika tidak ada aksi
-        }
-    }
-}
 
 @Composable
-fun CourseActions(course: Course) {
+fun CourseActions(
+    course: Course,
+    viewModel: CourseViewModel,
+    firebaseId: String,
+    onEnrollClick: (snapToken: String) -> Unit // Menggunakan callback
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -278,7 +302,7 @@ fun CourseActions(course: Course) {
     ) {
         Column {
             Text(
-                "Rp${course.price}", // Data dinamis
+                "Rp${course.price}",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -286,7 +310,13 @@ fun CourseActions(course: Course) {
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
-            onClick = {},
+            onClick = {
+                // Panggil fungsi createPayment di ViewModel
+                viewModel.createPayment(course.courseId, firebaseId = firebaseId) { token ->
+                    // Panggil callback untuk memberitahu parent Composable agar menampilkan WebView
+                    onEnrollClick(token)
+                }
+            },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
         ) {
             Text("GET ENROLL", color = Color.White)
@@ -294,8 +324,35 @@ fun CourseActions(course: Course) {
     }
 }
 
-// Komponen lain yang tidak diubah (Discussion, Tabs, dll.) tetap ada di sini...
-// ... (Saya akan menghapusnya untuk keringkasan, tapi JANGAN hapus dari file Anda)
+
+@Composable
+fun PaymentWebView(snapToken: String, onFinished: () -> Unit) {
+    val url = "https://app.sandbox.midtrans.com/snap/v2/vtweb/$snapToken"
+    Log.d("PaymentWebView", "Loading URL: $url")
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(), // Ini akan mengisi seluruh Box parent
+        factory = { context ->
+            WebView(context).apply {
+                settings.javaScriptEnabled = true // PENTING!
+                webViewClient = object : WebViewClient() {
+                    // Cek URL untuk menentukan kapan pembayaran selesai/dibatalkan
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        Log.d("PaymentWebView", "Page finished loading: $url")
+                        // Midtrans akan me-redirect ke URL yang mengandung kata "finish"
+                        // setelah transaksi selesai (sukses, pending, atau gagal).
+                        if (url != null && (url.contains("transaction_status") || url.contains("finish"))) {
+                            onFinished()
+                        }
+                    }
+                }
+                loadUrl(url)
+            }
+        }
+    )
+}
+
 @Composable
 fun DiscussionSection(
     uiState: DiscussionUiState,
@@ -312,7 +369,6 @@ fun DiscussionSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Card untuk menambah diskusi baru
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -351,7 +407,6 @@ fun DiscussionSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Gunakan `when` untuk menampilkan UI berdasarkan state
         when (uiState) {
             is DiscussionUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
@@ -365,7 +420,6 @@ fun DiscussionSection(
                 if (uiState.discussions.isEmpty()) {
                     Text("Be the first to start a discussion!", modifier = Modifier.padding(vertical = 16.dp))
                 } else {
-                    // Gunakan Column biasa karena sudah di dalam VerticalScroll
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         uiState.discussions.forEach { discussion ->
                             DiscussionItem(
@@ -441,7 +495,7 @@ fun DiscussionItem(
 }
 
 @Composable
-fun ReplyItem(reply: Discussion) { // Balasan juga bertipe Discussion
+fun ReplyItem(reply: Discussion) {
     Row(modifier = Modifier.fillMaxWidth().background(Color(0xFFF8F9FA), RoundedCornerShape(8.dp)).padding(12.dp)) {
         Icon(Icons.Default.Person, contentDescription = "User", /*...*/)
         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {

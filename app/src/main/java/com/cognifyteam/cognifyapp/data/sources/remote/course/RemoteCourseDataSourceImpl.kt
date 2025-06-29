@@ -10,8 +10,10 @@ import com.cognifyteam.cognifyapp.data.models.Section
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
+import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.PaymentTokenResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.services.SectionService
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -37,6 +39,7 @@ interface RemoteCourseDataSource {
 
     suspend fun getSectionsByCourse(course_id: String): ApiResponse<List<Section>>
 
+    suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse>
 }
 
 class RemoteCourseDataSourceImpl(
@@ -84,5 +87,7 @@ class RemoteCourseDataSourceImpl(
         return sectionService.getSectionsByCourse(course_id)
     }
 
-
+    override suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse> {
+        return courseService.createPayment(courseId, createPaymentRequest)
+    }
 }
