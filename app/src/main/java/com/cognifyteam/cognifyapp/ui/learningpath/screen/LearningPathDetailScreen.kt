@@ -22,8 +22,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.LearningPath
+import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
+import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.learningpath.viewmodel.Comment
 import com.cognifyteam.cognifyapp.ui.learningpath.viewmodel.LearningPathDetailViewModel
 import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
@@ -33,14 +37,26 @@ import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LearningPathDetailScreen(
+    appContainer: AppContainer?,
     navController: NavController,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit,
-    learningPathId: Int,
-    viewModel: LearningPathDetailViewModel = viewModel()
+    learningPathId: Int
 ) {
+    val viewModel: LearningPathDetailViewModel = viewModel(
+        factory = LearningPathDetailViewModel.provideFactory(
+            smartRepository = appContainer!!.smartRepository
+        )
+    )
     val uiState by viewModel.uiState.collectAsState()
+
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModel.provideFactory(
+            authRepository = appContainer.authRepository
+        )
+    )
+    val currentUser by userViewModel.userState.collectAsState()
 
     LaunchedEffect(learningPathId) {
         onFabStateChange(FabState(isVisible = false))
@@ -70,7 +86,7 @@ fun LearningPathDetailScreen(
             item { Spacer(modifier = Modifier.height(8.dp)) }
             item { PathDetailHeader(path) }
             item { PathDescription(path) }
-            item { ActionButtons(path, onLikeClicked = { viewModel.toggleLike() }) }
+            item { ActionButtons(userViewModel, path, onLikeClicked = { viewModel.toggleLike(currentUser!!.firebaseId) }) }
             item {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                 StepsHeader()
@@ -84,16 +100,16 @@ fun LearningPathDetailScreen(
             // --- BAGIAN KOMENTAR BARU DITAMBAHKAN DI SINI ---
             item { Divider(modifier = Modifier.padding(vertical = 8.dp)) }
             item {
-                CommentHeader(commentCount = path.comment_contents.size)
+                CommentHeader(commentCount = path.comments.size)
             }
             item {
                 CommentInput(
                     commentInput = uiState.commentInput,
                     onCommentInputChange = { viewModel.onCommentInputChange(it) },
-                    onPostComment = { viewModel.postComment() }
+                    onPostComment = { viewModel.postComment(currentUser!!.firebaseId) }
                 )
             }
-            items(path.comment_contents, key = { it.id }) { comment ->
+            items(path.comments, key = { it.id }) { comment ->
                 CommentItem(comment = comment)
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -118,7 +134,7 @@ fun CommentHeader(commentCount: Int) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Komentar ($commentCount)",
+            text = "Comments ($commentCount)",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
@@ -159,14 +175,14 @@ fun CommentInput(
                 shape = RoundedCornerShape(50)
                 // Warna akan otomatis diatur oleh MaterialTheme berdasarkan status enabled/disabled
             ) {
-                Text("Kirim")
+                Text("Sent")
             }
         }
     }
 }
 
 @Composable
-fun CommentItem(comment: Comment) {
+fun CommentItem(comment: SmartComment) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -180,7 +196,7 @@ fun CommentItem(comment: Comment) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = comment.authorInitials,
+                text = comment.getAuthorInitial(),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
@@ -189,12 +205,12 @@ fun CommentItem(comment: Comment) {
         Column(modifier = Modifier.weight(1f)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = comment.authorName,
+                    text = comment.author_name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "• ${comment.timestamp}",
+                    text = "• ${comment.createdAt}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -211,7 +227,7 @@ fun CommentItem(comment: Comment) {
 }
 
 @Composable
-fun PathDetailHeader(path: LearningPath) {
+fun PathDetailHeader(path: com.cognifyteam.cognifyapp.data.models.LearningPath) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
@@ -224,7 +240,7 @@ fun PathDetailHeader(path: LearningPath) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = path.authorInitials,
+                text = path.getAuthorInitial(),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
@@ -232,14 +248,14 @@ fun PathDetailHeader(path: LearningPath) {
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = path.authorName,
+                text = path.author_name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = path.timeAgo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = path.createdAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(text = " • ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.width(4.dp))
@@ -261,7 +277,7 @@ fun PathDetailHeader(path: LearningPath) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PathDescription(path: LearningPath) {
+fun PathDescription(path: com.cognifyteam.cognifyapp.data.models.LearningPath) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = path.title,
@@ -289,7 +305,8 @@ fun PathDescription(path: LearningPath) {
 }
 
 @Composable
-fun ActionButtons(path: LearningPath, onLikeClicked: () -> Unit) {
+fun ActionButtons(viewModel: UserViewModel, path: LearningPath, onLikeClicked: () -> Unit) {
+    val currentUser = viewModel.userState.collectAsState().value
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -299,12 +316,12 @@ fun ActionButtons(path: LearningPath, onLikeClicked: () -> Unit) {
             shape = RoundedCornerShape(50)
         ) {
             Icon(
-                imageVector = if (path.liked_by_you) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                imageVector = if (path.likes.any{ it.userId == currentUser!!.firebaseId}) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                 contentDescription = "Like",
-                tint = if (path.liked_by_you) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (path.likes.any{ it.userId == currentUser!!.firebaseId}) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = path.likes.toString())
+            Text(text = path.likes.size.toString())
         }
         Button(
             onClick = { /* Navigasi ke halaman belajar */ },
@@ -345,6 +362,7 @@ fun StepsHeader() {
 fun LearningPathDetailScreenPreview() {
     CognifyApplicationTheme {
         LearningPathDetailScreen(
+            appContainer = null,
             navController = rememberNavController(),
             onFabStateChange = { /* Do nothing in preview */ },
             onTopBarStateChange = { /* Do nothing in preview */ },
@@ -359,6 +377,7 @@ fun LearningPathDetailScreenPreview() {
 fun LearningPathDetailScreenDarkPreview() {
     CognifyApplicationTheme(darkTheme = true) {
         LearningPathDetailScreen(
+            appContainer = null,
             navController = rememberNavController(),
             onFabStateChange = { /* Do nothing in preview */ },
             onTopBarStateChange = { /* Do nothing in preview */ },

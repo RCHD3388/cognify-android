@@ -1,11 +1,13 @@
 package com.cognifyteam.cognifyapp.data.sources.remote.services
 
+import com.cognifyteam.cognifyapp.data.models.CommentBody
 import com.cognifyteam.cognifyapp.data.models.GenerateLearningPathPayloadJson
 import com.cognifyteam.cognifyapp.data.models.GeneratedLearningPath
 import com.cognifyteam.cognifyapp.data.models.LearningPath
 import com.cognifyteam.cognifyapp.data.models.LikedBody
 import com.cognifyteam.cognifyapp.data.models.LikedRes
 import com.cognifyteam.cognifyapp.data.models.SaveLearningPathPayload
+import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.models.UserJson
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
@@ -25,4 +27,6 @@ interface SmartService {
     suspend fun getAll(): Response<ApiResponse<List<LearningPath>>>
     @POST("smart/like/{smartId}")
     suspend fun likeSmart( @Path("smartId") smartId: Int, @Body body: LikedBody): Response<ApiResponse<LikedRes>>
+    @POST("smart/comment/{smartId}")
+    suspend fun addComment( @Path("smartId") smartId: Int, @Body body: CommentBody): Response<ApiResponse<SmartComment>>
 }

@@ -85,32 +85,27 @@ class LearningPathViewModel(
     fun onLikeClicked(pathId: Int, currentUserId: String) {
         viewModelScope.launch {
             val repoResult = smartRepository.likePath(smartId = pathId, userId = currentUserId)
-            repoResult.fold(
-                onSuccess = {
-                    // Buat daftar baru dengan memetakan daftar lama
-                    val updatedPaths = _allLearningPaths.map { path ->
-                        if (path.id == pathId) {
-                            if(path.likes.any { it.userId == currentUserId && it.smartId == path.id }){
-                                path.copy(
-                                    likes = path.likes.filter { it.userId != currentUserId && it.smartId != path.id }
-                                )
-                            }else{
-                                path.copy(
-                                    likes = path.likes + SmartLike(currentUserId, path.id, it.toInt())
-                                )
-                            }
-                        } else {
-                            path
+            repoResult.onSuccess{
+                // Buat daftar baru dengan memetakan daftar lama
+                val updatedPaths = _allLearningPaths.map { path ->
+                    if (path.id == pathId) {
+                        if(path.likes.any { it.userId == currentUserId && it.smartId == path.id }){
+                            path.copy(
+                                likes = path.likes.filter { it.userId != currentUserId && it.smartId != path.id }
+                            )
+                        }else{
+                            path.copy(
+                                likes = path.likes + SmartLike(currentUserId, path.id, it.toInt())
+                            )
                         }
+                    } else {
+                        path
                     }
-
-                    _allLearningPaths = updatedPaths
-                    filterLearningPaths()
-                },
-                onFailure = {
-
                 }
-            )
+
+                _allLearningPaths = updatedPaths
+                filterLearningPaths()
+            }
         }
     }
 

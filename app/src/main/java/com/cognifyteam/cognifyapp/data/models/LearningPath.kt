@@ -241,7 +241,7 @@ data class LearningPath(
             SmartLike(
                 userId = like.userId,
                 smartId = like.smartId,
-                id = id
+                id = like.id
             )
         }
     }
@@ -250,9 +250,11 @@ data class LearningPath(
             SmartComment(
                 userId = comment.userId,
                 smartId = comment.smartId,
+                author_name = comment.author_name,
+                author_email = comment.author_email,
                 content = comment.content,
                 createdAt = comment.createdAt,
-                id = id
+                id = comment.id
             )
         }
     }
@@ -264,7 +266,7 @@ data class LearningPath(
                 description = step.description,
                 estimatedTime = step.estimatedTime,
                 smartId = step.smartId,
-                id = id
+                id = step.id
             )
         }
     }
@@ -303,12 +305,30 @@ data class SmartLike(
 data class SmartComment(
     val userId: String,
     val smartId: Int,
+    val author_name: String,
+    val author_email: String,
     val content: String,
     val createdAt: String,
 
     @PrimaryKey(autoGenerate = false)
     val id: Int
-): Parcelable
+): Parcelable {
+    fun getAuthorInitial(): String{
+        val words = this.author_name.trim().split(' ').filter { it.isNotBlank() }
+        return when {
+            words.isEmpty() -> ""
+            words.size == 1 -> {
+                words[0].first().toString().uppercase()
+            }
+
+            else -> {
+                val firstInitial = words[0].first()
+                val secondInitial = words[1].first()
+                "$firstInitial$secondInitial".uppercase()
+            }
+        }
+    }
+}
 
 @JsonClass(generateAdapter = true)
 @Parcelize()
@@ -322,6 +342,13 @@ data class LikedRes(
 @Parcelize()
 data class LikedBody(
     val userId: String
+): Parcelable
+
+@JsonClass(generateAdapter = true)
+@Parcelize()
+data class CommentBody(
+    val userId: String,
+    val content: String,
 ): Parcelable
 
 
