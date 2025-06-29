@@ -38,8 +38,10 @@ fun SectionsManager(
     onRemoveSection: (Int) -> Unit,
     onAddMaterial: (Int, MaterialState) -> Unit,
     onRemoveMaterial: (Int, Int) -> Unit,
-    onUpdateMaterial: (Int, Int, MaterialState) -> Unit
+    onUpdateMaterial: (Int, Int, MaterialState) -> Unit,
+    onMaterialViewFileClick: (Uri) -> Unit
 ) {
+
     var showAddSectionDialog by remember { mutableStateOf(false) }
     var showAddMaterialDialogForSection by remember { mutableStateOf<Int?>(null) }
     var viewingMaterial by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -93,7 +95,8 @@ fun SectionsManager(
                 onMaterialClick = { materialIndex ->
                     // Set material yang akan dilihat saat diklik
                     viewingMaterial = Pair(index, materialIndex)
-                }
+                },
+                onMaterialViewFileClick = onMaterialViewFileClick
             )
         }
 
@@ -115,7 +118,8 @@ fun SectionItem(
     onAddMaterialClick: () -> Unit,
     onRemoveSectionClick: () -> Unit,
     onRemoveMaterialClick: (Int) -> Unit,
-    onMaterialClick: (Int) -> Unit // <-- Tambahkan parameter ini
+    onMaterialClick: (Int) -> Unit, // <-- Tambahkan parameter ini
+    onMaterialViewFileClick: (Uri) -> Unit // <-- TAMBAHKAN INI
 ) {
     Column(
         modifier = Modifier
@@ -140,7 +144,8 @@ fun SectionItem(
             MaterialItem(
                 material = material,
                 onRemoveClick = { onRemoveMaterialClick(index) },
-                onItemClick = { onMaterialClick(index) } // <-- Panggil lambda di sini
+                onItemClick = { onMaterialClick(index) }, // <-- Panggil lambda di sini
+                onViewFileClick = onMaterialViewFileClick
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -155,7 +160,8 @@ fun SectionItem(
 fun MaterialItem(
     material: MaterialState,
     onRemoveClick: () -> Unit,
-    onItemClick: () -> Unit // <-- Tambahkan parameter ini
+    onItemClick: () -> Unit ,
+    onViewFileClick: (Uri) -> Unit // <-- TAMBAHKAN INI
 ) {
     Row(
         modifier = Modifier
@@ -177,6 +183,16 @@ fun MaterialItem(
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(material.title, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        material.fileUri?.let { uri ->
+            IconButton(onClick = { onViewFileClick(uri) }, modifier = Modifier.size(20.dp)) {
+                // Anda bisa menggunakan ikon lain jika mau, misal Icons.Default.Visibility
+                Icon(
+                    imageVector = Icons.Default.List, // Contoh ikon, ganti sesuai selera
+                    contentDescription = "View File",
+                    tint = Color.Gray
+                )
+            }
+        }
         IconButton(onClick = onRemoveClick, modifier = Modifier.size(20.dp)) {
             Icon(Icons.Default.Delete, contentDescription = "Remove Material", tint = Color.LightGray)
         }

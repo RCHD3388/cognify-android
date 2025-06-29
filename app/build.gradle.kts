@@ -103,4 +103,5 @@ dependencies {
     //navigation compose
     implementation("androidx.navigation:navigation-compose:2.7.3")
     implementation("androidx.webkit:webkit:1.11.0")
+    implementation("androidx.compose.material:material-icons-extended")
 }

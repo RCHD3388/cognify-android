@@ -1,16 +1,21 @@
 package com.cognifyteam.cognifyapp.data.repositories
 
+import android.content.Context
 import android.util.Log
 import android.webkit.MimeTypeMap
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
 import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
+import com.cognifyteam.cognifyapp.data.models.MaterialJson
+import com.cognifyteam.cognifyapp.data.models.Section
+import com.cognifyteam.cognifyapp.data.models.SectionRequestBody
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSource
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteCourseDataSource
+import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionState
 import java.io.File
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
@@ -25,9 +30,20 @@ interface CourseRepository {
     suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>>
     suspend fun getEnrolledCourses(firebaseId: String, query: String? = null): Result<List<Course>>
     suspend fun getCourseById(courseId: String): Result<Course>
-    suspend fun createCourse(course_name: String, course_description: String, course_owner: String, course_price: Int, category_id: String, thumbnail: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest, course_owner_name: String): Result<Course>
+    suspend fun createCourse(
+        course_name: String,
+        course_description: String,
+        course_owner: String,
+        course_price: Int,
+        category_id: String,
+        thumbnail: File,
+        sectionsWithMaterials: List<SectionState>,
+        course_owner_name: String
+    ): Result<Course>
     suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course>
     suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): Result<String>
+    suspend fun getSectionsByCourseId(courseId: String): Result<List<Section>>
+    suspend fun getMaterialsBySectionId(sectionId: String): Result<List<MaterialJson>>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -36,6 +52,7 @@ fun String.toPlainTextRequestBody(): RequestBody {
 class CourseRepositoryImpl(
     private val localDataSource: LocalCourseDataSource,
     private val remoteDataSource: RemoteCourseDataSource,
+    private val context: Context
 ) : CourseRepository {
     override suspend fun getCourseById(courseId: String): Result<Course> {
         return try {
@@ -83,69 +100,80 @@ class CourseRepositoryImpl(
         course_price: Int,
         category_id: String,
         thumbnail: File,
-        createMultipleSectionsRequest: CreateMultipleSectionsRequest,
-        course_owner_name: String,
+        sectionsWithMaterials: List<SectionState>,
+        course_owner_name: String
     ): Result<Course> {
-
-        val extension = MimeTypeMap.getFileExtensionFromUrl(thumbnail.path)
-
-
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "image/*"
-
-        val requestImageFile = thumbnail.asRequestBody(mimeType.toMediaTypeOrNull())
-
-        val imageMultipart = MultipartBody.Part.createFormData(
-            "thumbnail",
-            thumbnail.name,
-            requestImageFile
-        )
-
-        val courseNameBody = course_name.toRequestBody("text/plain".toMediaTypeOrNull())
-        val descriptionBody = course_description.toRequestBody("text/plain".toMediaTypeOrNull())
-        val ownerBody = course_owner.toRequestBody("text/plain".toMediaTypeOrNull())
-        val priceBody = course_price.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-        val categoryIdBody = category_id.toRequestBody("text/plain".toMediaTypeOrNull())
-        val course_owner_name = course_owner_name.toRequestBody("text/plain".toMediaTypeOrNull())
-
-        val response = remoteDataSource.createCourse(
-            thumbnail = imageMultipart,
-            course_name = courseNameBody,
-            course_description = descriptionBody,
-            course_owner = ownerBody,
-            course_price = priceBody,
-            category_id = categoryIdBody,
-            course_owner_name = course_owner_name
-        )
-
-        if (response.data?.data != null) {
-            val newCourse = Course.fromJson(response.data.data)
-            localDataSource.createCourse(newCourse.toEntity())
-
-            // Jika tidak ada section untuk dibuat, langsung kembalikan sukses
-            if (createMultipleSectionsRequest.sections.isEmpty()) {
-                return Result.success(newCourse)
-            }
-
-            // 3. Panggil API untuk membuat section
-            val sectionResponse = remoteDataSource.createSection(
-                newCourse.courseId,
-                createMultipleSectionsRequest
+        return try {
+            // TAHAP 1: Membuat Course Dasar (Tidak ada perubahan)
+            val imageMultipart = thumbnail.toMultipartBodyPart("thumbnail")
+            val courseResponse = remoteDataSource.createCourse(
+                thumbnail = imageMultipart,
+                course_name = course_name.toPlainTextRequestBody(),
+                course_description = course_description.toPlainTextRequestBody(),
+                course_owner = course_owner.toPlainTextRequestBody(),
+                course_price = course_price.toString().toPlainTextRequestBody(),
+                category_id = category_id.toPlainTextRequestBody(),
+                course_owner_name = course_owner_name.toPlainTextRequestBody()
             )
 
-            // 4. PERIKSA apakah section JUGA BERHASIL dibuat
-            if (sectionResponse.status == "success") {
-                // Course & Section berhasil, ini adalah kondisi sukses sesungguhnya
+            val newCourse = courseResponse.data?.data?.let { Course.fromJson(it) }
+                ?: return Result.failure(Exception("Failed to create course or response was empty."))
+
+            localDataSource.createCourse(newCourse.toEntity())
+
+            if (sectionsWithMaterials.isEmpty()) {
                 return Result.success(newCourse)
-            } else {
-                // Course berhasil, tapi section gagal. Kembalikan failure.
-                // Idealnya, ada mekanisme 'rollback' untuk menghapus course yang sudah dibuat.
-                return Result.failure(Exception("Course was created, but failed to create sections."))
             }
 
-        } else {
-            // Gagal sejak awal saat membuat course
-            return Result.failure(Exception("Failed to create course or response was empty"))
+            // TAHAP 2: Membuat Sections (Tidak ada perubahan)
+            val sectionRequestBodies = sectionsWithMaterials.mapIndexed { index, sectionState ->
+                SectionRequestBody(title = sectionState.title, position = index + 1)
+            }
+            val createSectionsRequest = CreateMultipleSectionsRequest(sectionRequestBodies)
+            val sectionResponse = remoteDataSource.createSection(newCourse.courseId, createSectionsRequest)
+
+            // Memastikan `createdSections` tidak null sebelum digunakan
+            val createdSections = sectionResponse.data
+                ?: return Result.failure(Exception("Course created, but failed to create sections."))
+
+            // ======================================================
+            // TAHAP 3: UPLOAD MATERIALS (TANPA .zip())
+            // ======================================================
+            // Menggunakan perulangan 'for' dengan index sebagai alternatif .zip()
+            // Ini adalah cara yang paling aman untuk menghindari error Anda.
+            sectionsWithMaterials.forEachIndexed { index, sectionState ->
+                // Pastikan index tidak melebihi batas array `createdSections`
+                if (index < createdSections.data.size) {
+                    val createdSection = createdSections.data[index]
+
+                    if (sectionState.materials.isNotEmpty()) {
+                        val materialResponse = remoteDataSource.createMaterialsForSection(
+                            sectionId = createdSection.id.toString(),
+                            materials = sectionState.materials.toList(),
+                            context = context
+                        )
+                        if (materialResponse.status != "success") {
+                            // Keluar dari fungsi dengan failure jika ada error
+                            return@createCourse Result.failure(Exception("Failed to upload materials for section: '${sectionState.title}'."))
+                        }
+                    }
+                }
+            }
+            // ======================================================
+
+            Result.success(newCourse)
+
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "An error occurred during course creation process", e)
+            Result.failure(e)
         }
+    }
+
+    private fun String.toPlainTextRequestBody(): RequestBody = this.toRequestBody("text/plain".toMediaTypeOrNull())
+
+    private fun File.toMultipartBodyPart(partName: String): MultipartBody.Part {
+        val requestBody = this.asRequestBody("image/*".toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData(partName, this.name, requestBody)
     }
 
     override suspend fun getUserCreatedCourses(firebaseId: String): Result<List<Course>> {
@@ -179,6 +207,27 @@ class CourseRepositoryImpl(
             Result.success(response.data.token)
         } catch (e: Exception) {
             Log.e("CourseRepository", "Failed to create payment token", e)
+            Result.failure(e)
+        }
+    }
+    override  suspend fun  getSectionsByCourseId(courseId: String): Result<List<Section>> {
+        return try {
+            val response = remoteDataSource.getSectionsByCourseId(courseId)
+            val sections = response.data.data
+            Result.success(sections)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Failed to fetch sections by course ID", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getMaterialsBySectionId(sectionId: String): Result<List<MaterialJson>> {
+        return try {
+            val response = remoteDataSource.getMaterialsBySectionId(sectionId)
+            val materials = response.data.data
+            Result.success(materials)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Failed to fetch materials by section ID", e)
             Result.failure(e)
         }
     }

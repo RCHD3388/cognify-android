@@ -34,6 +34,7 @@ import com.cognifyteam.cognifyapp.data.sources.remote.services.AuthService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.DiscussionService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.FollowService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.MaterialService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.SmartService
 import com.cognifyteam.cognifyapp.data.sources.remote.smart.RemoteSmartDataSourceImpl
@@ -86,7 +87,9 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
     override val courseRepository: CourseRepository by lazy {
         CourseRepositoryImpl(
             LocalCourseDataSourceImpl(AppDatabase.getInstance(applicationContext).courseDao()),
-            RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java),retrofit.create(SectionService::class.java)),
+            RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java),retrofit.create(SectionService::class.java),retrofit.create(MaterialService::class.java),moshi),
+            applicationContext
+
 
         )
     }

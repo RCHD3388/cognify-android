@@ -1,7 +1,7 @@
 package com.cognifyteam.cognifyapp.ui.course
 
 import android.content.Context
-import android.content.Intent
+import android.util.Log
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -170,7 +170,10 @@ fun AddCourseScreen(
                 onRemoveSection = viewModel::removeSection,
                 onAddMaterial = viewModel::addMaterialToSection,
                 onRemoveMaterial = viewModel::removeMaterialFromSection,
-                onUpdateMaterial = viewModel::updateMaterialInSection
+                onUpdateMaterial = viewModel::updateMaterialInSection,
+                onMaterialViewFileClick = { uri ->
+                    Log.d("FileViewer", "File URI to view: $uri")
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -199,7 +202,7 @@ fun AddCourseScreen(
                                 position = index + 1,
                             )
                         }
-                        val createMultipleSectionsRequest = CreateMultipleSectionsRequest(sectionList)
+//                        val createMultipleSectionsRequest = CreateMultipleSectionsRequest(sectionList)
                         viewModel.createCourse(
                             course_name = courseName,
                             course_description = courseDescription,
@@ -207,7 +210,6 @@ fun AddCourseScreen(
                             course_price = coursePrice,
                             category_id = categoryId,
                             thumbnailFile = thumbnailFile,
-                            createMultipleSectionsRequest = createMultipleSectionsRequest,
                             course_owner_name = course_owner_name
                         )
                     } else {
