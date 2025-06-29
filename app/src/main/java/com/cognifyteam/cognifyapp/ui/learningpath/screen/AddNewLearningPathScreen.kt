@@ -1,13 +1,16 @@
 package com.cognifyteam.cognifyapp.ui.learningpath.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,9 +30,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.LearningPathStep
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
+import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
+import com.cognifyteam.cognifyapp.ui.auth.rememberGoogleSignLauncher
+import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddNewLearningPathScreen(
@@ -37,12 +46,27 @@ fun AddNewLearningPathScreen(
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit,
-    viewModel: AddNewLearningPathViewModel = viewModel()
 ) {
+    // add new learning path view model
+    val viewModel: AddNewLearningPathViewModel = viewModel(
+        factory = AddNewLearningPathViewModel.provideFactory(
+            smartRepository = appContainer!!.smartRepository
+        )
+    )
     val uiState by viewModel.uiState.collectAsState()
+
+    // user view model
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModel.provideFactory(
+            authRepository = appContainer.authRepository
+        )
+    )
+
+    val currentUser by userViewModel.userState.collectAsState()
 
     // Top Bar tetap sama untuk semua state
     LaunchedEffect(Unit) {
+        viewModel.resetState()
         onTopBarStateChange(
             TopBarState(
                 isVisible = true,
@@ -60,11 +84,20 @@ fun AddNewLearningPathScreen(
         onFabStateChange(FabState(isVisible = false))
     }
 
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState) {
+        if(uiState.screenState == LearningPathScreenState.FAILED_GENERATE || uiState.screenState == LearningPathScreenState.SAVE_RESULT){
+            Toast.makeText(context, uiState.screenMessage, Toast.LENGTH_LONG).show()
+            viewModel.resetState()
+        }
+    }
+
     // Menggunakan 'when' untuk menampilkan UI berdasarkan state
     when (uiState.screenState) {
-        LearningPathScreenState.FORM -> FormContent(uiState, viewModel, onShowSnackbar)
+        LearningPathScreenState.FORM, LearningPathScreenState.FAILED_GENERATE-> FormContent(uiState, viewModel, onShowSnackbar)
         LearningPathScreenState.LOADING -> LoadingContent()
-        LearningPathScreenState.RESULT -> ResultContent(uiState, viewModel)
+        LearningPathScreenState.RESULT, LearningPathScreenState.SAVE_RESULT -> ResultContent(uiState, viewModel, userViewModel)
     }
 }
 
@@ -158,8 +191,12 @@ fun LoadingContent() {
 @Composable
 fun ResultContent(
     uiState: AddLearningPathUiState,
-    viewModel: AddNewLearningPathViewModel
+    viewModel: AddNewLearningPathViewModel,
+    userViewModel: UserViewModel
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val currentUser by userViewModel.userState.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -168,22 +205,51 @@ fun ResultContent(
         // Kotak pesan sukses
         SuccessMessageCard()
 
-        // Judul
-        Text(
-            text = "Learning Path Anda",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
+        // Judul Learning Path
+        OutlinedTextField(
+            value = uiState.learningPathTitle,
+            onValueChange = { viewModel.onLearningPathTitleChanged(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 16.dp),
+            label = { Text("Judul Learning Path") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
         )
 
         // Daftar Learning Path yang bisa di-scroll
         LazyColumn(
             modifier = Modifier.weight(1f) // PENTING: Membuat list ini bisa scroll & mengisi ruang
         ) {
-            itemsIndexed(uiState.generatedPath) { index, step ->
+            item {
+                // Judul
+                Text(
+                    text = "Learning Path Anda",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+                )
+            }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(uiState.generatedPath!!.tags) { tag ->
+                        SkillTag(text = tag, MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+            item {
+                // Main Description
+                Text(
+                    text = "This learning path is designed for intermediate learners who want to solidify their web development skills and build more complex web applications. You'll delve deeper into front-end frameworks, back-end development, and database integration. The goal is to equip you with the knowledge and practical experience to tackle real-world web development projects.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)
+                )
+            }
+            itemsIndexed(uiState.generatedPath!!.paths) { index, step ->
                 LearningPathStepItem(
                     step = step,
-                    isLastItem = index == uiState.generatedPath.lastIndex
+                    isLastItem = index == uiState.generatedPath!!.paths.lastIndex
                 )
             }
         }
@@ -191,7 +257,8 @@ fun ResultContent(
         // Tombol Aksi di Bawah
         BottomActionButtons(
             onRegenerate = { viewModel.onRegenerateClicked() },
-            onSave = { viewModel.onSaveClicked() }
+            onSave = { viewModel.onSaveClicked(currentUser!!.firebaseId ?: "") },
+            canSave = uiState.isSaveButtonEnabled
         )
     }
 }
@@ -291,7 +358,7 @@ fun LearningPathStepItem(step: LearningPathStep, isLastItem: Boolean) {
 }
 
 @Composable
-fun BottomActionButtons(onRegenerate: () -> Unit, onSave: () -> Unit) {
+fun BottomActionButtons(onRegenerate: () -> Unit, onSave: () -> Unit, canSave: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -307,10 +374,11 @@ fun BottomActionButtons(onRegenerate: () -> Unit, onSave: () -> Unit) {
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-            Text("Generate Ulang")
+            Text("Regenerate Path")
         }
         Button(
             onClick = onSave,
+            enabled = canSave,
             modifier = Modifier
                 .weight(1f)
                 .height(56.dp),
@@ -318,7 +386,7 @@ fun BottomActionButtons(onRegenerate: () -> Unit, onSave: () -> Unit) {
         ) {
             Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize)) // SEBELUMNYA: Save
             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-            Text("Simpan Path")
+            Text("Save Path")
         }
     }
 }

@@ -1,28 +1,31 @@
 package com.cognifyteam.cognifyapp.ui.learningpath.screen
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.cognifyteam.cognifyapp.data.models.GeneratedLearningPath
+import com.cognifyteam.cognifyapp.data.models.LearningPathStep
+import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
+import com.cognifyteam.cognifyapp.data.repositories.smart.SmartRepository
+import com.cognifyteam.cognifyapp.ui.auth.AuthUiState
+import com.cognifyteam.cognifyapp.ui.auth.AuthViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 // Enum untuk merepresentasikan state layar saat ini
 enum class LearningPathScreenState {
     FORM,    // Tampilan form input
     LOADING, // Tampilan saat proses generate
-    RESULT   // Tampilan hasil learning path
+    RESULT,   // Tampilan hasil learning path
+    FAILED_GENERATE,
+    SAVE_RESULT
 }
-
-// Data class untuk satu langkah dalam learning path
-data class LearningPathStep(
-    val stepNumber: Int,
-    val title: String,
-    val description: String,
-    val estimatedTime: String
-)
 
 // Data class untuk menampung semua state dari layar
 data class AddLearningPathUiState(
@@ -41,12 +44,19 @@ data class AddLearningPathUiState(
 
     // State untuk mengontrol tampilan
     val screenState: LearningPathScreenState = LearningPathScreenState.FORM,
+    val screenMessage: String = "",
 
     // State untuk Hasil
-    val generatedPath: List<LearningPathStep> = emptyList()
+
+    val generatedPath: GeneratedLearningPath? = null,
+
+    val learningPathTitle: String = "",
+    val isSaveButtonEnabled: Boolean = false // Tambahkan state ini
 )
 
-class AddNewLearningPathViewModel : ViewModel() {
+class AddNewLearningPathViewModel(
+    private val smartRepository: SmartRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddLearningPathUiState())
     val uiState: StateFlow<AddLearningPathUiState> = _uiState.asStateFlow()
@@ -83,22 +93,51 @@ class AddNewLearningPathViewModel : ViewModel() {
         }
     }
 
+    fun resetState() {
+        _uiState.update { curState ->
+            curState.copy(screenState = LearningPathScreenState.FORM)
+        }
+    }
+
+    fun onLearningPathTitleChanged(title: String) {
+        _uiState.update {
+            it.copy(
+                learningPathTitle = title,
+                isSaveButtonEnabled = title.isNotBlank() // Aktifkan tombol jika judul tidak kosong
+            )
+        }
+    }
+
     // --- Fungsi untuk bagian Aksi (Generate, Save, etc.) ---
 
     fun onGenerateClicked() {
         viewModelScope.launch {
+            val mainTopic = uiState.value.selectedTopic ?: uiState.value.customTopic
+            val additionalPrompt = uiState.value.additionalPrompt ?: "Sesuaikan saja dengan topic dan level yang diminta"
+            val level = uiState.value.selectedLevel
+
             // 1. Ubah state ke LOADING
             _uiState.update { it.copy(screenState = LearningPathScreenState.LOADING) }
 
-            // 2. Simulasi proses generate (misalnya call API)
-            delay(2000) // delay 2 detik
+            // 2. generate (call API)
+            val backendResult = smartRepository.generateNewLP(topic = mainTopic, level, additional_prompt = additionalPrompt)
 
-            // 3. Buat data dummy dan update state ke RESULT
-            _uiState.update {
-                it.copy(
-                    screenState = LearningPathScreenState.RESULT,
-                    generatedPath = createDummyPathData()
-                )
+            backendResult.onSuccess { newLearningPath ->
+                _uiState.update {
+                    it.copy(
+                        screenState = LearningPathScreenState.RESULT,
+                        generatedPath = newLearningPath
+                    )
+                }
+            }.onFailure {
+                val originalErrorMessage = backendResult.exceptionOrNull()?.message
+                Log.e("AddNewLearningPathViewModel", "Fail to Generate: $originalErrorMessage")
+                _uiState.update {
+                    it.copy(
+                        screenState = LearningPathScreenState.FAILED_GENERATE,
+                        screenMessage = "Gagal membuat learning path. Silakan coba lagi nanti."
+                    )
+                }
             }
         }
     }
@@ -113,10 +152,40 @@ class AddNewLearningPathViewModel : ViewModel() {
         }
     }
 
-    fun onSaveClicked() {
-        // Logika untuk menyimpan learning path ke database/API
-        println("Learning Path Saved!")
-        // Di sini Anda bisa menavigasi ke layar lain atau menampilkan Snackbar
+    fun onSaveClicked(currentUser: String) {
+        viewModelScope.launch {
+            val learningPath = uiState.value.generatedPath
+            val title = uiState.value.learningPathTitle
+            _uiState.update { it.copy(screenState = LearningPathScreenState.LOADING) }
+
+            val backendResult = smartRepository.saveNewLP(userId = currentUser, title, learningPath!!)
+            Log.d("AddNewLearningPathViewModel", "Save Result: $backendResult")
+
+            backendResult.fold(
+                onSuccess = { savedData ->
+                    // Ini akan dieksekusi jika `backendResult` adalah Result.success
+                    Log.i("AddNewLearningPathViewModel", "Save successful: $savedData")
+                    _uiState.update {
+                        it.copy(
+                            screenState = LearningPathScreenState.SAVE_RESULT,
+                            screenMessage = "Learning Path saved successfully!"
+                        )
+                    }
+                },
+                onFailure = { exception ->
+                    // Ini akan dieksekusi jika `backendResult` adalah Result.failure
+                    Log.e("AddNewLearningPathViewModel", "Save failed", exception)
+                    _uiState.update {
+                        it.copy(
+                            // Sebaiknya ada state ERROR untuk menampilkan pesan error dengan benar
+                            screenState = LearningPathScreenState.SAVE_RESULT,
+                            // Ambil pesan dari exception, atau berikan pesan default jika tidak ada
+                            screenMessage = exception.message ?: "Save failed. Please check your internet connection."
+                        )
+                    }
+                }
+            )
+        }
     }
 
 
@@ -128,16 +197,14 @@ class AddNewLearningPathViewModel : ViewModel() {
         return this.copy(isGenerateButtonEnabled = isTopicFilled && isLevelSelected)
     }
 
-    private fun createDummyPathData(): List<LearningPathStep> {
-        // Data dummy bisa lebih dari 5
-        return listOf(
-            LearningPathStep(1, "HTML & CSS Fundamentals", "Pelajari struktur dasar HTML dan styling dengan CSS. Termasuk flexbox, grid, dan responsive design.", "2-3 minggu"),
-            LearningPathStep(2, "JavaScript Basics", "Kuasai dasar-dasar JavaScript: variabel, fungsi, array, objek, dan DOM manipulation.", "3-4 minggu"),
-            LearningPathStep(3, "React Fundamentals", "Belajar React: komponen, props, state, hooks, dan event handling.", "4-5 minggu"),
-//            LearningPathStep(4, "State Management", "Pahami Redux atau Context API untuk mengelola state aplikasi React.", "2-3 minggu"),
-//            LearningPathStep(5, "API Integration", "Belajar cara mengambil dan mengirim data ke server menggunakan Fetch API atau Axios.", "1-2 minggu"),
-//            LearningPathStep(6, "Styling in React", "Eksplorasi Styled Components atau Tailwind CSS untuk styling yang lebih modular dan efisien.", "2-3 minggu"),
-//            LearningPathStep(7, "Final Project", "Buat aplikasi e-commerce lengkap dengan React, termasuk API integration.", "3-4 minggu")
-        )
+    companion object {
+        fun provideFactory(
+            smartRepository: SmartRepository
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AddNewLearningPathViewModel(smartRepository) as T
+            }
+        }
     }
 }

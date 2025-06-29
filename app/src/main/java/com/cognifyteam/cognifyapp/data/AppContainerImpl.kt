@@ -12,6 +12,8 @@ import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepository
 import com.cognifyteam.cognifyapp.data.repositories.auth.AuthRepositoryImpl
 import com.cognifyteam.cognifyapp.data.repositories.profile.ProfileRepository
 import com.cognifyteam.cognifyapp.data.repositories.profile.ProfileRepositoryImpl
+import com.cognifyteam.cognifyapp.data.repositories.smart.SmartRepository
+import com.cognifyteam.cognifyapp.data.repositories.smart.SmartRepositoryImpl
 import com.cognifyteam.cognifyapp.data.sources.local.AppDatabase
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSource
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalAuthDataSourceImpl
@@ -19,6 +21,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseData
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalDiscussionDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalFollowDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalProfileDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalSmartDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.ErrorResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.auth.RemoteAuthDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.course.RemoteCourseDataSourceImpl
@@ -29,6 +32,8 @@ import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.DiscussionService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.FollowService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.SmartService
+import com.cognifyteam.cognifyapp.data.sources.remote.smart.RemoteSmartDataSourceImpl
 import com.cognifyteam.cognifyapp.data.sources.remote.users.RemoteFollowDataSourceImpl
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -37,6 +42,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 
 interface AppContainer{
     val authRepository: AuthRepository
+    val smartRepository: SmartRepository
     val profileRepository: ProfileRepository
     val courseRepository: CourseRepository
     val discussionRepository: DiscussionRepository
@@ -54,6 +60,13 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
         AuthRepositoryImpl(
             LocalAuthDataSourceImpl(AppDatabase.getInstance(applicationContext)),
             RemoteAuthDataSourceImpl(retrofit.create(AuthService::class.java))
+        )
+    }
+
+    override val smartRepository: SmartRepository by lazy {
+        SmartRepositoryImpl(
+            LocalSmartDataSourceImpl(AppDatabase.getInstance(applicationContext)),
+            RemoteSmartDataSourceImpl(retrofit.create(SmartService::class.java))
         )
     }
 

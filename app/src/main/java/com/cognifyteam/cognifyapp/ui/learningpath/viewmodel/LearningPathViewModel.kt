@@ -1,7 +1,12 @@
 package com.cognifyteam.cognifyapp.ui.learningpath.screen
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.cognifyteam.cognifyapp.data.models.LearningPathStep
+import com.cognifyteam.cognifyapp.data.models.SmartLike
+import com.cognifyteam.cognifyapp.data.repositories.smart.SmartRepository
 import com.cognifyteam.cognifyapp.ui.learningpath.viewmodel.Comment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,46 +32,41 @@ data class LearningPath(
     val steps: List<LearningPathStep>
 )
 
-// --- DUMMY DATA (Tidak perlu mutable lagi) ---
-private val sampleLearningPaths = listOf(
-    // ... data dummy tetap sama, tapi sekarang cocok dengan data class yang immutable
-    LearningPath(id = 1, title = "Frontend Development Mastery", description = "...", authorName = "Ahmad Sultoni", authorInitials = "AS", timeAgo = "2 jam yang lalu", level = "Pemula", tags = listOf("HTML", "CSS", "JavaScript", "React", "Programming"), likes = 234, comments = 45, liked_by_you = false, steps = emptyList()),
-    LearningPath(id = 2, title = "UI/UX Design Fundamentals", description = "...", authorName = "Maria Rosanti", authorInitials = "MR", timeAgo = "4 jam yang lalu", level = "Menengah", tags = listOf("UI Design", "UX Research", "Figma", "Prototyping", "Design"), likes = 189, comments = 32, liked_by_you = true, steps = emptyList()),
-    LearningPath(id = 3, title = "Data Science with Python", description = "...", authorName = "Budi Santoso", authorInitials = "BS", timeAgo = "1 hari yang lalu", level = "Menengah", tags = listOf("Python", "Pandas", "Data Science", "Machine Learning"), likes = 305, comments = 68, liked_by_you = false, steps = emptyList()),
-    LearningPath(id = 4, title = "Digital Marketing 101", description = "...", authorName = "Cyntia Bella", authorInitials = "CB", timeAgo = "3 hari yang lalu", level = "Pemula", tags = listOf("SEO", "Social Media", "Marketing"), likes = 152, comments = 21, liked_by_you = true, steps = emptyList())
-)
-
-private val filterCategories = listOf("Semua", "Programming", "Design", "Data Science", "Marketing")
+private val filterCategories = listOf("Semua", "Programming", "Frontend", "Backend", "Design", "Data Science", "Marketing")
 
 // --- UI STATE (Tidak ada perubahan) ---
 data class LearningPathUiState(
     val searchQuery: String = "",
     val selectedCategory: String = "Semua",
-    val learningPaths: List<LearningPath> = emptyList(),
+    val learningPaths: List<com.cognifyteam.cognifyapp.data.models.LearningPath> = emptyList(),
     val allCategories: List<String> = emptyList()
 )
 
 // --- VIEWMODEL (DENGAN LOGIKA YANG DIPERBAIKI) ---
-class LearningPathViewModel : ViewModel() {
+class LearningPathViewModel(
+    private val smartRepository: SmartRepository
+) : ViewModel() {
 
     // Sumber data utama sekarang menjadi state internal di dalam ViewModel
     // Ini memungkinkan kita untuk menggantinya dengan list baru saat ada perubahan
-    private var _allLearningPaths: List<LearningPath> = sampleLearningPaths
+    private var _allLearningPaths: List<com.cognifyteam.cognifyapp.data.models.LearningPath> = listOf()
     private val _allCategories: List<String> = filterCategories
 
     private val _uiState = MutableStateFlow(LearningPathUiState())
     val uiState: StateFlow<LearningPathUiState> = _uiState.asStateFlow()
 
-    init {
-        loadInitialData()
-    }
-
-    private fun loadInitialData() {
-        _uiState.value = LearningPathUiState(
-            learningPaths = _allLearningPaths,
-            allCategories = _allCategories,
-            selectedCategory = "Semua"
-        )
+    fun loadInitialData() {
+        viewModelScope.launch {
+            val allResultLearningPaths = smartRepository.getAllLearningPaths()
+            allResultLearningPaths.onSuccess {
+                _allLearningPaths = it
+                _uiState.value = LearningPathUiState(
+                    learningPaths = _allLearningPaths,
+                    allCategories = _allCategories,
+                    selectedCategory = "Semua"
+                )
+            }
+        }
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -82,26 +82,28 @@ class LearningPathViewModel : ViewModel() {
     // =======================================================================
     // --- FUNGSI onLikeClicked DENGAN LOGIKA IMMUTABLE (SOLUSI) ---
     // =======================================================================
-    fun onLikeClicked(pathId: Int) {
+    fun onLikeClicked(pathId: Int, currentUserId: String) {
         viewModelScope.launch {
+            smartRepository.likePath(smartId = pathId, userId = currentUserId)
             // Buat daftar baru dengan memetakan daftar lama
             val updatedPaths = _allLearningPaths.map { path ->
-                // Jika path ini adalah yang kita cari...
                 if (path.id == pathId) {
-                    // ...buat objek BARU dengan nilai yang diperbarui.
-                    path.copy(
-                        liked_by_you = !path.liked_by_you,
-                        likes = if (path.liked_by_you) path.likes - 1 else path.likes + 1
-                    )
+                    if(path.likes.any { it.userId == currentUserId && it.smartId == path.id }){
+                        path.copy(
+                            likes = path.likes.filter { it.userId != currentUserId && it.smartId != path.id }
+                        )
+                    }else{
+                        path.copy(
+                            likes = path.likes + SmartLike(currentUserId, path.id)
+                        )
+                    }
                 } else {
-                    // ...jika tidak, kembalikan objek path seperti semula.
                     path
                 }
             }
-            // Ganti sumber data utama kita dengan daftar yang baru ini
-            _allLearningPaths = updatedPaths
+            Log.d("asdasd", "${updatedPaths}")
 
-            // Panggil filter untuk menerapkan logika pencarian/kategori ke data baru
+            _allLearningPaths = updatedPaths
             filterLearningPaths()
         }
     }
@@ -130,5 +132,16 @@ class LearningPathViewModel : ViewModel() {
 
         // Karena kita selalu membuat objek baru, Compose pasti akan mendeteksi perubahan.
         _uiState.update { it.copy(learningPaths = filteredList) }
+    }
+
+    companion object {
+        fun provideFactory(
+            smartRepository: SmartRepository
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return LearningPathViewModel(smartRepository) as T
+            }
+        }
     }
 }

@@ -60,17 +60,21 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.cognifyteam.cognifyapp.data.AppContainer
+import com.cognifyteam.cognifyapp.data.models.LearningPathStep
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
+import com.cognifyteam.cognifyapp.ui.common.UserViewModel
 import com.cognifyteam.cognifyapp.ui.theme.CognifyApplicationTheme
 
 // --- SCREEN UTAMA (DENGAN PERUBAHAN) ---
@@ -81,11 +85,23 @@ fun MainLearningPathScreen(
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit,
-    viewModel: LearningPathViewModel = viewModel()
 ) {
+    val viewModel: LearningPathViewModel = viewModel(
+        factory = LearningPathViewModel.provideFactory(
+            smartRepository = appContainer!!.smartRepository
+        )
+    )
     val uiState by viewModel.uiState.collectAsState()
 
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModel.provideFactory(
+            authRepository = appContainer.authRepository
+        )
+    )
+    val currentUser by userViewModel.userState.collectAsState()
+
     LaunchedEffect(Unit) {
+        viewModel.loadInitialData()
         onFabStateChange(FabState(
             isVisible = true,
             icon = Icons.Filled.Add,
@@ -136,9 +152,10 @@ fun MainLearningPathScreen(
             LearningPathCard(
                 path = path,
                 // Tambahkan lambda untuk event klik like
-                onLikeClicked = { viewModel.onLikeClicked(path.id) },
+                onLikeClicked = { viewModel.onLikeClicked(path.id, currentUser!!.firebaseId) },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                onClicked = { navController?.navigate("learning_path_details/${path.id}") }
+                onClicked = { navController?.navigate("learning_path_details/${path.id}") },
+                userViewModel = userViewModel
             )
         }
     }
@@ -271,11 +288,13 @@ fun SearchBarSection(
 
 @Composable
 fun LearningPathCard(
-    path: LearningPath,
+    path: com.cognifyteam.cognifyapp.data.models.LearningPath,
     onLikeClicked: () -> Unit, // Tambahkan parameter untuk event klik
     onClicked: () -> Unit, // Tambahkan parameter untuk event klik
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userViewModel: UserViewModel
 ) {
+    val currentUser by userViewModel.userState.collectAsState()
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -289,17 +308,17 @@ fun LearningPathCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Avatar(initials = path.authorInitials)
+                Avatar(initials = path.getAuthorInitial())
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = path.authorName,
+                        text = path.author_name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = path.timeAgo,
+                        text = path.createdAt,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -342,8 +361,8 @@ fun LearningPathCard(
                 StatItem(
                     iconFilled = Icons.Filled.Favorite,
                     iconOutlined = Icons.Outlined.Favorite, // Ikon baru
-                    count = path.likes.toString(),
-                    isFilled = path.liked_by_you, // Status dari data
+                    count = path.likes.size.toString(),
+                    isFilled = path.likes.any { it.userId == currentUser!!.firebaseId }, // Status dari data
                     // Gunakan warna `error` dari tema untuk like
                     color = MaterialTheme.colorScheme.error,
                     onClick = onLikeClicked // Teruskan event klik
@@ -352,7 +371,7 @@ fun LearningPathCard(
                 // Item komentar tidak interaktif (tidak ada onClick)
                 StatItem(
                     iconFilled = Icons.Default.Send, // Tetap gunakan satu ikon
-                    count = path.comments.toString()
+                    count = path.comments.size.toString()
                 )
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -479,14 +498,14 @@ fun LevelTag(text: String) {
 
 
 @Composable
-fun SkillTag(text: String) {
+fun SkillTag(text: String, textStyle: TextStyle = MaterialTheme.typography.bodySmall) {
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodySmall,
+            style = textStyle,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -561,14 +580,5 @@ fun MainLearningPathScreenDarkPreview() {
             onTopBarStateChange = { /* Do nothing in preview */ },
             onShowSnackbar = { /* Do nothing in preview */ }
         )
-    }
-}
-
-@Preview(showBackground = true, name = "Learning Path Card Preview")
-@Composable
-fun LearningPathCardPreview() {
-    val previewPath = LearningPath(1, "Judul Preview", "Deskripsi...", "Author", "AU", "Baru saja", "Pemula", listOf("Tag"), 123, 12, liked_by_you = true, steps = listOf(LearningPathStep(1, "HTML & CSS Fundamentals", "Pelajari struktur dasar HTML dan styling dengan CSS. Termasuk flexbox, grid, dan responsive design.", "2-3 minggu")))
-    CognifyApplicationTheme {
-        LearningPathCard(path = previewPath, onLikeClicked = { }, onClicked = { })
     }
 }

@@ -2,8 +2,8 @@ package com.cognifyteam.cognifyapp.ui.learningpath.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cognifyteam.cognifyapp.data.models.LearningPathStep
 import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPath
-import com.cognifyteam.cognifyapp.ui.learningpath.screen.LearningPathStep
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,11 +47,11 @@ class LearningPathDetailViewModel : ViewModel() {
             level = "Pemula", tags = listOf("HTML", "CSS", "JavaScript", "React", "Vue.js"),
             likes = 234, liked_by_you = false,
             steps = listOf(
-                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu"),
-                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu"),
-                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu"),
-                LearningPathStep(4, "Advanced State Management", "...", "2 minggu"),
-                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu")
+                LearningPathStep(1, "HTML & CSS Fundamentals", "...", "2-3 minggu", 1),
+                LearningPathStep(2, "JavaScript Basics", "...", "3-4 minggu", 1),
+                LearningPathStep(3, "React Fundamentals", "...", "4-5 minggu", 1),
+                LearningPathStep(4, "Advanced State Management", "...", "2 minggu", 1),
+                LearningPathStep(5, "Final Project: E-commerce App", "...", "4 minggu", 1)
             ),
             comments = 123,
             comment_contents = listOf(
