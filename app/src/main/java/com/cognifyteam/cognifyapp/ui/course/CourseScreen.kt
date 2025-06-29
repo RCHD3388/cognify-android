@@ -71,7 +71,6 @@ import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
-import com.midtrans.sdk.corekit.core.MidtransSDK
 
 @Composable
 fun getActivity(): Activity {
