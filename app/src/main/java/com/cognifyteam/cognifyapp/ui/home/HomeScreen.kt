@@ -130,7 +130,7 @@ fun HeaderSection(navController: NavController, user: User?) {
             modifier = Modifier
                 .size(28.dp)
                 .clickable {
-                    // navController.navigate("course") // Rute ini tidak ada di AppNavRoutes Anda
+                     navController.navigate("course") // Rute ini tidak ada di AppNavRoutes Anda
                 }
         )
         Icon(
