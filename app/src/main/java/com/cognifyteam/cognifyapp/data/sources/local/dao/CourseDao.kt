@@ -27,4 +27,6 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE courseId = :courseId")
     suspend fun getCourseById(courseId: String): CourseEntity?
 
+    @Query("SELECT * FROM courses ORDER BY name ASC") // Urutkan berdasarkan nama
+    suspend fun getAllCourses(): List<CourseEntity>
 }

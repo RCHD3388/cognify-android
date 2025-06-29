@@ -67,4 +67,13 @@ interface CourseService {
         @Path("courseId") courseId: String,
         @Body request: CreatePaymentRequest
     ): BaseResponse<PaymentTokenResponse>
+    @GET("course/search")
+    suspend fun getCourses(
+        @Query("sortBy") sortBy: String
+    ): BaseResponse<EnrolledCoursesData>
+
+    @GET("course/getAllCourse")
+    suspend fun getAllCourses(
+        @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
+    ): BaseResponse<EnrolledCoursesData>
 }

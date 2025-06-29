@@ -46,6 +46,8 @@ interface CourseRepository {
     suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): Result<String>
     suspend fun getSectionsByCourseId(courseId: String): Result<List<Section>>
     suspend fun getMaterialsBySectionId(sectionId: String): Result<List<Material>>
+    suspend fun getCourses(sortBy: String): Result<List<Course>>
+    suspend fun getAllCourses(query: String? = null): Result<List<Course>>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -288,6 +290,56 @@ class CourseRepositoryImpl(
                 Result.failure(Exception("Materials not found."))
             } catch (cacheError: Exception) {
                 Result.failure(cacheError)
+    override suspend fun getCourses(sortBy: String): Result<List<Course>> {
+        return try {
+            // response sekarang bertipe BaseResponse<CourseListData>
+            val response = remoteDataSource.getCourses(sortBy)
+
+            // "Buka" lapisan: response.data.courses
+            // Ini akan mengambil array dari JSON Anda
+            val courseJsons = response.data.courses
+
+            // Mapping ke Domain Model tidak berubah
+            val courses = courseJsons.map { Course.fromJson(it) }
+            Result.success(courses)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAllCourses(query: String?): Result<List<Course>> {
+        try {
+            // 1. Panggil remote data source dengan query
+            val response = remoteDataSource.getAllCourses(query)
+
+            // Backend Anda untuk '/all' tidak memiliki nesting data di dalam data
+            val courseJsons = response.data.courses
+
+            // 2. Mapping ke Domain Model
+            val courses = courseJsons.map { Course.fromJson(it) }
+
+            // 3. HANYA update cache jika kita TIDAK sedang mencari.
+            // Ini mencegah hasil pencarian yang tidak lengkap menimpa cache utama.
+            if (query.isNullOrBlank()) {
+                localDataSource.upsertCourses(courses.map { it.toEntity() })
+            }
+
+            return Result.success(courses)
+
+        } catch (e: Exception) {
+            // 4. JIKA network gagal, fallback ke cache.
+            // Pencarian di cache dilakukan secara manual.
+            return Result.runCatching {
+                var cachedEntities = localDataSource.getAllCourses()
+
+                // Jika ada query, filter hasil dari cache
+                if (!query.isNullOrBlank()) {
+                    cachedEntities = cachedEntities.filter {
+                        it.name.contains(query, ignoreCase = true)
+                    }
+                }
+
+                cachedEntities.map { Course.fromEntity(it) }
             }
         }
     }

@@ -65,8 +65,10 @@ class DiscussionRepositoryImpl(
                         }
                     )
                 }
+                Log.d("DiscussionRepo", "Returning cached discussions.")
                 Result.success(discussionsWithReplies)
             } catch (cacheError: Exception) {
+                Log.e("DiscussionRepo", "Error parsing network response. Falling back to cache.", e)
                 Result.failure(cacheError)
             }
         }

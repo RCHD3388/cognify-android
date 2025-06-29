@@ -42,6 +42,7 @@ interface LocalCourseDataSource {
 
     suspend fun getCourseById(courseId: String): CourseEntity?
 
+    suspend fun getAllCourses(): List<CourseEntity>
 }
 
 class LocalCourseDataSourceImpl(
@@ -92,4 +93,7 @@ class LocalCourseDataSourceImpl(
 
 
 
+    override suspend fun getAllCourses(): List<CourseEntity> {
+        return courseDao.getAllCourses()
+    }
 }

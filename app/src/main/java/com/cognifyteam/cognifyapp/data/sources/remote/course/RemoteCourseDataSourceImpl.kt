@@ -64,6 +64,9 @@ interface RemoteCourseDataSource {
     suspend fun getSectionsByCourseId(courseId: String): ApiResponse<List<Section>>
 
     suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<Material>>
+    suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData>
+
+    suspend fun getAllCourses(query: String?): BaseResponse<EnrolledCoursesData>
 }
 
 class RemoteCourseDataSourceImpl(
@@ -196,5 +199,11 @@ class RemoteCourseDataSourceImpl(
 
     override suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<Material>> {
         return materialService.getMaterialsBySectionId(sectionId)
+    override suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData> {
+        return courseService.getCourses(sortBy)
+    }
+
+    override suspend fun getAllCourses(query: String?): BaseResponse<EnrolledCoursesData> {
+        return courseService.getAllCourses(query)
     }
 }
