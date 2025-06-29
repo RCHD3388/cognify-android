@@ -60,6 +60,9 @@ interface RemoteCourseDataSource {
     ): ApiResponse<List<MaterialJson>>
 
     suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse>
+    suspend fun getSectionsByCourseId(courseId: String): ApiResponse<List<Section>>
+
+    suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<MaterialJson>>
 }
 
 class RemoteCourseDataSourceImpl(
@@ -184,5 +187,13 @@ class RemoteCourseDataSourceImpl(
 
     override suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse> {
         return courseService.createPayment(courseId, createPaymentRequest)
+    }
+
+    override suspend fun getSectionsByCourseId(courseId: String): ApiResponse<List<Section>> {
+        return sectionService.getSectionsByCourse(courseId)
+    }
+
+    override suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<MaterialJson>> {
+        return materialService.getMaterialsBySectionId(sectionId)
     }
 }

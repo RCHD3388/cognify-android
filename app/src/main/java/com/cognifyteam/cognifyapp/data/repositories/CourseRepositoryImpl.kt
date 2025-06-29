@@ -7,6 +7,8 @@ import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
 import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
+import com.cognifyteam.cognifyapp.data.models.MaterialJson
+import com.cognifyteam.cognifyapp.data.models.Section
 import com.cognifyteam.cognifyapp.data.models.SectionRequestBody
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.sources.local.datasources.LocalCourseDataSource
@@ -40,6 +42,8 @@ interface CourseRepository {
     ): Result<Course>
     suspend fun createSection(courseId: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): Result<Course>
     suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): Result<String>
+    suspend fun getSectionsByCourseId(courseId: String): Result<List<Section>>
+    suspend fun getMaterialsBySectionId(sectionId: String): Result<List<MaterialJson>>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -203,6 +207,27 @@ class CourseRepositoryImpl(
             Result.success(response.data.token)
         } catch (e: Exception) {
             Log.e("CourseRepository", "Failed to create payment token", e)
+            Result.failure(e)
+        }
+    }
+    override  suspend fun  getSectionsByCourseId(courseId: String): Result<List<Section>> {
+        return try {
+            val response = remoteDataSource.getSectionsByCourseId(courseId)
+            val sections = response.data.data
+            Result.success(sections)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Failed to fetch sections by course ID", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getMaterialsBySectionId(sectionId: String): Result<List<MaterialJson>> {
+        return try {
+            val response = remoteDataSource.getMaterialsBySectionId(sectionId)
+            val materials = response.data.data
+            Result.success(materials)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Failed to fetch materials by section ID", e)
             Result.failure(e)
         }
     }

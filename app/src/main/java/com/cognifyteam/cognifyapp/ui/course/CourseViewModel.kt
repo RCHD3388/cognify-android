@@ -38,7 +38,16 @@ sealed interface CreateCourseWithContentState {
     data class Success(val message: String) : CreateCourseWithContentState
     data class Error(val message: String) : CreateCourseWithContentState
 }
-
+sealed interface SectionUiState {
+    data class Success(val sections: List<com.cognifyteam.cognifyapp.data.models.Section>) : SectionUiState
+    data class Error(val message: String) : SectionUiState
+    object Loading : SectionUiState
+}
+sealed interface MaterialUiState {
+    data class Success(val materials: List<com.cognifyteam.cognifyapp.data.models.Material>) : MaterialUiState
+    data class Error(val message: String) : MaterialUiState
+    object Loading : MaterialUiState
+}
 class CourseViewModel(
     private val courseRepository: CourseRepository
 ) : ViewModel() {
@@ -60,6 +69,11 @@ class CourseViewModel(
     private val _paymentError = MutableSharedFlow<String>()
     val paymentError: SharedFlow<String> = _paymentError
 
+
+    private val _materialsStateMap = MutableStateFlow<Map<String, MaterialUiState>>(emptyMap())
+    val materialsStateMap: StateFlow<Map<String, MaterialUiState>> = _materialsStateMap.asStateFlow()
+
+
     // --- FUNGSI BARU UNTUK MEMUAT DETAIL ---
     fun loadCourseDetails(courseId: String) {
         viewModelScope.launch {
@@ -69,6 +83,28 @@ class CourseViewModel(
                 _courseDetailState.value = CourseDetailUiState.Success(course)
             }.onFailure { exception ->
                 _courseDetailState.value = CourseDetailUiState.Error(exception.message ?: "Failed to load course details")
+            }
+        }
+    }
+    fun loadMaterialsForSection(sectionId: String) {
+        // Cek agar tidak memuat ulang data yang sudah ada atau sedang loading
+        if (_materialsStateMap.value[sectionId] is MaterialUiState.Loading || _materialsStateMap.value[sectionId] is MaterialUiState.Success) {
+            return
+        }
+
+        viewModelScope.launch {
+            // Update state untuk section ini menjadi Loading
+            _materialsStateMap.value = _materialsStateMap.value + (sectionId to MaterialUiState.Loading)
+
+            // Panggil repository
+            val result = courseRepository.getMaterialsBySectionId(sectionId)
+            result.onSuccess { materialJsons ->
+                val materials = materialJsons.map { com.cognifyteam.cognifyapp.data.models.Material.fromJson(it) }
+                // Update state untuk section ini menjadi Success
+                _materialsStateMap.value = _materialsStateMap.value + (sectionId to MaterialUiState.Success(materials))
+            }.onFailure {
+                // Update state untuk section ini menjadi Error
+                _materialsStateMap.value = _materialsStateMap.value + (sectionId to MaterialUiState.Error(it.message ?: "Failed to load materials"))
             }
         }
     }
@@ -125,7 +161,7 @@ class CourseViewModel(
             result.onSuccess { courses ->
                 _createdCoursesUiState.value = CreatedCoursesUiState.Success(courses)
             }.onFailure { exception ->
-                _createdCoursesUiState.value = CreatedCoursesUiState.Error("kimak " +exception.message ?: "Failed to load courses")
+                _createdCoursesUiState.value = CreatedCoursesUiState.Error(exception.message ?: "Failed to load courses")
             }
         }
     }
@@ -188,6 +224,22 @@ class CourseViewModel(
                 // Jika gagal, kirim pesan error
                 Log.e("CourseViewModel", "Payment creation failed: ${error.message}")
                 _paymentError.emit(error.message ?: "Failed to create payment transaction")
+            }
+        }
+    }
+    private val _sectionUiState = MutableStateFlow<SectionUiState>(SectionUiState.Loading)
+    val sectionUiState: StateFlow<SectionUiState> = _sectionUiState.asStateFlow()
+
+    // TAMBAHKAN FUNGSI BARU UNTUK MEMUAT SECTIONS
+    fun loadSections(courseId: String) {
+        viewModelScope.launch {
+            _sectionUiState.value = SectionUiState.Loading
+            // Anda mungkin perlu menambahkan `getSectionsByCourse` ke CourseRepository jika belum ada
+            val result = courseRepository.getSectionsByCourseId(courseId)
+            result.onSuccess { sections ->
+                _sectionUiState.value = SectionUiState.Success(sections)
+            }.onFailure {
+                _sectionUiState.value = SectionUiState.Error(it.message ?: "Failed to load sections")
             }
         }
     }

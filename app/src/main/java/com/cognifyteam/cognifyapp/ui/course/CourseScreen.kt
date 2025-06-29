@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.course
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -71,9 +72,11 @@ fun CourseScreen(
     // --- Amati State ---
     val discussionUiState by discussionViewModel.uiState.collectAsState()
     val courseDetailState by courseViewModel.courseDetailState.collectAsState()
+    val materialsStateMap by courseViewModel.materialsStateMap.collectAsState() // <-- TAMBAHKAN INI
     val currentUser by userViewModel.userState.collectAsState()
     val context = LocalContext.current
 
+    val sectionUiState by courseViewModel.sectionUiState.collectAsState()
     // --- Efek Samping ---
     LaunchedEffect(key1 = courseId) {
         discussionViewModel.loadDiscussions(courseId)
@@ -88,6 +91,7 @@ fun CourseScreen(
                 }
             )
         )
+        courseViewModel.loadSections(courseId)
     }
 
     // --- Tampilan Utama ---
@@ -126,7 +130,16 @@ fun CourseScreen(
                                 }
                             )
                         }
-                        CourseTab.Lessons -> ComingSoonSection(tabName = "Lessons")
+                        CourseTab.Lessons -> {
+                            LessonsContent(
+                                sectionUiState = sectionUiState,
+                                materialUiStateMap = materialsStateMap,
+                                onSectionClick = { sectionId ->
+                                    courseViewModel.loadMaterialsForSection(sectionId)
+                                },
+                                navController = navController // <-- KIRIM NAVCONTROLLER DI SINI
+                            )
+                        }
                         CourseTab.Reviews -> ComingSoonSection(tabName = "Reviews")
                     }
                 }
