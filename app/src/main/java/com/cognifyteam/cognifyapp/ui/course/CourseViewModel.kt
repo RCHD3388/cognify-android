@@ -99,7 +99,7 @@ class CourseViewModel(
             // Panggil repository
             val result = courseRepository.getMaterialsBySectionId(sectionId)
             result.onSuccess { materialJsons ->
-                val materials = materialJsons.map { com.cognifyteam.cognifyapp.data.models.Material.fromJson(it) }
+                val materials = materialJsons
                 // Update state untuk section ini menjadi Success
                 _materialsStateMap.value = _materialsStateMap.value + (sectionId to MaterialUiState.Success(materials))
             }.onFailure {

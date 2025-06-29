@@ -10,6 +10,7 @@ import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.models.DiscussionJson
+import com.cognifyteam.cognifyapp.data.models.Material
 import com.cognifyteam.cognifyapp.data.models.MaterialJson
 import com.cognifyteam.cognifyapp.data.models.MaterialRequestBody
 import com.cognifyteam.cognifyapp.data.models.Section
@@ -57,12 +58,12 @@ interface RemoteCourseDataSource {
         sectionId: String,
         materials: List<MaterialState>,
         context: Context
-    ): ApiResponse<List<MaterialJson>>
+    ): ApiResponse<List<Material>>
 
     suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): BaseResponse<PaymentTokenResponse>
     suspend fun getSectionsByCourseId(courseId: String): ApiResponse<List<Section>>
 
-    suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<MaterialJson>>
+    suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<Material>>
 }
 
 class RemoteCourseDataSourceImpl(
@@ -115,7 +116,7 @@ class RemoteCourseDataSourceImpl(
         sectionId: String,
         materials: List<MaterialState>,
         context: Context
-    ): ApiResponse<List<MaterialJson>> {
+    ): ApiResponse<List<Material>> {
         // 1. Buat metadata JSON
         val materialRequestBodies = materials.mapIndexed { index, materialState ->
             MaterialRequestBody(
@@ -193,7 +194,7 @@ class RemoteCourseDataSourceImpl(
         return sectionService.getSectionsByCourse(courseId)
     }
 
-    override suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<MaterialJson>> {
+    override suspend fun getMaterialsBySectionId(sectionId: String): ApiResponse<List<Material>> {
         return materialService.getMaterialsBySectionId(sectionId)
     }
 }
