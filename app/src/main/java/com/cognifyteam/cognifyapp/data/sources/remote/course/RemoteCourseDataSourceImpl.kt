@@ -4,10 +4,15 @@ package com.cognifyteam.cognifyapp.data.sources.remote.course
 
 import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
+import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
+import com.cognifyteam.cognifyapp.data.models.DiscussionJson
+import com.cognifyteam.cognifyapp.data.models.Section
+import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
+import com.cognifyteam.cognifyapp.data.sources.remote.services.SectionService
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 
@@ -27,10 +32,16 @@ interface RemoteCourseDataSource {
     ): BaseResponse<CourseDataWrapper>
 
     suspend fun getUserCreatedCourses(firebaseId: String): BaseResponse<UserCoursesDataWrapper>
+
+    suspend fun createSection(course_id: String,createMultipleSectionsRequest: CreateMultipleSectionsRequest) : ApiResponse<List<Section>>
+
+    suspend fun getSectionsByCourse(course_id: String): ApiResponse<List<Section>>
+
 }
 
 class RemoteCourseDataSourceImpl(
-    private val courseService: CourseService
+    private val courseService: CourseService,
+    private val sectionService: SectionService
 ) : RemoteCourseDataSource {
 
     override suspend fun getCourseById(courseId: String): BaseResponse<CourseDataWrapper> {
@@ -64,4 +75,14 @@ class RemoteCourseDataSourceImpl(
     override suspend fun getUserCreatedCourses(firebaseId: String): BaseResponse<UserCoursesDataWrapper> {
         return courseService.getUserCreatedCourses(firebaseId)
     }
+
+    override suspend fun createSection(course_id: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): ApiResponse<List<Section>> {
+        return sectionService.createMultipleSections(course_id, createMultipleSectionsRequest)
+    }
+
+    override suspend fun getSectionsByCourse(course_id: String): ApiResponse<List<Section>> {
+        return sectionService.getSectionsByCourse(course_id)
+    }
+
+
 }

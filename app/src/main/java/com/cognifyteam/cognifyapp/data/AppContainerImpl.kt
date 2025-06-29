@@ -34,6 +34,7 @@ import com.cognifyteam.cognifyapp.data.sources.remote.services.FollowService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.ProfileService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.SmartService
 import com.cognifyteam.cognifyapp.data.sources.remote.smart.RemoteSmartDataSourceImpl
+import com.cognifyteam.cognifyapp.data.sources.remote.services.SectionService
 import com.cognifyteam.cognifyapp.data.sources.remote.users.RemoteFollowDataSourceImpl
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -79,7 +80,7 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
     override val courseRepository: CourseRepository by lazy {
         CourseRepositoryImpl(
             LocalCourseDataSourceImpl(AppDatabase.getInstance(applicationContext).courseDao()),
-            RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java)),
+            RemoteCourseDataSourceImpl(retrofit.create(CourseService::class.java),retrofit.create(SectionService::class.java)),
 
         )
     }

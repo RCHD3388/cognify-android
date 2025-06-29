@@ -11,6 +11,7 @@ import com.cognifyteam.cognifyapp.data.models.LearningPathEntity
 import com.cognifyteam.cognifyapp.data.models.LearningPathStepEntity
 import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.SmartLike
+import com.cognifyteam.cognifyapp.data.models.SectionEntity
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.sources.local.dao.AuthDao
@@ -22,6 +23,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartCommentDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartLikeDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartStepDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
 
 @Database(entities = [
     UserEntity::class,
@@ -33,7 +35,9 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartStepDao
     LearningPathStepEntity::class,
     SmartLike::class,
     SmartComment::class,
+    SectionEntity::class
 ], version = 15)
+
 abstract class AppDatabase : RoomDatabase() {
 
      abstract fun authDao(): AuthDao
@@ -45,6 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
      abstract fun courseDao(): CourseDao
      abstract fun discussionDao(): DiscussionDao
     abstract fun followDao(): FollowDao
+    abstract fun sectionDao(): SectionDao
 
     companion object {
         @Volatile
