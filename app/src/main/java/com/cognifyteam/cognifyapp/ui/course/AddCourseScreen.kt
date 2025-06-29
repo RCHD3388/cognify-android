@@ -1,7 +1,7 @@
 package com.cognifyteam.cognifyapp.ui.course
 
 import android.content.Context
-import android.content.Intent
+import android.util.Log
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
