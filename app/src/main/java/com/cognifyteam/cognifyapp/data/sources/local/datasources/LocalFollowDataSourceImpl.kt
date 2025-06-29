@@ -1,6 +1,7 @@
 package com.cognifyteam.cognifyapp.data.sources.local.datasources
 
 import com.cognifyteam.cognifyapp.data.models.FollowsCrossRef
+import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.models.UserWithFollowers
 import com.cognifyteam.cognifyapp.data.models.UserWithFollowing
 import com.cognifyteam.cognifyapp.data.sources.local.dao.FollowDao
@@ -12,11 +13,16 @@ interface LocalFollowDataSource {
     suspend fun clearFollowingForUser(userId: String)
     suspend fun getFollowing(userId: String): UserWithFollowing?
     suspend fun getFollowers(userId: String): UserWithFollowers?
+    suspend fun upsertUsers(users: List<UserEntity>)
 }
 
 class LocalFollowDataSourceImpl(
     private val followDao: FollowDao
 ) : LocalFollowDataSource {
+
+    override suspend fun upsertUsers(users: List<UserEntity>) {
+        followDao.upsertUsers(users)
+    }
 
     override suspend fun insertFollow(follow: FollowsCrossRef) {
         followDao.insertFollow(follow)

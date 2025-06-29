@@ -37,6 +37,7 @@ object AppNavRoutes {
     const val SEARCH = "search"
     const val COURSE = "course"
     const val ALLCOURSE = "allcourse"
+    const val USER_PROFILE = "user_profile/{firebaseId}"
 }
 
 @Composable
@@ -93,6 +94,41 @@ fun AppNavGraph(
             AddCourseScreen(navController, appContainer)
         }
 
+        composable(
+            route = AppNavRoutes.USER_PROFILE,
+            arguments = listOf(navArgument("firebaseId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            // Ambil firebaseId dari argumen navigasi
+            val firebaseId = backStackEntry.arguments?.getString("firebaseId")
+
+            if (firebaseId != null) {
+                // Gunakan kembali Composable ProfilePage, tetapi dengan ID yang berbeda
+                val profileViewModel: ProfileViewModel = viewModel(
+                    factory = ProfileViewModel.provideFactory(
+                        postsRepository = appContainer.profileRepository
+                    )
+                )
+
+                val userCoursesViewModel: UserCoursesViewModel = viewModel(
+                    factory = UserCoursesViewModel.provideFactory(
+                        courseRepository = appContainer.courseRepository
+                    )
+                )
+
+                ProfilePage(
+                    navController = navController,
+                    authViewModel = authViewModel,
+                    profileViewModel = profileViewModel,
+                    userCoursesViewModel = userCoursesViewModel,
+                    userViewModel = userViewModel,
+                    firebaseId = firebaseId,
+                    onFabStateChange = onFabStateChange,
+                    onTopBarStateChange = onTopBarStateChange,
+                    onShowSnackbar = onShowSnackbar // Meneruskan
+                )
+            }
+        }
+
         composable(AppNavRoutes.PROFILE) {
 
             // Dapatkan ID user dari state otentikasi
@@ -126,6 +162,7 @@ fun AppNavGraph(
                     authViewModel = authViewModel, // Untuk aksi logout
                     profileViewModel = profileViewModel, // Untuk data profil
                     userCoursesViewModel = userCoursesViewModel,
+                    userViewModel = userViewModel,
                     firebaseId = firebaseId, // Berikan ID user
                     onFabStateChange = onFabStateChange,
                     onTopBarStateChange = onTopBarStateChange,

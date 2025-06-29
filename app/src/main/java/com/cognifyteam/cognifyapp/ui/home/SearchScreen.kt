@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,12 +26,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.cognifyteam.cognifyapp.data.AppContainer
-import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.data.sources.remote.UserUiState
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
@@ -38,22 +37,21 @@ import com.cognifyteam.cognifyapp.ui.common.FollowViewModel
 import com.cognifyteam.cognifyapp.ui.common.SearchUiState
 import com.cognifyteam.cognifyapp.ui.common.SearchViewModel
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.navigation.AppNavRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSearchScreen(
     appContainer: AppContainer,
-     navController: NavController, // Mungkin akan dibutuhkan nanti
+    navController: NavController,
     onFabStateChange: (FabState) -> Unit,
     onTopBarStateChange: (TopBarState) -> Unit,
     onShowSnackbar: (String) -> Unit
 ) {
+    // --- Konfigurasi UI Utama ---
     LaunchedEffect(Unit) {
-        // --- Konfigurasi FAB untuk UserSearchScreen ---
-        onFabStateChange(FabState(
-            isVisible = false,
-        ))
-        onTopBarStateChange(TopBarState( // Konfigurasi eksplisit untuk Top Bar
+        onFabStateChange(FabState(isVisible = false))
+        onTopBarStateChange(TopBarState(
             isVisible = true,
             title = "Search Users",
             navigationIcon = {
@@ -64,6 +62,7 @@ fun UserSearchScreen(
             actions = null
         ))
     }
+
     // --- Inisialisasi ViewModel ---
     val searchViewModel: SearchViewModel = viewModel(
         factory = SearchViewModel.provideFactory(
@@ -83,7 +82,6 @@ fun UserSearchScreen(
     var searchQuery by remember { mutableStateOf("") }
 
     // --- Efek Samping ---
-    // Muat daftar 'following' dari user yang login sekali saja
     LaunchedEffect(loggedInUser) {
         loggedInUser?.firebaseId?.let {
             searchViewModel.loadInitialFollowingState(it)
@@ -93,28 +91,9 @@ fun UserSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background) // Gunakan theme
     ) {
-        // Header (tidak berubah)
-//        TopAppBar(
-//            title = {
-//                Text(
-//                    "Search Users",
-//                    style = MaterialTheme.typography.titleLarge,
-//                    fontWeight = FontWeight.Medium
-//                )
-//            },
-//            navigationIcon = {
-//                IconButton(onClick = { /* Handle back navigation */ }) {
-//                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-//                }
-//            },
-//            colors = TopAppBarDefaults.topAppBarColors(
-//                containerColor = Color.White
-//            )
-//        )
-
-        // Search Box (sekarang terhubung ke ViewModel)
+        // Search Box
         SearchBox(
             query = searchQuery,
             onQueryChange = {
@@ -124,7 +103,7 @@ fun UserSearchScreen(
             modifier = Modifier.padding(16.dp)
         )
 
-        // Tampilkan hasil berdasarkan state dari ViewModel
+        // Tampilkan hasil berdasarkan state
         when (val state = uiState) {
             is SearchUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -132,16 +111,15 @@ fun UserSearchScreen(
                 }
             }
             is SearchUiState.Error -> {
-                Text(state.message, color = Color.Red, modifier = Modifier.padding(16.dp))
+                Text(state.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
             }
             is SearchUiState.EmptyQuery -> {
-                // Tampilkan pesan awal
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Type a name to search for users.")
+                    Text("Type a name to search for users.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             is SearchUiState.EmptyResult -> {
-                SearchResultsSection(users = emptyList(), searchQuery = searchQuery, onFollowClick = {userId, isFollowing -> })
+                SearchResultsSection(users = emptyList(), searchQuery = searchQuery, onFollowClick = { _, _ -> }, onUserClick = {})
             }
             is SearchUiState.Success -> {
                 SearchResultsSection(
@@ -154,9 +132,12 @@ fun UserSearchScreen(
                             } else {
                                 followViewModel.followUser(followerId, userIdToFollow)
                             }
-                            // Update UI secara optimis
                             searchViewModel.toggleFollowState(userIdToFollow)
                         }
+                    },
+                    onUserClick = { userId ->
+                        val route = AppNavRoutes.USER_PROFILE.replace("{firebaseId}", userId)
+                        navController.navigate(route)
                     }
                 )
             }
@@ -176,37 +157,24 @@ fun SearchBox(
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
         placeholder = {
-            Text(
-                "Search users...",
-                color = Color(0xFF6B6B6B)
-            )
+            Text("Search users...", color = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         leadingIcon = {
-            Icon(
-                Icons.Default.Search,
-                contentDescription = "Search",
-                tint = Color(0xFF6B6B6B)
-            )
+            Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(
-                    onClick = { onQueryChange("") }
-                ) {
-                    Icon(
-                        Icons.Default.Clear,
-                        contentDescription = "Clear",
-                        tint = Color(0xFF6B6B6B)
-                    )
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFF4A90E2),
-            unfocusedBorderColor = Color(0xFFE0E0E0),
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
         ),
         singleLine = true
     )
@@ -216,46 +184,50 @@ fun SearchBox(
 fun SearchResultsSection(
     users: List<UserUiState>,
     searchQuery: String,
-    onFollowClick: (userId: String, isCurrentlyFollowing: Boolean) -> Unit
+    onFollowClick: (userId: String, isCurrentlyFollowing: Boolean) -> Unit,
+    onUserClick: (userId: String) -> Unit,
 ) {
     if (users.isEmpty() && searchQuery.isNotEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     Icons.Default.Search,
                     contentDescription = "No results",
                     modifier = Modifier.size(64.dp),
-                    tint = Color(0xFFBDBDBD)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "No users found",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF6B6B6B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = "Try searching with different keywords",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF9E9E9E)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
             }
         }
     } else {
+        if (searchQuery.isNotEmpty()) {
+            Text(
+                text = "${users.size} results for \"$searchQuery\"",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(users, key = { it.user.firebaseId }) { uiUser ->
                 UserCard(
                     uiUser = uiUser,
+                    onClick = { onUserClick(uiUser.user.firebaseId) },
                     onFollowClick = { onFollowClick(uiUser.user.firebaseId, uiUser.isFollowing) }
                 )
             }
@@ -266,51 +238,83 @@ fun SearchResultsSection(
 @Composable
 fun UserCard(
     uiUser: UserUiState,
+    onClick: () -> Unit,
     onFollowClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val user = uiUser.user // Ekstrak model domain asli
+    val user = uiUser.user
 
     Card(
-        modifier = modifier.fillMaxWidth().clickable { /* Navigasi ke profil user */ },
-        // ...
+        modifier = modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(modifier = Modifier.size(56.dp)) { /* Gambar Profil */ }
-
-            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = user.name) // Gunakan nama dari model User
-                    // if (user.isVerified) ... // isVerified perlu ditambahkan ke model User jika ada
-                }
-                Text(text = "@${user.email.substringBefore('@')}") // Contoh username
-                // if (user.bio.isNotEmpty()) ... // bio perlu ditambahkan ke model User jika ada
-                Text(text = "0 followers") // followerCount perlu ditambahkan ke model User jika ada
+            Box(
+                modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Default profile",
+                    modifier = Modifier.size(28.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
 
-            // Gunakan isFollowing dari UserUiState
+            Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = user.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    // if (user.isVerified) ...
+                }
+                Text(
+                    text = "@${user.email.substringBefore('@')}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // if (user.bio.isNotEmpty()) ...
+                Text(
+                    text = "0 followers",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
             Button(
                 onClick = onFollowClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (uiUser.isFollowing) Color(0xFFE8F5E8) else Color(0xFF4A90E2),
-                    contentColor = if (uiUser.isFollowing) Color(0xFF2E7D32) else Color.White
+                    containerColor = if (uiUser.isFollowing) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
+                    contentColor = if (uiUser.isFollowing) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary
                 ),
-                // ...
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.height(36.dp).widthIn(min = 80.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                Text(text = if (uiUser.isFollowing) "Following" else "Follow")
+                Text(
+                    text = if (uiUser.isFollowing) "Following" else "Follow",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
 }
 
-// Helper function to format numbers
 fun formatNumber(number: Int): String {
     return when {
-        number >= 1_000_000 -> "${number / 1_000_000}M"
-        number >= 1_000 -> "${number / 1_000}K"
+        number >= 1_000_000 -> String.format("%.1fM", number / 1_000_000.0)
+        number >= 10_000 -> "${number / 1_000}K"
+        number >= 1_000 -> String.format("%.1fK", number / 1_000.0)
         else -> number.toString()
     }
 }
