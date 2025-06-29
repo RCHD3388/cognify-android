@@ -21,7 +21,8 @@ data class LearningPathStepJson(
     val title: String,
     val description: String,
     val estimatedTime: String,
-    val smartId: Int
+    val smartId: Int,
+    val id : Int,
 )
 
 @Entity(tableName = "smart_steps")
@@ -32,8 +33,8 @@ data class LearningPathStepEntity (
     val estimatedTime: String,
     val smartId: Int,
 
-    @PrimaryKey(autoGenerate = true)
-    val id : Long = 0,
+    @PrimaryKey(autoGenerate = false)
+    val id : Int,
 )
 
 @Parcelize
@@ -43,6 +44,7 @@ data class LearningPathStep (
     val description: String,
     val estimatedTime: String,
     val smartId: Int,
+    val id : Int,
 ): Parcelable{
     companion object {
         fun fromEntity(entity: LearningPathStepEntity): LearningPathStep {
@@ -51,7 +53,8 @@ data class LearningPathStep (
                 title = entity.title,
                 description = entity.description,
                 estimatedTime = entity.estimatedTime,
-                smartId = entity.smartId
+                smartId = entity.smartId,
+                id = entity.id
             )
         }
         fun fromJson(json: LearningPathStepJson): LearningPathStep {
@@ -60,7 +63,8 @@ data class LearningPathStep (
                 title = json.title,
                 description = json.description,
                 estimatedTime = json.estimatedTime,
-                smartId = json.smartId
+                smartId = json.smartId,
+                id = json.id
             )
         }
     }
@@ -70,7 +74,8 @@ data class LearningPathStep (
             title = title,
             description = description,
             estimatedTime = estimatedTime,
-            smartId = smartId
+            smartId = smartId,
+            id = id
         )
     }
     fun toEntity(): LearningPathStepEntity {
@@ -79,7 +84,8 @@ data class LearningPathStep (
             title = title,
             description = description,
             estimatedTime = estimatedTime,
-            smartId = smartId
+            smartId = smartId,
+            id = id
         )
     }
 }
@@ -235,6 +241,7 @@ data class LearningPath(
             SmartLike(
                 userId = like.userId,
                 smartId = like.smartId,
+                id = id
             )
         }
     }
@@ -244,7 +251,8 @@ data class LearningPath(
                 userId = comment.userId,
                 smartId = comment.smartId,
                 content = comment.content,
-                createdAt = comment.createdAt
+                createdAt = comment.createdAt,
+                id = id
             )
         }
     }
@@ -255,7 +263,8 @@ data class LearningPath(
                 title = step.title,
                 description = step.description,
                 estimatedTime = step.estimatedTime,
-                smartId = step.smartId
+                smartId = step.smartId,
+                id = id
             )
         }
     }
@@ -284,8 +293,8 @@ data class SmartLike(
     val userId: String,
     val smartId: Int,
 
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0
+    @PrimaryKey(autoGenerate = false)
+    val id: Int
 ): Parcelable
 
 @JsonClass(generateAdapter = true)
@@ -297,13 +306,14 @@ data class SmartComment(
     val content: String,
     val createdAt: String,
 
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0
+    @PrimaryKey(autoGenerate = false)
+    val id: Int
 ): Parcelable
 
 @JsonClass(generateAdapter = true)
 @Parcelize()
 data class LikedRes(
+    val likeId: Int,
     val liked: Boolean,
     val message: String
 ): Parcelable
