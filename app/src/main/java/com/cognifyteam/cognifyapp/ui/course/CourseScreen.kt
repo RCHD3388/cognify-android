@@ -4,6 +4,7 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -38,6 +39,7 @@ import com.cognifyteam.cognifyapp.data.models.Rating
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.profile.InitialAvatar
 import com.cognifyteam.cognifyapp.ui.profile.PaymentWebView
 
 // Enum untuk merepresentasikan Tab yang aktif
@@ -451,7 +453,7 @@ fun CourseInstructor(course: Course) {
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(course.course_owner_name, style = MaterialTheme.typography.titleMedium)
-                Text("Design Tutor", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Course Instructor", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -565,7 +567,12 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // Placeholder untuk gambar profil penulis diskusi
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                InitialAvatar(
+                    name = discussion.authorName,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                )
                 Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                     Text(text = discussion.authorName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Text(text = discussion.createdAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
