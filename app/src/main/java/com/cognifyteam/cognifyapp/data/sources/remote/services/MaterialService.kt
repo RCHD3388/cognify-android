@@ -19,7 +19,7 @@ interface MaterialService {
      * @param files List dari file (dokumen/video) yang akan diunggah.
      */
     @Multipart
-    @POST("materials/{sectionId}")
+    @POST("material/materials/{sectionId}")
     suspend fun createMultipleMaterials(
         @Path("sectionId") sectionId: String,
         @Part("materials") materialsJson: RequestBody,

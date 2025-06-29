@@ -202,7 +202,7 @@ fun AddCourseScreen(
                                 position = index + 1,
                             )
                         }
-                        val createMultipleSectionsRequest = CreateMultipleSectionsRequest(sectionList)
+//                        val createMultipleSectionsRequest = CreateMultipleSectionsRequest(sectionList)
                         viewModel.createCourse(
                             course_name = courseName,
                             course_description = courseDescription,
@@ -210,7 +210,6 @@ fun AddCourseScreen(
                             course_price = coursePrice,
                             category_id = categoryId,
                             thumbnailFile = thumbnailFile,
-                            createMultipleSectionsRequest = createMultipleSectionsRequest,
                             course_owner_name = course_owner_name
                         )
                     } else {

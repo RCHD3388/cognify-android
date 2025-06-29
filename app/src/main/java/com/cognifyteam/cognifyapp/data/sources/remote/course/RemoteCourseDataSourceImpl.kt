@@ -61,7 +61,7 @@ interface RemoteCourseDataSource {
 class RemoteCourseDataSourceImpl(
     private val courseService: CourseService,
     private val sectionService: SectionService,
-    private val materialService: MaterialService,
+    private val materialService: MaterialService, // <-- Dependency baru
     private val moshi: Moshi
 ) : RemoteCourseDataSource {
 
@@ -109,6 +109,7 @@ class RemoteCourseDataSourceImpl(
         materials: List<MaterialState>,
         context: Context
     ): ApiResponse<List<MaterialJson>> {
+        // 1. Buat metadata JSON
         val materialRequestBodies = materials.mapIndexed { index, materialState ->
             MaterialRequestBody(
                 title = materialState.title,
@@ -117,29 +118,30 @@ class RemoteCourseDataSourceImpl(
                 position = index + 1
             )
         }
-
         val listType = Types.newParameterizedType(List::class.java, MaterialRequestBody::class.java)
         val jsonAdapter = moshi.adapter<List<MaterialRequestBody>>(listType)
         val materialsJsonString = jsonAdapter.toJson(materialRequestBodies)
         val materialsJsonRequestBody = materialsJsonString.toRequestBody("application/json".toMediaTypeOrNull())
 
+        // 2. Siapkan file-file untuk diunggah
         val fileParts = materials.mapNotNull { materialState ->
             materialState.fileUri?.let { uri ->
                 uriToFile(context, uri)?.let { file ->
                     val mimeType = getMimeTypeFromUri(context, uri)
                     val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
+                    // Backend mengharapkan nama field "files"
                     MultipartBody.Part.createFormData("files", file.name, requestFile)
                 }
             }
         }
 
+        // 3. Panggil API service
         return materialService.createMultipleMaterials(
             sectionId = sectionId,
             materialsJson = materialsJsonRequestBody,
             files = fileParts
         )
     }
-
     private fun uriToFile(context: Context, uri: Uri): File? {
         return try {
             val inputStream = context.contentResolver.openInputStream(uri)

@@ -77,10 +77,30 @@ class CourseViewModel(
     private val _createCourseState = MutableStateFlow<CreateCourseState>(CreateCourseState.Idle)
     val createCourseState: StateFlow<CreateCourseState> = _createCourseState.asStateFlow()
 
-    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest, course_owner_name: String) {
+    fun createCourse(
+        course_name: String,
+        course_description: String,
+        course_owner: String,
+        course_price: Int,
+        category_id: String,
+        thumbnailFile: File,
+        course_owner_name: String
+    ) {
         viewModelScope.launch {
             _createCourseState.value = CreateCourseState.Loading
-            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile, createMultipleSectionsRequest, course_owner_name)
+
+            // Memanggil repository dengan signature yang sudah benar
+            val result = courseRepository.createCourse(
+                course_name = course_name,
+                course_description = course_description,
+                course_owner = course_owner,
+                course_price = course_price,
+                category_id = category_id,
+                thumbnail = thumbnailFile,
+                sectionsWithMaterials = _sections.value, // <-- Mengirim state langsung
+                course_owner_name = course_owner_name
+            )
+
             result.onSuccess { newCourse ->
                 _createCourseState.value = CreateCourseState.Success("Course '${newCourse.name}' berhasil dibuat!")
             }.onFailure { exception ->
