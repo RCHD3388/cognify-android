@@ -1,5 +1,3 @@
-// Berkas: ui/course/CourseViewModel.kt
-
 package com.cognifyteam.cognifyapp.ui.course
 
 import android.util.Log
@@ -7,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cognifyteam.cognifyapp.data.models.Course
+import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.repositories.CourseRepository
-
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,7 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
-import kotlin.math.log
+import com.cognifyteam.cognifyapp.ui.course.addcourse.SectionState
+import com.cognifyteam.cognifyapp.ui.course.addcourse.MaterialState
 
 // DIUBAH: Ganti nama agar lebih spesifik
 sealed interface CreatedCoursesUiState {
@@ -32,6 +31,12 @@ sealed interface CourseDetailUiState {
     object Loading : CourseDetailUiState
 }
 
+sealed interface CreateCourseWithContentState {
+    object Idle : CreateCourseWithContentState
+    object Loading : CreateCourseWithContentState
+    data class Success(val message: String) : CreateCourseWithContentState
+    data class Error(val message: String) : CreateCourseWithContentState
+}
 
 class CourseViewModel(
     private val courseRepository: CourseRepository
@@ -72,11 +77,10 @@ class CourseViewModel(
     private val _createCourseState = MutableStateFlow<CreateCourseState>(CreateCourseState.Idle)
     val createCourseState: StateFlow<CreateCourseState> = _createCourseState.asStateFlow()
 
-
-    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File, course_owner_name: String) {
+    fun createCourse(course_name: String, course_description: String, course_owner: String, course_price:Int, category_id: String, thumbnailFile: File, createMultipleSectionsRequest: CreateMultipleSectionsRequest, course_owner_name: String) {
         viewModelScope.launch {
             _createCourseState.value = CreateCourseState.Loading
-            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile, course_owner_name)
+            val result = courseRepository.createCourse(course_name, course_description, course_owner, course_price, category_id, thumbnailFile, createMultipleSectionsRequest, course_owner_name)
             result.onSuccess { newCourse ->
                 _createCourseState.value = CreateCourseState.Success("Course '${newCourse.name}' berhasil dibuat!")
             }.onFailure { exception ->
@@ -101,6 +105,49 @@ class CourseViewModel(
 
     fun resetCreateCourseState() {
         _createCourseState.value = CreateCourseState.Idle
+    }
+
+
+    private val _sections = MutableStateFlow<List<SectionState>>(emptyList())
+    val sections: StateFlow<List<SectionState>> = _sections.asStateFlow()
+
+    fun addSection(title: String) {
+
+        val newSection = SectionState(
+            title = title,
+        )
+        _sections.value = _sections.value + newSection
+    }
+
+    fun removeSection(index: Int) {
+        _sections.value = _sections.value.toMutableList().also { it.removeAt(index) }
+    }
+
+    fun addMaterialToSection(sectionIndex: Int, material: MaterialState) {
+        val currentSections = _sections.value.toMutableList()
+        if (sectionIndex >= 0 && sectionIndex < currentSections.size) {
+            currentSections[sectionIndex].materials.add(material)
+            _sections.value = currentSections
+        }
+    }
+
+    fun removeMaterialFromSection(sectionIndex: Int, materialIndex: Int) {
+        val currentSections = _sections.value.toMutableList()
+        if (sectionIndex >= 0 && sectionIndex < currentSections.size) {
+            currentSections[sectionIndex].materials.removeAt(materialIndex)
+            _sections.value = currentSections
+        }
+    }
+
+    fun updateMaterialInSection(sectionIndex: Int, materialIndex: Int, updatedMaterial: MaterialState) {
+        val currentSections = _sections.value.toMutableList()
+        if (sectionIndex >= 0 && sectionIndex < currentSections.size) {
+            val materials = currentSections[sectionIndex].materials
+            if (materialIndex >= 0 && materialIndex < materials.size) {
+                materials[materialIndex] = updatedMaterial
+                _sections.value = currentSections
+            }
+        }
     }
 
     companion object {
