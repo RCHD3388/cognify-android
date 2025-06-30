@@ -10,6 +10,7 @@ import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
 import com.cognifyteam.cognifyapp.data.models.DiscussionJson
+import com.cognifyteam.cognifyapp.data.models.Material
 import com.cognifyteam.cognifyapp.data.models.MaterialJson
 import com.cognifyteam.cognifyapp.data.models.MaterialRequestBody
 import com.cognifyteam.cognifyapp.data.models.Section
@@ -57,7 +58,7 @@ interface RemoteCourseDataSource {
         sectionId: String,
         materials: List<MaterialState>,
         context: Context
-    ): ApiResponse<List<MaterialJson>>
+    ): ApiResponse<List<Material>>
 
     suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData>
 
@@ -79,9 +80,13 @@ class RemoteCourseDataSourceImpl(
         return courseService.getCourseById(courseId)
     }
 
-    override suspend fun getEnrolledCourses(firebaseId: String, query: String?): BaseResponse<EnrolledCoursesData> {
+    override suspend fun getEnrolledCourses(
+        firebaseId: String,
+        query: String?
+    ): BaseResponse<EnrolledCoursesData> {
         return courseService.getEnrolledCourses(firebaseId, query)
     }
+
     override suspend fun createCourse(
         thumbnail: MultipartBody.Part,
         courseName: RequestBody,
@@ -107,18 +112,30 @@ class RemoteCourseDataSourceImpl(
         return courseService.getUserCreatedCourses(firebaseId)
     }
 
-    override suspend fun createSection(course_id: String, createMultipleSectionsRequest: CreateMultipleSectionsRequest): ApiResponse<List<Section>> {
+    override suspend fun createSection(
+        course_id: String,
+        createMultipleSectionsRequest: CreateMultipleSectionsRequest
+    ): ApiResponse<List<Section>> {
         return sectionService.createMultipleSections(course_id, createMultipleSectionsRequest)
     }
 
     override suspend fun getSectionsByCourse(course_id: String): ApiResponse<List<Section>> {
         return sectionService.getSectionsByCourse(course_id)
     }
+
+    override suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData> {
+        return courseService.getCourses(sortBy)
+    }
+
+    override suspend fun getAllCourses(query: String?): BaseResponse<EnrolledCoursesData> {
+        return courseService.getAllCourses(query)
+    }
+
     override suspend fun createMaterialsForSection(
         sectionId: String,
         materials: List<MaterialState>,
         context: Context
-    ): ApiResponse<List<MaterialJson>> {
+    ): ApiResponse<List<Material>> {
         // 1. Buat metadata JSON
         val materialRequestBodies = materials.mapIndexed { index, materialState ->
             MaterialRequestBody(
@@ -133,12 +150,6 @@ class RemoteCourseDataSourceImpl(
         val materialsJsonString = jsonAdapter.toJson(materialRequestBodies)
         val materialsJsonRequestBody = materialsJsonString.toRequestBody("application/json".toMediaTypeOrNull())
 
-    override suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData> {
-        return courseService.getCourses(sortBy)
-    }
-
-    override suspend fun getAllCourses(query: String?): BaseResponse<EnrolledCoursesData> {
-        return courseService.getAllCourses(query)
         // 2. Siapkan file-file untuk diunggah
         val fileParts = materials.mapNotNull { materialState ->
             materialState.fileUri?.let { uri ->

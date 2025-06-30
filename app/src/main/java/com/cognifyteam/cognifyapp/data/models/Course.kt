@@ -124,7 +124,7 @@ data class Course(
             description = this.description,
             rating = this.rating,
             thumbnail = this.thumbnail,
-            price = this.price.toInt(),
+            price = this.price.toDouble().toInt(),
             course_owner = this.course_owner,
             course_owner_name = this.course_owner_name
         )

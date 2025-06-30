@@ -280,12 +280,23 @@ class CourseViewModel(
             courseRepository.getCourses(type)
                 .onSuccess { courses -> stateFlow.value = CourseListUiState.Success(courses) }
                 .onFailure { e -> stateFlow.value = CourseListUiState.Error(e.message ?: "Error") }
-    fun createPayment(courseId: String, firebaseId: String, onResult: (snapToken: String) -> Unit) {
+        }
+    }
+
+    fun createPayment(
+        courseId: String,
+        firebaseId: String,
+        onResult: (snapToken: String) -> Unit
+    ) {
         viewModelScope.launch {
-            val result = courseRepository.createPayment(courseId, CreatePaymentRequest(firebaseId))
+            val result =
+                courseRepository.createPayment(courseId, CreatePaymentRequest(firebaseId))
             result.onSuccess { token ->
                 // Jika sukses, panggil callback yang diterima dari UI dengan token yang didapat
-                Log.d("CourseViewModel", "Payment token received: $token. Calling onResult.")
+                Log.d(
+                    "CourseViewModel",
+                    "Payment token received: $token. Calling onResult."
+                )
                 onResult(token) // GANTI DARI _paymentToken.emit(token)
             }.onFailure { error ->
                 // Jika gagal, kirim pesan error
@@ -294,6 +305,7 @@ class CourseViewModel(
             }
         }
     }
+
     private val _sectionUiState = MutableStateFlow<SectionUiState>(SectionUiState.Loading)
     val sectionUiState: StateFlow<SectionUiState> = _sectionUiState.asStateFlow()
 
