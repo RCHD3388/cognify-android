@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -254,7 +256,7 @@ fun CategoriesSection() {
         SectionHeader(title = "Categories", onSeeAllClick = {})
         LazyRow(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             // Data statis, bisa diganti dengan data dari API nanti
-            val categories = listOf("UI Design" to Icons.Outlined.Search, "Health" to Icons.Outlined.Search, "Psychology" to Icons.Outlined.Search, "Business" to Icons.Outlined.Search)
+            val categories = listOf("UI Design" to Icons.Outlined.Search, "Health" to Icons.Default.Add , "Programming" to Icons.Default.Code , "Cloud" to Icons.Default.Cloud)
             val colors = listOf(Color(0xFF6366F1), Color(0xFF10B981), Color(0xFFF59E0B), Color(0xFFEF4444))
             items(categories.size) { index ->
                 val (name, icon) = categories[index]
@@ -289,7 +291,7 @@ fun CourseCard(course: Course, onClick: () -> Unit) {
     ) {
         Column {
             AsyncImage(
-                model = "http://10.0.2.2:3000${course.thumbnail}",
+                model = course.thumbnail,
                 contentDescription = course.name,
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 contentScale = ContentScale.Crop,
@@ -301,9 +303,9 @@ fun CourseCard(course: Course, onClick: () -> Unit) {
                     Text(course.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 18.sp)
                     Text(course.course_owner_name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Column {
-                    Text("${(50 * 100).toInt()}% Complete", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium, modifier = Modifier.align(Alignment.End).padding(bottom = 4.dp))
-//                    LinearProgressIndicator(progress = course.progress, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Rp${course.price}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("⭐ ${course.rating}", fontSize = 12.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -321,7 +323,7 @@ fun PopularCourseCard(course: Course, onClick: () -> Unit) {
     ) {
         Column {
             AsyncImage(
-                model = "http://10.0.2.2:3000${course.thumbnail}",
+                model = course.thumbnail,
                 contentDescription = course.name,
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 contentScale = ContentScale.Crop,

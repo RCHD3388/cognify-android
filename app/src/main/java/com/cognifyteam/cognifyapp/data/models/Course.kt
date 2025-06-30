@@ -40,8 +40,8 @@ data class CourseJson(
     val course_rating: String?,
 
     // Dibuat nullable karena URL-nya diatur oleh server setelah upload.
-    @Json(name = "course_thumbnail")
-    val course_thumbnail: String?,
+    @Json(name = "thumbnail")
+    val thumbnail: String?,
 
     @Json(name = "course_owner_name")
     val course_owner_name: String
@@ -83,20 +83,14 @@ data class Course(
 ) : Parcelable {
     companion object {
         fun fromJson(json: CourseJson): Course {
-            val fullThumbnailUrl = if (!json.course_thumbnail.isNullOrBlank()) {
-                // Hapus garis miring di awal jika ada, untuk menghindari URL ganda seperti http://...//uploads
-                val cleanPath = json.course_thumbnail.removePrefix("/")
-                "http://10.0.2.2:3000/$cleanPath"
-            } else {
-                json.course_thumbnail
-            }
+
             return Course(
                 // Tambahkan pengecekan null untuk keamanan
                 courseId = json.course_id ?: "",
                 name = json.course_name,
                 description = json.course_description,
                 rating = json.course_rating ?: "0.0",
-                thumbnail = fullThumbnailUrl ?: "",
+                thumbnail = json.thumbnail.toString(),
                 price = json.course_price,
                 course_owner = json.course_owner,
                 course_owner_name = json.course_owner_name

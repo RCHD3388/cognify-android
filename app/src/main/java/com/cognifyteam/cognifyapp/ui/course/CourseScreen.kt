@@ -422,7 +422,7 @@ fun CourseBanner(course: Course) {
         .fillMaxWidth()
         .height(200.dp)) {
         AsyncImage(
-            model = "http://10.0.2.2:3000${course.thumbnail}",
+            model = course.thumbnail.toString(),
             contentDescription = course.name,
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop,
@@ -430,6 +430,7 @@ fun CourseBanner(course: Course) {
             error = painterResource(id = R.drawable.robot)
         )
     }
+
 }
 
 @Composable
@@ -460,9 +461,7 @@ fun InstructorInfo(course: Course) {
         .padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Default.Person, "Instructor", tint = MaterialTheme.colorScheme.primary)
         Text(course.course_owner_name, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-        Spacer(Modifier.width(16.dp))
-        Icon(Icons.Outlined.CheckCircle, "Lessons", tint = MaterialTheme.colorScheme.primary)
-        Text("32 Lessons", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+
     }
 }
 
@@ -501,16 +500,7 @@ fun CourseInstructor(course: Course) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = "",
-                contentDescription = "Instructor",
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                placeholder = painterResource(id = R.drawable.robot),
-                error = painterResource(id = R.drawable.robot)
-            )
+            Avatar(course.course_owner_name[0].toString())
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(course.course_owner_name, style = MaterialTheme.typography.titleMedium)
                 Text("Course Instructor", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -738,6 +728,6 @@ fun RatingWithCount(rating: Float, count: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Outlined.Star, contentDescription = "Rating", tint = Color(0xFFFFC107), modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text = "$rating ($count Reviews)", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+
     }
 }

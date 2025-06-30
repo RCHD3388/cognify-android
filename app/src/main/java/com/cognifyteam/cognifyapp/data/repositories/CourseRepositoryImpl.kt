@@ -135,6 +135,7 @@ class CourseRepositoryImpl(
                 course_owner_name = course_owner_name.toPlainTextRequestBody()
             )
 
+
             val newCourse = courseResponse.data?.data?.let { Course.fromJson(it) }
                 ?: return Result.failure(Exception("Failed to create course or response was empty."))
 

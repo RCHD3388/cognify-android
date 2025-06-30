@@ -298,7 +298,7 @@ fun CourseCard(
         ) {
             // Course Thumbnail
             AsyncImage(
-                model = "http://10.0.2.2:3000${course.thumbnail}",
+                model = course.thumbnail,
                 contentDescription = course.name,
                 modifier = Modifier
                     .fillMaxHeight()

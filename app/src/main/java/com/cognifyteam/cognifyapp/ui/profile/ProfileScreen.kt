@@ -440,7 +440,6 @@ fun CourseCard(title: String, author: String, rating: Float, progress: Int, imag
                     Text(text = "$progress%", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                LinearProgressIndicator(progress = progress / 100f, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             }
         }
     }
