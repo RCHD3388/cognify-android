@@ -254,7 +254,7 @@ fun MaterialScreen(
                                     val pdfUrl = "https://bucket-storage-mdp.s3.us-east-1.amazonaws.com/%5BBAA%5D-Jadwal-UTS-Semester-Genap-2024-2025.pdf"
                                     val url = material.url
                                     val googleDocsUrl = "https://docs.google.com/gview?embedded=true&url=$url"
-                                    WebContent(url = googleDocsUrl)
+                                    WebContentVideo(url = googleDocsUrl)
                                 }
                                 else -> {
                                     Box(
@@ -286,7 +286,7 @@ fun MaterialScreen(
 // Composable untuk menampilkan konten web (TIDAK BERUBAH)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebContent(url: String) {
+fun WebContentVideo(url: String) {
     // Dapatkan activity dari context untuk mengontrol tampilan fullscreen
     val activity = LocalContext.current as Activity
 
@@ -348,4 +348,126 @@ fun WebContent(url: String) {
     }, update = {
         it.loadUrl(url)
     })
+}
+
+// Composable untuk menampilkan konten web (TIDAK BERUBAH)
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun WebContent(url: String) {
+    // Dapatkan activity dari context untuk mengontrol tampilan fullscreen
+    val activity = LocalContext.current as Activity
+
+    // AndroidView adalah cara untuk menempatkan View Android (seperti WebView) di dalam Composable
+    AndroidView(factory = { context ->
+        // Blok ini dieksekusi sekali saat View pertama kali dibuat
+        WebView(context).apply {
+            // Mengatur WebView agar mengisi seluruh ruang yang tersedia
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+
+            // WebViewClient untuk menangani navigasi di dalam WebView itu sendiri
+            webViewClient = WebViewClient()
+
+            // --- PENGATURAN WAJIB UNTUK MEDIA INTERAKTIF ---
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true // Diperlukan oleh beberapa pemutar video berbasis web
+            settings.mediaPlaybackRequiresUserGesture = false // Kunci agar video bisa autoplay
+
+            // Custom WebChromeClient untuk menangani fitur UI browser seperti event fullscreen
+            webChromeClient = object : WebChromeClient() {
+                private var customView: View? = null
+                private var customViewCallback: CustomViewCallback? = null
+                private val FULL_SCREEN_SETTING = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+
+                override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                    if (customView != null) {
+                        onHideCustomView()
+                        return
+                    }
+                    customView = view
+                    customViewCallback = callback
+                    (activity.window.decorView as FrameLayout).addView(
+                        customView,
+                        FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT
+                        )
+                    )
+                    activity.window.decorView.systemUiVisibility = FULL_SCREEN_SETTING
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                }
+
+                override fun onHideCustomView() {
+                    (activity.window.decorView as FrameLayout).removeView(customView)
+                    customView = null
+                    customViewCallback?.onCustomViewHidden()
+                    activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                }
+            }
+
+            // --- BAGIAN UTAMA SOLUSI ---
+            // Membuat template HTML on-the-fly untuk membungkus URL video
+            // Ini memaksa WebView untuk menggunakan pemutar video HTML5, bukan men-download file
+            val htmlData = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                    <style>
+                        html, body { 
+                            margin: 0; 
+                            padding: 0; 
+                            width: 100%; 
+                            height: 100%; 
+                            overflow: hidden; 
+                            background-color: black; 
+                        }
+                        video { 
+                            width: 100%; 
+                            height: 100%; 
+                            object-fit: contain; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    <video controls autoplay playsinline>
+                        <source src="$url" type="video/mp4">
+                        Browser Anda tidak mendukung tag video.
+                    </video>
+                </body>
+                </html>
+            """.trimIndent()
+
+            // Memuat string HTML yang kita buat, bukan memuat URL secara langsung
+            loadDataWithBaseURL(null, htmlData, "text/html", "UTF-8", null)
+        }
+    },
+        // Blok update ini dipanggil jika `url` berubah saat recomposition
+        update = { webView ->
+            // Logika yang sama diterapkan di sini untuk memperbarui konten jika URL berubah
+            val htmlData = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                <style>
+                    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: black; }
+                    video { width: 100%; height: 100%; object-fit: contain; }
+                </style>
+            </head>
+            <body>
+                <video controls autoplay playsinline>
+                    <source src="$url" type="video/mp4">
+                    Browser Anda tidak mendukung tag video.
+                </video>
+            </body>
+            </html>
+        """.trimIndent()
+            webView.loadDataWithBaseURL(null, htmlData, "text/html", "UTF-8", null)
+        })
 }
