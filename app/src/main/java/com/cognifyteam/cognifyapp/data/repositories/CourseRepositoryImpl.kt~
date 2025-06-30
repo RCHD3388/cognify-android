@@ -280,7 +280,7 @@ class CourseRepositoryImpl(
 
                 if (cachedMaterials.isNotEmpty()) {
                     Result.success(cachedMaterials.map { Material.fromEntity(it) })
-                }else{
+                }
                     Log.e("CourseRepository", "Failed to fetch materials from remote and no cache for section ID $sectionId", e)
                     Result.failure(Exception("Materials not found."))
                 }

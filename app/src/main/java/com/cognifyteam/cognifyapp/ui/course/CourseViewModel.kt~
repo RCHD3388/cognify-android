@@ -157,7 +157,7 @@ class CourseViewModel(
         viewModelScope.launch {
             _createdCoursesUiState.value = CreatedCoursesUiState.Loading
             val result = courseRepository.getUserCreatedCourses(firebaseId)
-
+            Log.e("result", result.toString())
             result.onSuccess { courses ->
                 _createdCoursesUiState.value = CreatedCoursesUiState.Success(courses)
             }.onFailure { exception ->
