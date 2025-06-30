@@ -43,6 +43,8 @@ interface LocalCourseDataSource {
     suspend fun getCourseById(courseId: String): CourseEntity?
 
     suspend fun getAllCourses(): List<CourseEntity>
+
+    suspend fun isUserEnrolledInCourse(firebaseId: String, courseId: String): Boolean
 }
 
 class LocalCourseDataSourceImpl(
@@ -90,10 +92,11 @@ class LocalCourseDataSourceImpl(
         return courseDao.getCourseById(courseId)
     }
 
-
-
-
     override suspend fun getAllCourses(): List<CourseEntity> {
         return courseDao.getAllCourses()
+    }
+
+    override suspend fun isUserEnrolledInCourse(firebaseId: String, courseId: String): Boolean {
+        return courseDao.isUserEnrolledInCourse(firebaseId, courseId)
     }
 }

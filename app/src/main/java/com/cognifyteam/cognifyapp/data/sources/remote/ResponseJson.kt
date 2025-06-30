@@ -31,6 +31,12 @@ data class ProfileData(
 )
 
 @JsonClass(generateAdapter = true)
+data class EnrollmentCheckResponse(
+    @Json(name = "isEnrolled")
+    val isEnrolled: Boolean
+)
+
+@JsonClass(generateAdapter = true)
 data class BaseResponse<T>(
     @Json(name = "status")
     val status: String,

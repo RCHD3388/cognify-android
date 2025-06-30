@@ -29,4 +29,7 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses ORDER BY name ASC") // Urutkan berdasarkan nama
     suspend fun getAllCourses(): List<CourseEntity>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM UserCourseCrossRef WHERE firebaseId = :firebaseId AND courseId = :courseId LIMIT 1)")
+    suspend fun isUserEnrolledInCourse(firebaseId: String, courseId: String): Boolean
 }

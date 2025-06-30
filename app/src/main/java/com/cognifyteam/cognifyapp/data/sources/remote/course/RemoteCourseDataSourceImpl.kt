@@ -19,6 +19,7 @@ import com.cognifyteam.cognifyapp.data.sources.remote.BaseResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.EnrolledCoursesData
+import com.cognifyteam.cognifyapp.data.sources.remote.EnrollmentCheckResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.services.CourseService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.MaterialService
 import com.cognifyteam.cognifyapp.data.sources.remote.services.PaymentTokenResponse
@@ -31,6 +32,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
 
@@ -67,6 +69,8 @@ interface RemoteCourseDataSource {
     suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData>
 
     suspend fun getAllCourses(query: String?): BaseResponse<EnrolledCoursesData>
+    suspend fun checkEnrollment(courseId: String, firebaseId: String): ApiResponse<Boolean>
+    suspend fun enrollFreeCourse(courseId: String, firebaseId: String): Response<ApiResponse<String>>
 }
 
 class RemoteCourseDataSourceImpl(
@@ -217,11 +221,17 @@ class RemoteCourseDataSourceImpl(
         return materialService.getMaterialsBySectionId(sectionId)
     }
 
-    override suspend fun getCourses(sortBy: String): BaseResponse<EnrolledCoursesData> {
-        return courseService.getCourses(sortBy)
+    override suspend fun checkEnrollment(
+        courseId: String,
+        firebaseId: String
+    ): ApiResponse<Boolean> {
+        return courseService.checkEnrollment(courseId, firebaseId)
     }
 
-    override suspend fun getAllCourses(query: String?): BaseResponse<EnrolledCoursesData> {
-        return courseService.getAllCourses(query)
+    override suspend fun enrollFreeCourse(
+        courseId: String,
+        firebaseId: String
+    ): Response<ApiResponse<String>> {
+        return courseService.enrollFreeCourse(courseId, firebaseId)
     }
 }

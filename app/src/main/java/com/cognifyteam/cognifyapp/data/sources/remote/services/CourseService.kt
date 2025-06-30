@@ -12,6 +12,7 @@ import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateReplyRequest
+import com.cognifyteam.cognifyapp.data.sources.remote.EnrollmentCheckResponse
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import okhttp3.MultipartBody
@@ -77,4 +78,16 @@ interface CourseService {
         @Path("courseId") courseId: String,
         @Body request: CreatePaymentRequest
     ): BaseResponse<PaymentTokenResponse>
+
+    @GET("course/{courseId}/check-enrollment/{firebaseId}")
+    suspend fun checkEnrollment(
+        @Path("courseId") courseId: String,
+        @Path("firebaseId") firebaseId: String
+    ): ApiResponse<Boolean>
+
+    @POST("course/{courseId}/enroll-free/{firebaseId}")
+    suspend fun enrollFreeCourse(
+        @Path("courseId") courseId: String,
+        @Path("firebaseId") firebaseId: String
+    ): Response<ApiResponse<String>> // Kita tidak butuh data spesifik dari respons, jadi Unit sudah cukup
 }

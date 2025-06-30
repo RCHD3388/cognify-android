@@ -1,6 +1,7 @@
 package com.cognifyteam.cognifyapp.ui.course
 
 import android.app.Activity
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -36,6 +37,7 @@ import com.cognifyteam.cognifyapp.data.AppContainer
 import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.Discussion
 import com.cognifyteam.cognifyapp.data.models.Rating
+import com.cognifyteam.cognifyapp.data.models.User
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
@@ -70,6 +72,7 @@ fun CourseScreen(
     val courseDetailState by courseViewModel.courseDetailState.collectAsState()
     val materialsStateMap by courseViewModel.materialsStateMap.collectAsState() // <-- TAMBAHKAN INI
     val ratingsListState by ratingViewModel.ratingsListState.collectAsState()
+    val enrollmentState by courseViewModel.enrollmentState.collectAsState()
     val currentUser by userViewModel.userState.collectAsState()
     val context = LocalContext.current
 
@@ -77,13 +80,30 @@ fun CourseScreen(
     var paymentSnapToken by remember { mutableStateOf<String?>(null) }
 
     val sectionUiState by courseViewModel.sectionUiState.collectAsState()
+
+
+    // --- EFEK BARU UNTUK MENDENGARKAN EVENT SUKSES ---
+    LaunchedEffect(key1 = Unit) {
+        courseViewModel.enrollmentSuccessEvent.collect {
+            Toast.makeText(context, "Successfully enrolled!", Toast.LENGTH_SHORT).show()
+            // Refresh data pendaftaran agar tombol hilang
+            loggedInUser?.firebaseId?.let { userId ->
+                courseViewModel.checkUserEnrollment(courseId, userId)
+            }
+        }
+    }
     // --- Efek Samping ---
-    LaunchedEffect(key1 = courseId) {
+    LaunchedEffect(key1 = courseId, key2 = loggedInUser) {
         // Load semua data yang dibutuhkan
         courseViewModel.loadCourseDetails(courseId)
         discussionViewModel.loadDiscussions(courseId)
         ratingViewModel.loadRatings(courseId)
         courseViewModel.loadSections(courseId)
+
+        // Hanya cek enrollment jika user sudah login
+        loggedInUser?.firebaseId?.let { userId ->
+            courseViewModel.checkUserEnrollment(courseId, userId)
+        }
 
         // Atur TopBar dan FAB
         onFabStateChange(FabState(isVisible = false))
@@ -117,7 +137,7 @@ fun CourseScreen(
             is CourseDetailUiState.Success -> {
                 val course = state.course
                 var selectedTab by remember { mutableStateOf(CourseTab.Overview) }
-
+                val isOwner = loggedInUser?.firebaseId == course.course_owner
                 Column(modifier = Modifier.fillMaxSize()) {
                     CourseBanner(course = course)
                     CourseTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
@@ -132,11 +152,12 @@ fun CourseScreen(
                                 CourseOverviewContent(
                                     course = course,
                                     viewModel = courseViewModel,
+                                    loggedInUser = loggedInUser, // Kirim objek User? yang aman
+                                    enrollmentState = enrollmentState,
                                     onEnrollClick = { token ->
                                         paymentSnapToken = token
                                         showPaymentWebView = true
-                                    },
-                                    firebaseId = loggedInUser!!.firebaseId
+                                    }
                                 )
                             }
 
@@ -167,7 +188,9 @@ fun CourseScreen(
                                     onSectionClick = { sectionId ->
                                         courseViewModel.loadMaterialsForSection(sectionId)
                                     },
-                                    navController = navController // <-- KIRIM NAVCONTROLLER DI SINI
+                                    navController = navController,
+                                    isOwner = isOwner, // Kirim status kepemilikan
+                                    enrollmentState = enrollmentState // Kirim status pendaftaran
                                 )
                             }
 
@@ -204,19 +227,29 @@ fun CourseScreen(
 fun CourseOverviewContent(
     course: Course,
     viewModel: CourseViewModel,
+    loggedInUser: User?, // Terima objek User yang bisa null
+    enrollmentState: EnrollmentCheckState,
     onEnrollClick: (String) -> Unit,
-    firebaseId: String
 ) {
-
+    // Logika isOwner sekarang aman dari NullPointerException
+    val isOwner = loggedInUser?.firebaseId == course.course_owner
+    Log.e("halo", isOwner.toString())
     Column {
         CourseDetails(course = course)
         CourseInstructor(course = course)
-        CourseActions(
-            course = course,
-            viewModel = viewModel,
-            firebaseId = firebaseId,
-            onEnrollClick = onEnrollClick
-        )
+
+        // Hanya panggil CourseActions jika user sudah login.
+        // Ini mencegah pengiriman parameter null yang tidak diinginkan.
+        loggedInUser?.let { user ->
+            CourseActions(
+                course = course,
+                viewModel = viewModel,
+                firebaseId = user.firebaseId,
+                isOwner = isOwner,
+                enrollmentState = enrollmentState,
+                onEnrollClick = onEnrollClick
+            )
+        }
     }
 }
 
@@ -224,7 +257,9 @@ fun CourseOverviewContent(
 @Composable
 fun ComingSoonSection(tabName: String) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
         contentAlignment = Alignment.Center
     ) {
         Text("$tabName content is coming soon!", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -243,11 +278,15 @@ fun RatingSection(
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
     ) {
         // Form untuk memberi/mengupdate rating
         Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -256,7 +295,9 @@ fun RatingSection(
                 Text("Write Your Review", /*...*/)
                 // Star Rating
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
                     // --- GUNAKAN `repeat()` INI ---
@@ -268,7 +309,9 @@ fun RatingSection(
                             tint = if (i <= selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline,
                             modifier = Modifier
                                 .size(36.dp)
-                                .clickable { selectedRating = if (selectedRating == i) i - 1 else i } // Logika toggle yang lebih baik
+                                .clickable {
+                                    selectedRating = if (selectedRating == i) i - 1 else i
+                                } // Logika toggle yang lebih baik
                                 .padding(horizontal = 4.dp)
                         )
                     }
@@ -280,7 +323,9 @@ fun RatingSection(
                     .padding(horizontal = 8.dp)
                 )
                 // Submit Button
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
                     Button(
                         onClick = {
                             if (selectedRating > 0) {
@@ -373,7 +418,9 @@ fun CourseTabs(selectedTab: CourseTab, onTabSelected: (CourseTab) -> Unit) {
 
 @Composable
 fun CourseBanner(course: Course) {
-    Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .height(200.dp)) {
         AsyncImage(
             model = "http://10.0.2.2:3000${course.thumbnail}",
             contentDescription = course.name,
@@ -408,7 +455,9 @@ fun CourseTitleAndRating(course: Course) {
 
 @Composable
 fun InstructorInfo(course: Course) {
-    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Default.Person, "Instructor", tint = MaterialTheme.colorScheme.primary)
         Text(course.course_owner_name, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
         Spacer(Modifier.width(16.dp))
@@ -420,7 +469,9 @@ fun InstructorInfo(course: Course) {
 @Composable
 fun DescriptionSection(course: Course) {
     var isExpanded by remember { mutableStateOf(false) }
-    Column(modifier = Modifier.padding(top = 16.dp).animateContentSize()) {
+    Column(modifier = Modifier
+        .padding(top = 16.dp)
+        .animateContentSize()) {
         Text(
             text = course.description,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -442,7 +493,9 @@ fun DescriptionSection(course: Course) {
 @Composable
 fun CourseInstructor(course: Course) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -451,7 +504,10 @@ fun CourseInstructor(course: Course) {
             AsyncImage(
                 model = "",
                 contentDescription = "Instructor",
-                modifier = Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 placeholder = painterResource(id = R.drawable.robot),
                 error = painterResource(id = R.drawable.robot)
             )
@@ -468,23 +524,41 @@ fun CourseActions(
     course: Course,
     viewModel: CourseViewModel,
     firebaseId: String,
-    onEnrollClick: (snapToken: String) -> Unit // Menggunakan callback
+    onEnrollClick: (snapToken: String) -> Unit,
+    enrollmentState: EnrollmentCheckState,
+    isOwner: Boolean
 ) {
-    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column {
             Text(text = "Rp${course.price}", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text("VAT included", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(modifier = Modifier.weight(1f))
-        Button(
-            onClick = {
-                viewModel.createPayment(course.courseId, firebaseId = firebaseId) { token ->
-                    onEnrollClick(token)
-                }
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text("GET ENROLL", color = MaterialTheme.colorScheme.onPrimary)
+
+        val showEnrollButton = when (enrollmentState) {
+            is EnrollmentCheckState.Checked -> !isOwner && !enrollmentState.isEnrolled
+            else -> false // Sembunyikan tombol saat loading atau error
+        }
+        if (showEnrollButton) {
+            Button(
+                onClick = {
+                    // --- LOGIKA UTAMA DI SINI ---
+                    if (course.price.toDouble() == 0.0) {
+                        // Jika kursus gratis, panggil fungsi baru
+                        viewModel.enrollInFreeCourse(course.courseId, firebaseId)
+                    } else {
+                        // Jika berbayar, jalankan alur pembayaran seperti biasa
+                        viewModel.createPayment(course.courseId, firebaseId = firebaseId) { token ->
+                            onEnrollClick(token)
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("GET ENROLL", color = MaterialTheme.colorScheme.onPrimary)
+            }
         }
     }
 }
@@ -496,7 +570,9 @@ fun DiscussionSection(
     onAddReply: (discussionId: Int, replyText: String) -> Unit
 ) {
     var newDiscussionText by remember { mutableStateOf("") }
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
         Text(
             text = "Discussion",
             style = MaterialTheme.typography.headlineSmall,
@@ -504,7 +580,9 @@ fun DiscussionSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
         Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
             shape = RoundedCornerShape(8.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -517,7 +595,9 @@ fun DiscussionSection(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
                     Button(
                         onClick = {
                             if (newDiscussionText.isNotBlank()) {
@@ -537,7 +617,9 @@ fun DiscussionSection(
         Spacer(modifier = Modifier.height(16.dp))
         when (uiState) {
             is DiscussionUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
             is DiscussionUiState.Error -> {
                 Text(text = uiState.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 16.dp))
@@ -572,13 +654,17 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // Placeholder untuk gambar profil penulis diskusi
                 Avatar(discussion.getAuthorInitial())
-                Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                Column(modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)) {
                     Text(text = discussion.authorName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Text(text = Discussion.formatTanggal(discussion.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Text(text = discussion.content, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = { showReplyInput = !showReplyInput }) {
                     Icon(Icons.Default.Send, contentDescription = "Reply", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(4.dp))
@@ -592,9 +678,13 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
                 }
             }
             if (showReplyInput) {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Column(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)) {
                     OutlinedTextField(value = replyText, onValueChange = { replyText = it }, placeholder = { Text("Write a reply...") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-                    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = { showReplyInput = false; replyText = "" }) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Button(onClick = {
                             if (replyText.isNotBlank()) {
@@ -610,7 +700,9 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
                 }
             }
             if (showReplies && discussion.replies.isNotEmpty()) {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     discussion.replies.forEach { reply -> ReplyItem(reply = reply) }
                 }
             }
@@ -620,9 +712,17 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
 
 @Composable
 fun ReplyItem(reply: Discussion) {
-    Row(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(8.dp)).padding(12.dp)) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .background(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            RoundedCornerShape(8.dp)
+        )
+        .padding(12.dp)) {
         Avatar(reply.getAuthorInitial())
-        Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+        Column(modifier = Modifier
+            .weight(1f)
+            .padding(start = 8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(text = reply.authorName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
                 Text(text = Discussion.formatTanggal(reply.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

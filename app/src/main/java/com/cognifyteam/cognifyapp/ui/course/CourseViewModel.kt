@@ -55,6 +55,13 @@ sealed interface MaterialUiState {
     data class Error(val message: String) : MaterialUiState
     object Loading : MaterialUiState
 }
+
+sealed interface EnrollmentCheckState {
+    object Idle : EnrollmentCheckState
+    object Loading : EnrollmentCheckState
+    data class Checked(val isEnrolled: Boolean) : EnrollmentCheckState
+    data class Error(val message: String) : EnrollmentCheckState
+}
 class CourseViewModel(
     private val courseRepository: CourseRepository
 ) : ViewModel() {
@@ -76,6 +83,9 @@ class CourseViewModel(
     private val _courseDetailState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
     val courseDetailState: StateFlow<CourseDetailUiState> = _courseDetailState.asStateFlow()
 
+    private val _enrollmentState = MutableStateFlow<EnrollmentCheckState>(EnrollmentCheckState.Idle)
+    val enrollmentState: StateFlow<EnrollmentCheckState> = _enrollmentState.asStateFlow()
+
     private val _allCoursesList = MutableStateFlow<List<Course>>(emptyList())
     private val _event = MutableSharedFlow<String>()
     val event: SharedFlow<String> = _event
@@ -85,6 +95,9 @@ class CourseViewModel(
 
     private val _paymentError = MutableSharedFlow<String>()
     val paymentError: SharedFlow<String> = _paymentError
+
+    private val _enrollmentSuccessEvent = MutableSharedFlow<Unit>()
+    val enrollmentSuccessEvent: SharedFlow<Unit> = _enrollmentSuccessEvent
 
 
     private val _materialsStateMap = MutableStateFlow<Map<String, MaterialUiState>>(emptyMap())
@@ -207,6 +220,24 @@ class CourseViewModel(
         }
     }
 
+    fun enrollInFreeCourse(courseId: String, firebaseId: String) {
+        viewModelScope.launch {
+            // Kita tidak perlu state Loading khusus di sini, karena prosesnya cepat.
+            // Tombol akan hilang setelah sukses.
+            val result = courseRepository.enrollInFreeCourse(courseId, firebaseId)
+            result.onSuccess {
+                // Beri tahu UI bahwa pendaftaran berhasil
+                _enrollmentSuccessEvent.emit(Unit)
+            }.onFailure {
+                // Jika gagal, kita bisa kirim error ke UI (misalnya via Snackbar)
+                // Untuk sekarang, kita hanya log
+                Log.e("CourseViewModel", "Free enrollment failed: ${it.message}")
+                _paymentError.emit(it.message ?: "Enrollment failed")
+            }
+        }
+    }
+
+
     fun onSearchQueryChanged(query: String) {
         // Fungsi ini sekarang menjadi satu-satunya cara untuk memicu pencarian
         _searchQuery.value = query
@@ -274,15 +305,6 @@ class CourseViewModel(
         }
     }
 
-    fun createPayment(courseId: String, firebaseId: String, onResult: (snapToken: String) -> Unit) {
-        viewModelScope.launch {
-            stateFlow.value = CourseListUiState.Loading
-            courseRepository.getCourses(type)
-                .onSuccess { courses -> stateFlow.value = CourseListUiState.Success(courses) }
-                .onFailure { e -> stateFlow.value = CourseListUiState.Error(e.message ?: "Error") }
-        }
-    }
-
     fun createPayment(
         courseId: String,
         firebaseId: String,
@@ -329,6 +351,19 @@ class CourseViewModel(
             courseRepository.getCourses(type)
                 .onSuccess { courses -> stateFlow.value = CourseListUiState.Success(courses) }
                 .onFailure { e -> stateFlow.value = CourseListUiState.Error(e.message ?: "Error") }
+        }
+    }
+
+    fun checkUserEnrollment(courseId: String, firebaseId: String) {
+        viewModelScope.launch {
+            _enrollmentState.value = EnrollmentCheckState.Loading
+            val result = courseRepository.checkEnrollmentStatus(courseId, firebaseId)
+            result.onSuccess { isEnrolled ->
+                _enrollmentState.value = EnrollmentCheckState.Checked(isEnrolled)
+            }.onFailure {
+                _enrollmentState.value = EnrollmentCheckState.Error(it.message ?: "Failed to check enrollment")
+                Log.e("CourseViewModel", "Enrollment check failed: ${it.message}")
+            }
         }
     }
 

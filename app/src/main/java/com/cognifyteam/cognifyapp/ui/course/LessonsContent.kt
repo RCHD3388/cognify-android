@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -32,32 +33,74 @@ import java.nio.charset.StandardCharsets
 fun LessonsContent(
     sectionUiState: SectionUiState,
     materialUiStateMap: Map<String, MaterialUiState>,
-    onSectionClick: (String) -> Unit,
-    navController: NavController
+    onSectionClick: (sectionId: String) -> Unit,
+    navController: NavController,
+    isOwner: Boolean, // <-- Parameter baru
+    enrollmentState: EnrollmentCheckState // <-- Parameter baru
 ) {
-    when (sectionUiState) {
-        is SectionUiState.Loading -> { /* ... (tidak berubah) */ }
-        is SectionUiState.Error -> { /* ... (tidak berubah) */ }
-        is SectionUiState.Success -> {
-            if (sectionUiState.sections.isEmpty()) {
-                ComingSoonSection("Lessons")
-            } else {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 1000.dp), // Cegah nested scrolling
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    itemsIndexed(sectionUiState.sections) { index, section ->
-                        SectionItem(
-                            section = section,
-                            sectionNumber = index + 1,
-                            materialsState = materialUiStateMap[section.id], // Ambil state materi untuk section ini
-                            onSectionClick = { onSectionClick(section.id) },
-                            navController = navController
-                        )
+    val hasAccess = when (enrollmentState) {
+        is EnrollmentCheckState.Checked -> isOwner || enrollmentState.isEnrolled
+        else -> isOwner // Jika belum dicek, asumsikan hanya owner yang bisa lihat
+    }
+
+    if (hasAccess) {
+        when (sectionUiState) {
+            is SectionUiState.Loading -> { /* ... (tidak berubah) */
+            }
+
+            is SectionUiState.Error -> { /* ... (tidak berubah) */
+            }
+
+            is SectionUiState.Success -> {
+                if (sectionUiState.sections.isEmpty()) {
+                    ComingSoonSection("Lessons")
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 1000.dp), // Cegah nested scrolling
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        itemsIndexed(sectionUiState.sections) { index, section ->
+                            SectionItem(
+                                section = section,
+                                sectionNumber = index + 1,
+                                materialsState = materialUiStateMap[section.id], // Ambil state materi untuk section ini
+                                onSectionClick = { onSectionClick(section.id) },
+                                navController = navController
+                            )
+                        }
                     }
                 }
             }
+        }
+    }
+    else {
+        // Tampilkan pesan "terkunci" jika tidak punya akses
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Locked",
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Access Denied",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "You must enroll in this course to access the lessons.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }

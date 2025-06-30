@@ -26,9 +26,9 @@ class FollowRepositoryImpl(
 
             // --- SINKRONISASI CACHE ---
             // 1. Simpan data pengguna yang didapat ke dalam tabel 'users'
-            if (users.isNotEmpty()) {
-                localDataSource.upsertUsers(users.map { it.toEntity() })
-            }
+//            if (users.isNotEmpty()) {
+//                localDataSource.upsertUsers(users.map { it.toEntity() })
+//            }
 
             // 2. Bersihkan relasi 'following' yang lama untuk user ini
             localDataSource.clearFollowingForUser(userId)

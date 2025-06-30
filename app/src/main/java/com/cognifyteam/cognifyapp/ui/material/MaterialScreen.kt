@@ -260,13 +260,13 @@ fun MaterialScreen(
                                     Box(
                                         modifier = Modifier.fillMaxSize().padding(16.dp),
 
-                                    ) {
+                                        ) {
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Spacer(modifier = Modifier.height(16.dp))
                                             Text(
-                                               "${material.description}",
+                                                "${material.description}",
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 color = Color(0xFF6B7280),
                                                 fontWeight = FontWeight.Medium

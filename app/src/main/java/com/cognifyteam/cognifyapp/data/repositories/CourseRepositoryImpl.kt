@@ -47,7 +47,9 @@ interface CourseRepository {
     suspend fun getAllCourses(query: String? = null): Result<List<Course>>
     suspend fun createPayment(courseId: String, createPaymentRequest: CreatePaymentRequest): Result<String>
     suspend fun getSectionsByCourseId(courseId: String): Result<List<Section>>
-    suspend fun getMaterialsBySectionId(sectionId: String): Result<List<MaterialJson>>
+    suspend fun getMaterialsBySectionId(sectionId: String): Result<List<Material>>
+    suspend fun checkEnrollmentStatus(courseId: String, firebaseId: String): Result<Boolean>
+    suspend fun enrollInFreeCourse(courseId: String, firebaseId: String): Result<Unit>
 }
 fun String.toPlainTextRequestBody(): RequestBody {
     return this.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -206,11 +208,11 @@ class CourseRepositoryImpl(
         }catch (Exception: Exception){
             return try {
                 Log.d("asd", "berhasil masuk")
-                val userWithCourses = localDataSource.getUserWithCourses(firebaseId)
-                Log.d("asd", "${userWithCourses}")
-                val cachedCourses = userWithCourses?.courses?.map { Course.fromEntity(it) }
+                val userCreatedCourses = localDataSource.getUserCreatedCourses(firebaseId)
+                val cachedCourses = userCreatedCourses.map { Course.fromEntity(it) }
                 if (!cachedCourses.isNullOrEmpty()) Result.success(cachedCourses)
                 else Result.failure(Exception("No courses found"))
+
             } catch (cacheError: Exception) { Result.failure(cacheError) }
         }
     }
@@ -306,30 +308,14 @@ class CourseRepositoryImpl(
 
                 if (cachedMaterials.isNotEmpty()) {
                     Result.success(cachedMaterials.map { Material.fromEntity(it) })
+                }else{
+                    Log.e("CourseRepository", "Failed to fetch materials from remote and no cache for section ID $sectionId", e)
+                    Result.failure(Exception("Materials not found."))
                 }
-//                    Log.e("CourseRepository", "Failed to fetch materials from remote and no cache for section ID $sectionId", e)
-//                    Result.failure(Exception("Materials not found."))
-//                }
-                Result.failure(Exception("Materials not found."))
+
             } catch (cacheError: Exception) {
                 Result.failure(cacheError)
             }
-        }
-    }
-    override suspend fun getCourses(sortBy: String): Result<List<Course>> {
-        return try {
-            // response sekarang bertipe BaseResponse<CourseListData>
-            val response = remoteDataSource.getCourses(sortBy)
-
-            // "Buka" lapisan: response.data.courses
-            // Ini akan mengambil array dari JSON Anda
-            val courseJsons = response.data.courses
-
-            // Mapping ke Domain Model tidak berubah
-            val courses = courseJsons.map { Course.fromJson(it) }
-            Result.success(courses)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -370,13 +356,45 @@ class CourseRepositoryImpl(
         }
     }
 
-    override suspend fun getMaterialsBySectionId(sectionId: String): Result<List<MaterialJson>> {
-        return try {
-            val response = remoteDataSource.getMaterialsBySectionId(sectionId)
-            val materials = response.data.data
-            Result.success(materials)
+    override suspend fun checkEnrollmentStatus(courseId: String, firebaseId: String): Result<Boolean> {
+        try {
+            // Panggil remote data source
+            val response = remoteDataSource.checkEnrollment(courseId, firebaseId)
+            // 'isEnrolled' ada di dalam `response.data.data.isEnrolled`
+            val isEnrolled = response.data.data
+
+            // Perbarui cache jika perlu (misal, menambah/menghapus cross reference)
+            // Untuk pengecekan sederhana, kita bisa skip caching di sini
+            // atau tambahkan UserCourseCrossRef jika isEnrolled true.
+            if(isEnrolled) {
+                localDataSource.insertUserCourseCrossRefs(listOf(UserCourseCrossRef(firebaseId, courseId)))
+            }
+
+            return Result.success(isEnrolled)
         } catch (e: Exception) {
-            Log.e("CourseRepository", "Failed to fetch materials by section ID", e)
+            // Jika remote gagal, coba cek dari cache lokal
+            return try {
+                val isEnrolledInCache = localDataSource.isUserEnrolledInCourse(firebaseId, courseId)
+                Result.success(isEnrolledInCache)
+            } catch (cacheError: Exception) {
+                Log.e("CourseRepository", "Enrollment check failed on remote and local", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun enrollInFreeCourse(courseId: String, firebaseId: String): Result<Unit> {
+        // Fungsi ini sudah benar dan tidak perlu diubah,
+        // karena sekarang backend akan mengirim respons yang kompatibel.
+        return try {
+            remoteDataSource.enrollFreeCourse(courseId, firebaseId)
+
+            // Jika sukses, perbarui cache lokal agar konsisten
+            localDataSource.insertUserCourseCrossRefs(listOf(UserCourseCrossRef(firebaseId, courseId)))
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("CourseRepository", "Failed to enroll in free course", e)
             Result.failure(e)
         }
     }
