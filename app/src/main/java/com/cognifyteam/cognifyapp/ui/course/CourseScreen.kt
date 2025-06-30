@@ -177,7 +177,9 @@ fun CourseScreen(
                                         currentUser?.firebaseId?.let { id ->
                                             discussionViewModel.addReply(discussionId, id, replyText)
                                         }
-                                    }
+                                    },
+                                    isOwner = isOwner,
+                                    enrollmentState = enrollmentState
                                 )
                             }
 
@@ -557,70 +559,105 @@ fun CourseActions(
 fun DiscussionSection(
     uiState: DiscussionUiState,
     onAddDiscussion: (String) -> Unit,
-    onAddReply: (discussionId: Int, replyText: String) -> Unit
+    onAddReply: (discussionId: Int, replyText: String) -> Unit,
+    isOwner: Boolean,
+    enrollmentState: EnrollmentCheckState // <-- Parameter baru
 ) {
+    val hasAccess = when (enrollmentState) {
+        is EnrollmentCheckState.Checked -> isOwner || enrollmentState.isEnrolled
+        else -> isOwner // Jika belum dicek, asumsikan hanya owner yang bisa lihat
+    }
     var newDiscussionText by remember { mutableStateOf("") }
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)) {
-        Text(
-            text = "Discussion",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        Card(
+    if (!hasAccess) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                .fillMaxSize()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                OutlinedTextField(
-                    value = newDiscussionText,
-                    onValueChange = { newDiscussionText = it },
-                    placeholder = { Text("Start a discussion...") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
-                Row(modifier = Modifier
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Locked",
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Access Denied",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "You must enroll in this course to access the lessons.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    } else {
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
+            Text(
+                text = "Discussion",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            Card(
+                modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
-                    Button(
-                        onClick = {
-                            if (newDiscussionText.isNotBlank()) {
-                                onAddDiscussion(newDiscussionText)
-                                newDiscussionText = ""
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Icon(Icons.Default.Send, contentDescription = "Post", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Post", color = MaterialTheme.colorScheme.onPrimary)
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = newDiscussionText,
+                        onValueChange = { newDiscussionText = it },
+                        placeholder = { Text("Start a discussion...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                        Button(
+                            onClick = {
+                                if (newDiscussionText.isNotBlank()) {
+                                    onAddDiscussion(newDiscussionText)
+                                    newDiscussionText = ""
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Send, contentDescription = "Post", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Post", color = MaterialTheme.colorScheme.onPrimary)
+                        }
                     }
                 }
             }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        when (uiState) {
-            is DiscussionUiState.Loading -> {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            }
-            is DiscussionUiState.Error -> {
-                Text(text = uiState.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 16.dp))
-            }
-            is DiscussionUiState.Success -> {
-                if (uiState.discussions.isEmpty()) {
-                    Text("Be the first to start a discussion!", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        uiState.discussions.forEach { discussion ->
-                            DiscussionItem(discussion = discussion, onAddReply = { replyText -> onAddReply(discussion.id, replyText) })
+            Spacer(modifier = Modifier.height(16.dp))
+            when (uiState) {
+                is DiscussionUiState.Loading -> {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                }
+                is DiscussionUiState.Error -> {
+                    Text(text = uiState.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 16.dp))
+                }
+                is DiscussionUiState.Success -> {
+                    if (uiState.discussions.isEmpty()) {
+                        Text("Be the first to start a discussion!", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            uiState.discussions.forEach { discussion ->
+                                DiscussionItem(discussion = discussion, onAddReply = { replyText -> onAddReply(discussion.id, replyText) })
+                            }
                         }
                     }
                 }

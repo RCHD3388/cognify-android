@@ -67,7 +67,7 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
     val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     val retrofit = Retrofit.Builder().addConverterFactory(
         MoshiConverterFactory.create(moshi)
-    ).baseUrl("http://50.19.24.229:3000/api/v1/").build()
+    ).baseUrl("http://10.0.2.2:3000/api/v1/").build()
 
     override val authRepository: AuthRepository by lazy {
         AuthRepositoryImpl(

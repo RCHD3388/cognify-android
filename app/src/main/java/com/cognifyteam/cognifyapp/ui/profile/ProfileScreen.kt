@@ -245,7 +245,6 @@ fun ProfileHeader(user: User, isMyProfile: Boolean) {
             modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatItem(number = "0", label = "Learning Path")
             StatItem(number = user.followersCount.toString(), label = "Followers")
             StatItem(number = user.followingCount.toString(), label = "Following")
         }
@@ -366,7 +365,7 @@ fun EnrolledCoursesSection(coursesState: CourseListUiState, navController: NavCo
                                 author = course.description,
                                 rating = course.rating.toFloatOrNull() ?: 0f,
                                 progress = (30..85).random(),
-                                imageUrl = "...",
+                                imageUrl = course.thumbnail.orEmpty().ifBlank { "..." },
                                 onCourseClick = { navController.navigate("course_details/${course.courseId}") }
                             )
                         }
