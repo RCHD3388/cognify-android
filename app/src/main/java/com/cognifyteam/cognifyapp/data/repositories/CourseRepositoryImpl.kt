@@ -7,6 +7,8 @@ import com.cognifyteam.cognifyapp.data.models.Course
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
 import com.cognifyteam.cognifyapp.data.models.CourseJson
 import com.cognifyteam.cognifyapp.data.models.CreateMultipleSectionsRequest
+import com.cognifyteam.cognifyapp.data.models.Material
+import com.cognifyteam.cognifyapp.data.models.MaterialEntity
 import com.cognifyteam.cognifyapp.data.models.MaterialJson
 import com.cognifyteam.cognifyapp.data.models.Section
 import com.cognifyteam.cognifyapp.data.models.SectionRequestBody
@@ -57,16 +59,29 @@ class CourseRepositoryImpl(
     private val context: Context
 ) : CourseRepository {
     override suspend fun getCourseById(courseId: String): Result<Course> {
-        return try {
+        try {
+            // 1. Coba ambil dari remote
             val response = remoteDataSource.getCourseById(courseId)
-            val courseDataWrapper = response.data
-            val courseJson = courseDataWrapper.data
+            val courseJson = response.data.data
             val course = Course.fromJson(courseJson)
 
-            Result.success(course)
+            // 2. Jika berhasil, simpan/update ke local
+            localDataSource.createCourse(course.toEntity()) // createCourse bisa berfungsi sebagai upsert
+
+            return Result.success(course)
         } catch (e: Exception) {
-            Log.e("CourseRepository", "Error fetching course details by ID", e)
-            Result.failure(e)
+            // 3. Jika remote gagal, coba ambil dari local
+            return try {
+                val cachedCourseEntity = localDataSource.getCourseById(courseId)
+                if (cachedCourseEntity != null) {
+                    Result.success(Course.fromEntity(cachedCourseEntity))
+                } else {
+                    Log.e("CourseRepository", "Failed to fetch from remote and no cache found for course ID $courseId", e)
+                    Result.failure(Exception("Course not found online or offline."))
+                }
+            } catch (cacheError: Exception) {
+                Result.failure(cacheError)
+            }
         }
     }
 
@@ -136,8 +151,10 @@ class CourseRepositoryImpl(
 
             // Memastikan `createdSections` tidak null sebelum digunakan
             val createdSections = sectionResponse.data
-                ?: return Result.failure(Exception("Course created, but failed to create sections."))
 
+                ?: return Result.failure(Exception("Course created, but failed to create sections."))
+            val sectionEntities = createdSections.data.map { it.toEntity() }
+            localDataSource.insertSections(sectionEntities)
             // ======================================================
             // TAHAP 3: UPLOAD MATERIALS (TANPA .zip())
             // ======================================================
@@ -158,10 +175,11 @@ class CourseRepositoryImpl(
                             // Keluar dari fungsi dengan failure jika ada error
                             return@createCourse Result.failure(Exception("Failed to upload materials for section: '${sectionState.title}'."))
                         }
+                        val materialEntities = materialResponse.data.data.map { it.toEntity() }
+                        localDataSource.insertMaterials(materialEntities)
                     }
                 }
             }
-            // ======================================================
 
             Result.success(newCourse)
 
@@ -187,12 +205,13 @@ class CourseRepositoryImpl(
             return Result.success(courses)
         }catch (Exception: Exception){
             return try {
+                Log.d("asd", "berhasil masuk")
                 val userWithCourses = localDataSource.getUserWithCourses(firebaseId)
+                Log.d("asd", "${userWithCourses}")
                 val cachedCourses = userWithCourses?.courses?.map { Course.fromEntity(it) }
                 if (!cachedCourses.isNullOrEmpty()) Result.success(cachedCourses)
                 else Result.failure(Exception("No courses found"))
             } catch (cacheError: Exception) { Result.failure(cacheError) }
-
         }
     }
 
@@ -235,13 +254,81 @@ class CourseRepositoryImpl(
             Result.failure(e)
         }
     }
-    override  suspend fun  getSectionsByCourseId(courseId: String): Result<List<Section>> {
-        return try {
+    override suspend fun getSectionsByCourseId(courseId: String): Result<List<Section>> {
+        try {
+            // 1. Coba ambil dari remote
             val response = remoteDataSource.getSectionsByCourseId(courseId)
             val sections = response.data.data
-            Result.success(sections)
+
+            // 2. Jika berhasil dan tidak kosong, simpan/update ke local
+            if (sections.isNotEmpty()) {
+                // Kita asumsikan Section punya fungsi .toEntity()
+                // dan Anda perlu menambahkan courseId secara manual jika tidak ada di respons
+                val sectionEntities = sections.map { it.toEntity() }
+                val filteredSectionEntities = sectionEntities.filter { it.courseId == courseId }
+                localDataSource.insertSections(filteredSectionEntities)
+            }
+            return Result.success(sections)
         } catch (e: Exception) {
-            Log.e("CourseRepository", "Failed to fetch sections by course ID", e)
+            // 3. Jika remote gagal, coba ambil dari local
+            return try {
+                val cachedSections = localDataSource.getSectionsForCourse(courseId)
+                if (cachedSections.isNotEmpty()) {
+                    Result.success(cachedSections.map { Section.fromEntity(it) })
+                } else {
+                    Log.e("CourseRepository", "Failed to fetch sections from remote and no cache for course ID $courseId", e)
+                    Result.failure(Exception("Sections not found."))
+                }
+            } catch (cacheError: Exception) {
+                Result.failure(cacheError)
+            }
+        }
+    }
+
+    override suspend fun getMaterialsBySectionId(sectionId: String): Result<List<Material>> {
+        try {
+            // 1. Coba ambil dari remote
+            val response = remoteDataSource.getMaterialsBySectionId(sectionId)
+            val materials = response.data.data
+
+            // 2. Jika berhasil, simpan/update ke local
+            if (materials.isNotEmpty()) {
+                val materialEntities = materials.map { it.toEntity() }
+                localDataSource.insertMaterials(materialEntities)
+            }
+
+            return Result.success(materials)
+        } catch (e: Exception) {
+            // 3. Jika remote gagal, coba ambil dari local
+            return try {
+
+                val cachedMaterials = localDataSource.getMaterialsForSection(sectionId)
+
+                if (cachedMaterials.isNotEmpty()) {
+                    Result.success(cachedMaterials.map { Material.fromEntity(it) })
+                }
+//                    Log.e("CourseRepository", "Failed to fetch materials from remote and no cache for section ID $sectionId", e)
+//                    Result.failure(Exception("Materials not found."))
+//                }
+                Result.failure(Exception("Materials not found."))
+            } catch (cacheError: Exception) {
+                Result.failure(cacheError)
+            }
+        }
+    }
+    override suspend fun getCourses(sortBy: String): Result<List<Course>> {
+        return try {
+            // response sekarang bertipe BaseResponse<CourseListData>
+            val response = remoteDataSource.getCourses(sortBy)
+
+            // "Buka" lapisan: response.data.courses
+            // Ini akan mengambil array dari JSON Anda
+            val courseJsons = response.data.courses
+
+            // Mapping ke Domain Model tidak berubah
+            val courses = courseJsons.map { Course.fromJson(it) }
+            Result.success(courses)
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

@@ -18,7 +18,7 @@ interface SectionDao {
      * Menggunakan Flow agar UI otomatis update jika ada perubahan.
      */
     @Query("SELECT * FROM sections WHERE courseId = :courseId ORDER BY position ASC")
-    fun getSectionsForCourse(courseId: String): Flow<List<SectionEntity>>
+    suspend fun getSectionsForCourse(courseId: String): List<SectionEntity>
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

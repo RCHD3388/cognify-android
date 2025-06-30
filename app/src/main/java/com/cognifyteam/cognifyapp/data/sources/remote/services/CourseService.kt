@@ -71,6 +71,7 @@ interface CourseService {
     suspend fun getAllCourses(
         @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
     ): BaseResponse<EnrolledCoursesData>
+    
     @POST("course/{courseId}/payment")
     suspend fun createPayment(
         @Path("courseId") courseId: String,

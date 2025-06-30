@@ -80,6 +80,16 @@ class CourseViewModel(
     private val _event = MutableSharedFlow<String>()
     val event: SharedFlow<String> = _event
 
+    private val _paymentToken = MutableSharedFlow<String>()
+    val paymentToken: SharedFlow<String> = _paymentToken
+
+    private val _paymentError = MutableSharedFlow<String>()
+    val paymentError: SharedFlow<String> = _paymentError
+
+
+    private val _materialsStateMap = MutableStateFlow<Map<String, MaterialUiState>>(emptyMap())
+    val materialsStateMap: StateFlow<Map<String, MaterialUiState>> = _materialsStateMap.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -92,16 +102,6 @@ class CourseViewModel(
         // Panggil pencarian awal saat ViewModel pertama kali dibuat
         searchAllCourses("")
     }
-    private val _paymentToken = MutableSharedFlow<String>()
-    val paymentToken: SharedFlow<String> = _paymentToken
-
-    private val _paymentError = MutableSharedFlow<String>()
-    val paymentError: SharedFlow<String> = _paymentError
-
-
-    private val _materialsStateMap = MutableStateFlow<Map<String, MaterialUiState>>(emptyMap())
-    val materialsStateMap: StateFlow<Map<String, MaterialUiState>> = _materialsStateMap.asStateFlow()
-
 
     // --- FUNGSI BARU UNTUK MEMUAT DETAIL ---
     fun loadCourseDetails(courseId: String) {
@@ -128,7 +128,7 @@ class CourseViewModel(
             // Panggil repository
             val result = courseRepository.getMaterialsBySectionId(sectionId)
             result.onSuccess { materialJsons ->
-                val materials = materialJsons.map { com.cognifyteam.cognifyapp.data.models.Material.fromJson(it) }
+                val materials = materialJsons
                 // Update state untuk section ini menjadi Success
                 _materialsStateMap.value = _materialsStateMap.value + (sectionId to MaterialUiState.Success(materials))
             }.onFailure {
@@ -274,7 +274,7 @@ class CourseViewModel(
         }
     }
 
-    private fun loadCoursesByType(type: String, stateFlow: MutableStateFlow<CourseListUiState>) {
+    fun createPayment(courseId: String, firebaseId: String, onResult: (snapToken: String) -> Unit) {
         viewModelScope.launch {
             stateFlow.value = CourseListUiState.Loading
             courseRepository.getCourses(type)
@@ -318,8 +318,17 @@ class CourseViewModel(
             result.onSuccess { sections ->
                 _sectionUiState.value = SectionUiState.Success(sections)
             }.onFailure {
-                _sectionUiState.value = SectionUiState.Error(it.message ?: "Failed to load sections")
+                _sectionUiState.value =
+                    SectionUiState.Error(it.message ?: "Failed to load sections")
             }
+        }
+    }
+    private fun loadCoursesByType(type: String, stateFlow: MutableStateFlow<CourseListUiState>) {
+        viewModelScope.launch {
+            stateFlow.value = CourseListUiState.Loading
+            courseRepository.getCourses(type)
+                .onSuccess { courses -> stateFlow.value = CourseListUiState.Success(courses) }
+                .onFailure { e -> stateFlow.value = CourseListUiState.Error(e.message ?: "Error") }
         }
     }
 

@@ -29,5 +29,5 @@ interface MaterialService {
     ): ApiResponse<List<Material>>
 
     @GET("material/materials/{sectionId}")
-    suspend fun getMaterialsBySectionId(@Path("sectionId") sectionId: String): ApiResponse<List<MaterialJson>>
+    suspend fun getMaterialsBySectionId(@Path("sectionId") sectionId: String): ApiResponse<List<Material>>
 }

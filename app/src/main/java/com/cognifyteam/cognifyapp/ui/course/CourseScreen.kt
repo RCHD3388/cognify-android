@@ -4,6 +4,7 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -38,6 +39,8 @@ import com.cognifyteam.cognifyapp.data.models.Rating
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.learningpath.screen.Avatar
+import com.cognifyteam.cognifyapp.ui.profile.InitialAvatar
 import com.cognifyteam.cognifyapp.ui.profile.PaymentWebView
 
 // Enum untuk merepresentasikan Tab yang aktif
@@ -272,7 +275,10 @@ fun RatingSection(
                     // --- AKHIR PERBAIKAN ---
                 }
                 // Comment TextField
-                OutlinedTextField(value = comment, onValueChange = { comment = it }, /*...*/)
+                OutlinedTextField(value = comment, onValueChange = { comment = it }, modifier = Modifier
+                    .fillMaxWidth() // 1. Buat ukurannya penuh dulu
+                    .padding(horizontal = 8.dp)
+                )
                 // Submit Button
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
                     Button(
@@ -451,7 +457,7 @@ fun CourseInstructor(course: Course) {
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(course.course_owner_name, style = MaterialTheme.typography.titleMedium)
-                Text("Design Tutor", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Course Instructor", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -565,10 +571,10 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // Placeholder untuk gambar profil penulis diskusi
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                Avatar(discussion.getAuthorInitial())
                 Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                     Text(text = discussion.authorName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Text(text = discussion.createdAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = Discussion.formatTanggal(discussion.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Text(text = discussion.content, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
@@ -615,11 +621,11 @@ fun DiscussionItem(discussion: Discussion, onAddReply: (String) -> Unit) {
 @Composable
 fun ReplyItem(reply: Discussion) {
     Row(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(8.dp)).padding(12.dp)) {
-        Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+        Avatar(reply.getAuthorInitial())
         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(text = reply.authorName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-                Text(text = reply.createdAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = Discussion.formatTanggal(reply.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(text = reply.content, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
         }

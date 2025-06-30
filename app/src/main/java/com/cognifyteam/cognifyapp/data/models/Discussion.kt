@@ -1,12 +1,18 @@
 package com.cognifyteam.cognifyapp.data.models
 
 import android.os.Parcelable
+import android.util.Log
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import kotlinx.parcelize.Parcelize
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 // DTO untuk Network, merepresentasikan satu post diskusi dari JSON
 @JsonClass(generateAdapter = true)
@@ -95,26 +101,48 @@ data class Discussion(
                 replies = json.replies?.map { fromJson(it) } ?: emptyList()
             )
         }
+
+        fun formatTanggal(isoDateString: String): String {
+            try {
+                // 1. Parse string ISO 8601 langsung menjadi objek Instant (UTC).
+                //    Tidak perlu formatter input karena ini format default.
+                val instant = Instant.parse(isoDateString)
+
+                // 2. Dapatkan zona waktu default dari perangkat pengguna.
+                val zonaWaktuLokal = ZoneId.systemDefault()
+
+                // 3. Definisikan formatter untuk output yang diinginkan dengan Locale Indonesia.
+                val outputFormatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("in", "ID"))
+
+                // 4. Format instant dengan menerapkan zona waktu lokal.
+                //    'withZone' penting untuk memastikan tanggal dan waktu benar-benar dikonversi.
+                return outputFormatter.withZone(zonaWaktuLokal).format(instant)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return isoDateString // Kembalikan string asli jika ada error
+            }
+        }
     }
 
-    fun toReplyEntity(courseId: String, parentId: Int): DiscussionEntity {
+    fun toReplyEntity(courseId: String, parentId: Int, firebaseId: String? = null): DiscussionEntity {
         return DiscussionEntity(
             id = this.id,
             content = this.content,
             createdAt = this.createdAt,
-            userId = this.authorId,
+            userId = firebaseId ?: this.authorId,
             courseId = courseId, // Gunakan courseId dari induk
             parentId = parentId   // Set parentId
         )
     }
 
     // Mapper dari Domain Model (UI) ke Entity (database)
-    fun toEntity(courseId: String): List<DiscussionEntity> {
+    fun toEntity(courseId: String, firebaseId: String? = null): List<DiscussionEntity> {
         val parentEntity = DiscussionEntity(
             id = this.id,
             content = this.content,
             createdAt = this.createdAt,
-            userId = this.authorId,
+            userId = firebaseId ?: this.authorId,
             courseId = courseId,
             parentId = null // Ini adalah post utama
         )
@@ -129,5 +157,21 @@ data class Discussion(
             )
         }
         return listOf(parentEntity) + replyEntities
+    }
+
+    fun getAuthorInitial(): String{
+        val words = this.authorName.trim().split(' ').filter { it.isNotBlank() }
+        return when {
+            words.isEmpty() -> ""
+            words.size == 1 -> {
+                words[0].first().toString().uppercase()
+            }
+
+            else -> {
+                val firstInitial = words[0].first()
+                val secondInitial = words[1].first()
+                "$firstInitial$secondInitial".uppercase()
+            }
+        }
     }
 }

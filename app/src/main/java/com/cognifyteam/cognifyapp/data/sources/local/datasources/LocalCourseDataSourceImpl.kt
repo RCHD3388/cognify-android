@@ -1,9 +1,14 @@
 package com.cognifyteam.cognifyapp.data.sources.local.datasources
 
+import android.util.Log
 import com.cognifyteam.cognifyapp.data.models.CourseEntity
+import com.cognifyteam.cognifyapp.data.models.MaterialEntity
+import com.cognifyteam.cognifyapp.data.models.SectionEntity
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserWithCourses
 import com.cognifyteam.cognifyapp.data.sources.local.dao.CourseDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.MaterialDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
 
 interface LocalCourseDataSource {
     /**
@@ -27,11 +32,24 @@ interface LocalCourseDataSource {
     //get user created courses
     suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity>
 
+    suspend fun insertSections(sections: List<SectionEntity>)
+
+    suspend fun getSectionsForCourse(courseId: String): List<SectionEntity>
+
+    suspend fun getMaterialsForSection(sectionId: String): List<MaterialEntity>
+
+    suspend fun insertMaterials(materials: List<MaterialEntity>)
+
+    suspend fun getCourseById(courseId: String): CourseEntity?
+
     suspend fun getAllCourses(): List<CourseEntity>
 }
 
 class LocalCourseDataSourceImpl(
-    private val courseDao: CourseDao
+    private val courseDao: CourseDao,
+    private val SectionDao: SectionDao,
+    private val MaterialDao: MaterialDao
+
 ) : LocalCourseDataSource {
 
     override suspend fun upsertCourses(courses: List<CourseEntity>) {
@@ -53,6 +71,27 @@ class LocalCourseDataSourceImpl(
     override suspend fun getUserCreatedCourses(firebaseId: String): List<CourseEntity> {
         return courseDao.getUserCreatedCourses(firebaseId)
     }
+
+    override suspend fun insertSections(sections: List<SectionEntity>) {
+        return SectionDao.insertAll(sections)
+    }
+
+    override suspend fun getSectionsForCourse(courseId: String): List<SectionEntity> {
+        return SectionDao.getSectionsForCourse(courseId)
+    }
+    override suspend fun getMaterialsForSection(sectionId: String): List<MaterialEntity> {
+        return MaterialDao.getMaterialsForSection(sectionId)
+    }
+    override suspend fun insertMaterials(materials: List<MaterialEntity>) {
+        return MaterialDao.insertAll(materials)
+    }
+
+    override suspend fun getCourseById(courseId: String): CourseEntity? {
+        return courseDao.getCourseById(courseId)
+    }
+
+
+
 
     override suspend fun getAllCourses(): List<CourseEntity> {
         return courseDao.getAllCourses()
