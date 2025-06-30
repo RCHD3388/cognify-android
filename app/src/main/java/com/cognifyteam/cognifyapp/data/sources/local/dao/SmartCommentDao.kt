@@ -23,6 +23,9 @@ interface SmartCommentDao {
     @Query("SELECT * FROM smart_comments WHERE smartId = :smartId")
     suspend fun getOneSmartComments(smartId: Int): List<SmartComment>
 
+    @Query("DELETE FROM smart_comments WHERE smartId = :smartId")
+    suspend fun deleteAllById(smartId: Int)
+
     @Query("DELETE FROM smart_comments")
     suspend fun clearAll()
 }

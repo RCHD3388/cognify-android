@@ -10,7 +10,10 @@ import com.cognifyteam.cognifyapp.data.models.UserCoursesDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.ApiResponse
 import com.cognifyteam.cognifyapp.data.sources.remote.CourseDataWrapper
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateCourseRequest
+import com.cognifyteam.cognifyapp.data.sources.remote.CreatePaymentRequest
 import com.cognifyteam.cognifyapp.data.sources.remote.CreateReplyRequest
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -21,6 +24,14 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import okhttp3.RequestBody
 import retrofit2.http.Query
+
+@JsonClass(generateAdapter = true)
+data class PaymentTokenResponse(
+    @Json(name = "token")
+    val token: String,
+    @Json(name = "redirect_url")
+    val redirect_url: String
+)
 
 interface CourseService {
     @GET("course/getUserCourse/{firebaseId}")
@@ -60,4 +71,9 @@ interface CourseService {
     suspend fun getAllCourses(
         @Query("q") query: String? // Dibuat nullable, Retrofit akan mengabaikannya jika null
     ): BaseResponse<EnrolledCoursesData>
+    @POST("course/{courseId}/payment")
+    suspend fun createPayment(
+        @Path("courseId") courseId: String,
+        @Body request: CreatePaymentRequest
+    ): BaseResponse<PaymentTokenResponse>
 }

@@ -13,6 +13,7 @@ import com.cognifyteam.cognifyapp.data.models.RatingEntity
 import com.cognifyteam.cognifyapp.data.models.SmartComment
 import com.cognifyteam.cognifyapp.data.models.SmartLike
 import com.cognifyteam.cognifyapp.data.models.SectionEntity
+import com.cognifyteam.cognifyapp.data.models.TransactionEntity
 import com.cognifyteam.cognifyapp.data.models.UserCourseCrossRef
 import com.cognifyteam.cognifyapp.data.models.UserEntity
 import com.cognifyteam.cognifyapp.data.sources.local.dao.AuthDao
@@ -26,6 +27,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartLikeDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SmartStepDao
 import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
+import com.cognifyteam.cognifyapp.data.sources.local.dao.TransactionDao
 
 @Database(entities = [
     UserEntity::class,
@@ -38,6 +40,7 @@ import com.cognifyteam.cognifyapp.data.sources.local.dao.SectionDao
     SmartLike::class,
     SmartComment::class,
     SectionEntity::class,
+    TransactionEntity::class
     RatingEntity::class
 ], version = 17)
 
@@ -53,6 +56,7 @@ abstract class AppDatabase : RoomDatabase() {
      abstract fun discussionDao(): DiscussionDao
     abstract fun followDao(): FollowDao
     abstract fun sectionDao(): SectionDao
+    abstract fun transactionDao(): TransactionDao
     abstract fun ratingDao(): RatingDao
 
     companion object {

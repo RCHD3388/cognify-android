@@ -1,5 +1,6 @@
 package com.cognifyteam.cognifyapp.ui.course
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -37,6 +38,7 @@ import com.cognifyteam.cognifyapp.data.models.Rating
 import com.cognifyteam.cognifyapp.ui.FabState
 import com.cognifyteam.cognifyapp.ui.TopBarState
 import com.cognifyteam.cognifyapp.ui.common.UserViewModel
+import com.cognifyteam.cognifyapp.ui.profile.PaymentWebView
 
 // Enum untuk merepresentasikan Tab yang aktif
 enum class CourseTab {
@@ -58,18 +60,29 @@ fun CourseScreen(
     val ratingViewModel: RatingViewModel = viewModel(factory = RatingViewModel.provideFactory(appContainer.ratingRepository))
     val userViewModel: UserViewModel = viewModel(factory = UserViewModel.provideFactory(appContainer.authRepository))
 
+    val loggedInUser by userViewModel.userState.collectAsState()
+
     // --- Amati State ---
     val discussionUiState by discussionViewModel.uiState.collectAsState()
     val courseDetailState by courseViewModel.courseDetailState.collectAsState()
+    val materialsStateMap by courseViewModel.materialsStateMap.collectAsState() // <-- TAMBAHKAN INI
     val ratingsListState by ratingViewModel.ratingsListState.collectAsState()
     val currentUser by userViewModel.userState.collectAsState()
     val context = LocalContext.current
 
+    var showPaymentWebView by remember { mutableStateOf(false) }
+    var paymentSnapToken by remember { mutableStateOf<String?>(null) }
+
+    val sectionUiState by courseViewModel.sectionUiState.collectAsState()
     // --- Efek Samping ---
     LaunchedEffect(key1 = courseId) {
-        discussionViewModel.loadDiscussions(courseId)
+        // Load semua data yang dibutuhkan
         courseViewModel.loadCourseDetails(courseId)
+        discussionViewModel.loadDiscussions(courseId)
         ratingViewModel.loadRatings(courseId)
+        courseViewModel.loadSections(courseId)
+
+        // Atur TopBar dan FAB
         onFabStateChange(FabState(isVisible = false))
         onTopBarStateChange(
             TopBarState(isVisible = true, title = "Course Details",
@@ -82,55 +95,102 @@ fun CourseScreen(
         )
     }
 
-    // --- Tampilan Utama ---
-    when (val state = courseDetailState) {
-        is CourseDetailUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        }
-        is CourseDetailUiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = state.message, color = MaterialTheme.colorScheme.error) }
-        }
-        is CourseDetailUiState.Success -> {
-            val course = state.course
-            var selectedTab by remember { mutableStateOf(CourseTab.Overview) }
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = courseDetailState) {
+            is CourseDetailUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+            }
 
-            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                CourseBanner(course = course)
-                CourseTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+            is CourseDetailUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { Text(text = state.message, color = MaterialTheme.colorScheme.error) }
+            }
 
-                Box(modifier = Modifier.animateContentSize()) {
-                    when (selectedTab) {
-                        CourseTab.Overview -> {
-                            CourseOverviewContent(course = course)
-                        }
-                        CourseTab.Discussion -> {
-                            DiscussionSection(
-                                uiState = discussionUiState,
-                                onAddDiscussion = { newDiscussionText ->
-                                    currentUser?.firebaseId?.let { id ->
-                                        discussionViewModel.addDiscussion(courseId, id, newDiscussionText)
+            is CourseDetailUiState.Success -> {
+                val course = state.course
+                var selectedTab by remember { mutableStateOf(CourseTab.Overview) }
+
+                Column(modifier = Modifier.fillMaxSize()) {
+                    CourseBanner(course = course)
+                    CourseTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+
+                    Box(modifier = Modifier
+                        .weight(1f) // Ambil sisa ruang
+                        .verticalScroll(rememberScrollState())
+                        .animateContentSize()
+                    ) {
+                        when (selectedTab) {
+                            CourseTab.Overview -> {
+                                CourseOverviewContent(
+                                    course = course,
+                                    viewModel = courseViewModel,
+                                    onEnrollClick = { token ->
+                                        paymentSnapToken = token
+                                        showPaymentWebView = true
+                                    },
+                                    firebaseId = loggedInUser!!.firebaseId
+                                )
+                            }
+
+                            CourseTab.Discussion -> {
+                                DiscussionSection(
+                                    uiState = discussionUiState,
+                                    onAddDiscussion = { newDiscussionText ->
+                                        currentUser?.firebaseId?.let { id ->
+                                            discussionViewModel.addDiscussion(
+                                                courseId,
+                                                id,
+                                                newDiscussionText
+                                            )
+                                        }
+                                    },
+                                    onAddReply = { discussionId, replyText ->
+                                        currentUser?.firebaseId?.let { id ->
+                                            discussionViewModel.addReply(discussionId, id, replyText)
+                                        }
                                     }
-                                },
-                                onAddReply = { discussionId, replyText ->
-                                    currentUser?.firebaseId?.let { id ->
-                                        discussionViewModel.addReply(discussionId, id, replyText)
+                                )
+                            }
+
+                            CourseTab.Lessons -> {
+                                LessonsContent(
+                                    sectionUiState = sectionUiState,
+                                    materialUiStateMap = materialsStateMap,
+                                    onSectionClick = { sectionId ->
+                                        courseViewModel.loadMaterialsForSection(sectionId)
+                                    },
+                                    navController = navController // <-- KIRIM NAVCONTROLLER DI SINI
+                                )
+                            }
+
+                            CourseTab.Reviews -> {
+                                RatingSection(
+                                    uiState = ratingsListState,
+                                    onSubmitRating = { rating, comment ->
+                                        currentUser?.firebaseId?.let { id ->
+                                            ratingViewModel.submitRating(courseId, id, rating, comment)
+                                        }
                                     }
-                                }
-                            )
-                        }
-                        CourseTab.Lessons -> ComingSoonSection(tabName = "Lessons")
-                        CourseTab.Reviews -> {
-                            RatingSection(
-                                uiState = ratingsListState,
-                                onSubmitRating = { rating, comment ->
-                                    currentUser?.firebaseId?.let { id ->
-                                        ratingViewModel.submitRating(courseId, id, rating, comment)
-                                    }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
+            }
+        }
+        if (showPaymentWebView && paymentSnapToken != null) {
+            PaymentWebView (snapToken = paymentSnapToken!!) {
+                // Callback saat pembayaran selesai
+                showPaymentWebView = false
+                paymentSnapToken = null
+                Toast.makeText(context, "Payment process finished.", Toast.LENGTH_LONG).show()
+                // Navigasi kembali atau refresh data
+                navController.popBackStack()
             }
         }
     }
@@ -138,11 +198,22 @@ fun CourseScreen(
 
 // Composable baru untuk konten tab Overview
 @Composable
-fun CourseOverviewContent(course: Course) {
+fun CourseOverviewContent(
+    course: Course,
+    viewModel: CourseViewModel,
+    onEnrollClick: (String) -> Unit,
+    firebaseId: String
+) {
+
     Column {
         CourseDetails(course = course)
         CourseInstructor(course = course)
-        CourseActions(course = course)
+        CourseActions(
+            course = course,
+            viewModel = viewModel,
+            firebaseId = firebaseId,
+            onEnrollClick = onEnrollClick
+        )
     }
 }
 
@@ -387,7 +458,12 @@ fun CourseInstructor(course: Course) {
 }
 
 @Composable
-fun CourseActions(course: Course) {
+fun CourseActions(
+    course: Course,
+    viewModel: CourseViewModel,
+    firebaseId: String,
+    onEnrollClick: (snapToken: String) -> Unit // Menggunakan callback
+) {
     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column {
             Text(text = "Rp${course.price}", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
@@ -395,7 +471,11 @@ fun CourseActions(course: Course) {
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
-            onClick = {},
+            onClick = {
+                viewModel.createPayment(course.courseId, firebaseId = firebaseId) { token ->
+                    onEnrollClick(token)
+                }
+            },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("GET ENROLL", color = MaterialTheme.colorScheme.onPrimary)

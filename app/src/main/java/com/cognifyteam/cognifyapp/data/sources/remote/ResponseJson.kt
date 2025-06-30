@@ -71,6 +71,11 @@ data class CreatePostRequest(
     val courseId: String
 )
 
+@JsonClass(generateAdapter = true)
+data class CreatePaymentRequest(
+    val firebaseId: String
+)
+
 // DTO untuk mengirim data saat membuat balasan
 @JsonClass(generateAdapter = true)
 data class CreateReplyRequest(

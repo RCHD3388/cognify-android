@@ -20,6 +20,9 @@ interface SmartStepDao {
     @Query("SELECT * FROM smart_steps WHERE smartId = :smartId")
     suspend fun getOneSmartSteps(smartId: Int): List<LearningPathStepEntity>
 
+    @Query("DELETE FROM smart_steps WHERE smartId = :smartId")
+    suspend fun deleteAllById(smartId: Int)
+
     @Query("DELETE FROM smart_steps")
     suspend fun clearAll()
 }
